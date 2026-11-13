@@ -1,0 +1,11 @@
+{
+  "ConnectionStrings": {
+    "DatabaseConnection": "Host=localhost;Port=5433;Database=adhd-planning;Username=devusr;Password=change-me"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}

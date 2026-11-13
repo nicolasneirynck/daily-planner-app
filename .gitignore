@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/Logs/
+**/TestResults/
+**/coverage/
+*.log
+.DS_Store
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+.env
+.env.*
+!.env.example
+src/Planning.Server/appsettings.Development.json
+src/Planning.Server/appsettings.Local.json
