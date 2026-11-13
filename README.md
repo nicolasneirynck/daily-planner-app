@@ -14,7 +14,7 @@ The working title is **Planning**. The starter is being adapted in stages:
 
 1. **Solution and project names — done.** The solution, six application projects, and three test projects use `Planning` names and paths.
 2. **Code references — done.** Namespaces, imports, Swagger's API title, EF migration metadata, and the client stylesheet reference use `Planning`.
-3. **Local database — done.** Docker Compose exposes PostgreSQL on host port `5433`; local `.env` and development settings provide matching database credentials. These local files are ignored by Git.
+3. **Local database — done.** Docker Compose exposes PostgreSQL on host port `5433`. The local `.env` supplies credentials to Compose and the server; Git ignores it.
 4. **URLs and identity — provisionally done.** The hosted app uses `https://localhost:5001`. The server has its own `UserSecretsId`. Registration is public and newly registered accounts receive the `User` role. `Administrator` and `Technician` remain example roles; review access rules when defining the application's real users.
 5. **Choose the examples — pending.** Products and Projects are working examples, not required Planning features. Keep or remove each complete feature across Domain, Shared, Services, Persistence, Server, Client, and tests. Update service registration, `ApplicationDbContext`, development seeding, and EF migrations to match. Make schema changes through a migration.
 6. **Replace example data and presentation — pending.** Replace or disable the example users, fixed development password, products, projects, and addresses in `src/Planning.Persistence/DbSeeder.cs`. Review the browser title, navigation branding, icons, and example pages in the client. Keep the original MIT license notice.
@@ -28,19 +28,26 @@ From the repository root:
 
 ```bash
 cp .env.example .env
-cp src/Planning.Server/appsettings.Development.json.example src/Planning.Server/appsettings.Development.json
-# Set the same database, user, and password in both local files.
+# Set the same database, user, and password in the POSTGRES_* values and connection string.
 docker compose up -d
-dotnet run --project src/Planning.Server
+./scripts/run-local.sh
 ```
 
-If these local files already exist, keep them and skip the copy commands.
+If `.env` already exists, keep it and skip the copy command. The start script exports its values as environment variables before running the server.
 
 Open `https://localhost:5001`. The server hosts the Blazor client and API at the same origin. The server launch profile sets `ASPNETCORE_ENVIRONMENT=Development`. If the development certificate is not trusted, run `dotnet dev-certs https --trust`.
 
-The local database is exposed on host port `5433` (container port `5432`). The example files use database `adhd-planning` and user `devusr`; choose your own local password. Docker Compose reads `.env`, and the server reads `src/Planning.Server/appsettings.Development.json`. Both local files are ignored by Git. For deployment, provide `ConnectionStrings:DatabaseConnection` through environment configuration or a secret store; no production connection string is included.
+The local database is exposed on host port `5433` (container port `5432`). `.env.example` uses database `adhd-planning` and user `devusr`; choose your own local password. Docker Compose reads the `POSTGRES_*` values from `.env`. The start script exports `ConnectionStrings__DatabaseConnection`; .NET maps the double underscore to `ConnectionStrings:DatabaseConnection`. This environment value takes precedence over the optional, ignored `src/Planning.Server/appsettings.Development.json`. For deployment, provide the connection string through environment configuration or a secret store; no production connection string is included.
 
 In Development, the server applies EF Core migrations and seeds example data on startup. This requires PostgreSQL to be running. In other environments, apply migrations as part of deployment before starting the server.
+
+To confirm that the initial migration was applied to the local database:
+
+```bash
+docker compose exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT \"MigrationId\" FROM \"__EFMigrationsHistory\" ORDER BY \"MigrationId\";"'
+```
+
+The result should include `20261004181924_Initial`.
 
 ## Build and test
 
