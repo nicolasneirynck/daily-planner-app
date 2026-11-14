@@ -276,6 +276,11 @@ public class DayPlanningShould : BunitContext
     [Fact]
     public async Task KeepSelectedDayWhenAnOlderRequestFinishesLast()
     {
+        /*  1. De pagina toont vandaag
+            2. Je klikt naar morgen; dat antwoord wordt vertraagd
+            3. Je klikt terug naar vandaag; het antwoord voor vandaag komt meteen
+            4. Daarna komt het vertraagde antwoord voor morgen alsnog binnen*/
+        
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
@@ -315,7 +320,7 @@ public class DayPlanningShould : BunitContext
         delayedTomorrow.SetResult(Day(tomorrow)); // Day(tomorrow) maakt testantwoord via helper, SetResult geeft dat antwoord aan de awachtende GetDayAsync
         await nextClick; // wachten tot test de eerder gestarte klikafhandeling klaar is
 
-        // Assert
+        // Assert dat vandaag zichtbaar blijft, ook nadat een ouder antwoord voor morgen alsnog binnenkomt
         await cut.WaitForAssertionAsync(() =>
             cut.Find("[data-testid='time-block-name']").TextContent.Trim()
                 .ShouldBe($"Day {today:yyyy-MM-dd}"));

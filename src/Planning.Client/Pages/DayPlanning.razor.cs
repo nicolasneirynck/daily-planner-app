@@ -11,6 +11,7 @@ public partial class DayPlanning
     private IReadOnlyList<TimeBlockDto> _timeBlocks = [];
     private bool _isLoading = true;
     private bool _hasLoadError;
+    private int _loadVersion;
     private bool IsToday => _selectedDate == DateOnly.FromDateTime(DateTime.Today);
     
     [Inject] public required IDayPlanningService DayPlanningService { get; set; }
@@ -28,6 +29,7 @@ public partial class DayPlanning
 
     private async Task LoadDayAsync(DateOnly date)
     {
+        var loadVersion = ++_loadVersion; // verhoogt _loadVersion eerst met 1 en daarna nieuwe waarde opslaan in loadVersion
         _selectedDate = date;
         _isLoading = true;
         _hasLoadError = false;
@@ -37,11 +39,13 @@ public partial class DayPlanning
         {
             var result = await DayPlanningService.GetDayAsync(date);
 
+            if (loadVersion != _loadVersion)
+                return;
+
             if (result.IsSuccess)
                 _timeBlocks = result.Value.TimeBlocks
                     .OrderBy(block => block.SortOrder)
                     .ToArray();
-
             else
                 _hasLoadError = true;
         }
@@ -49,12 +53,16 @@ public partial class DayPlanning
                                    or JsonException
                                    or InvalidOperationException)
         {
-            Log.Warning(ex, "Could not load day planning for {Date}", date);
-            _hasLoadError = true;
+            if (loadVersion == _loadVersion)
+            {
+                Log.Warning(ex, "Could not load day planning for {Date}", date);
+                _hasLoadError = true;
+            }
         }
         finally
         {
-            _isLoading = false;
+            if (loadVersion == _loadVersion)
+                _isLoading = false;
         }
     }
 }
