@@ -22,22 +22,35 @@
     }
 }
 
-.day-planning-empty-state {
-    max-width: 32rem;
-    padding: 1.5rem;
+.time-block-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); /*min(100%, 20rem): een kolom is minimaal 20rem breed, behalve als de container smaller is. Dan mag ze krimpen tot de containerbreedte. */
+    gap: 1rem;
+}
+
+.time-block {
+    min-height: 10rem;
+    padding: 1.25rem;
     border: 1px solid #e7ddcc;
     border-radius: 1.5rem;
     background: white;
-    text-align: center;
 }
 
-.day-planning-empty-state h2 {
-    margin-bottom: 0.5rem;
+.time-block h2 {
+    margin: 0;
     color: #192231;
     font-size: 1.25rem;
-    font-weight: 700;
 }
 
-.day-planning-empty-state p {
+.time-block-hours,
+.time-block-empty {
     color: #526071;
+}
+
+.time-block-hours {
+    margin: 0.25rem 0 1.5rem;
+}
+
+.time-block-empty {
+    margin: 0;
 }

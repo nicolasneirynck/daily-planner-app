@@ -5,10 +5,34 @@
 
 <header class="day-planning-header">
     <p>Vandaag</p>
-    <h1>@DateTime.Today.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))</h1>
+    <h1>@_selectedDate.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))</h1>
 </header>
 
-<section class="day-planning-empty-state" aria-label="Lege dagplanning">
-    <h2>Je dag is nog leeg</h2>
-    <p>Er zijn nog geen activiteiten gepland.</p>
-</section>
+@if (_isLoading)
+{
+    <p>Dagplanning laden...</p>
+}
+else if (_hasLoadError)
+{
+    <p>De dagplanning kon niet geladen worden.</p>
+}
+else
+{
+    <div class="time-block-grid" aria-label="Tijdsblokken">
+        @foreach (var block in _timeBlocks)
+        {
+            <section class="time-block" @key="block.Id" aria-labelledby="time-block-@block.Id">
+                <h2 id="time-block-@block.Id" data-testid="time-block-name">@block.Name</h2>
+                <p class="time-block-hours">
+                    @block.StartTime.ToString("HH:mm") - @block.EndTime.ToString("HH:mm")
+                </p>
+
+                @if (block.Activities.Count == 0)
+                {
+                    <p class="time-block-empty">Niets gepland!</p>
+                }
+            </section>
+        }
+
+    </div>
+}
