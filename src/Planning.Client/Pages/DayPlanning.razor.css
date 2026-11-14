@@ -16,64 +16,8 @@
     line-height: 1.15;
 }
 
-.day-navigation{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
+.day-navigation-slot {
     margin-top: 1.25rem;
-}
-
-.day-navigation button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none; /* = flex-grow: 0; flex-shrink: 0; flex-basis: auto; -> knop wordt niet automatisch breder als er ruimte over is, niet smaller als de rij knap wordt. Zijn breedte volgt de inhoud en eventele andere breedteregels*/
-    height: 3rem;
-    border: 1px solid #e7ddcc;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.day-navigation-arrow {
-    width: 3rem;
-    border-radius: 50%;
-    background: #fbf7ef;
-    color: #192231;
-}
-
-.day-navigation-arrow svg {
-    width: 1.25rem;
-    height: 1.25rem;
-}
-
-.day-navigation-today {
-    width: 7.5rem;
-    border-radius: 999px; /* hoeken zo sterk mogelijk afronden. Browser beperkt de afronding automatisch tot wat het element past -> bij brede knop een pilvorm*/
-    background: #f5eee1;
-    color: #192231;
-}
-
-.day-navigation-today[aria-pressed="true"] {
-    border-color: var(--accent-coral);
-    background: var(--accent-coral);
-    color: white;
-}
-
-/* Pas deze hoverkleuren alleen toe als het primaire invoerapparaat kan hoveren (muis, trackpad)
-op een aanrachtscherm bestaat geen echte hover. Zonder deze beperking kan een knop na een tik soms in zijn 
-:hover kleur hangen. */
-@media (hover: hover) {
-    .day-navigation-arrow:hover,
-    .day-navigation-today[aria-pressed="false"]:hover {
-        background: #caf0dc;
-    }
-
-    .day-navigation-today[aria-pressed="true"]:hover {
-        border-color: #f47b60;
-        background: #f47b60;
-    }
 }
 
 .time-block-grid {
@@ -102,7 +46,7 @@ op een aanrachtscherm bestaat geen echte hover. Zonder deze beperking kan een kn
         grid-column: 1;
     }
 
-    .day-navigation {
+    .day-navigation-slot {
         grid-column: 2;
         grid-row: 1 / span 2; /* laat haar vanaf rij 1 over twee rijen lopen*/
         align-self: center; /* centreert haar verticaal binnen deze 2 rijen*/

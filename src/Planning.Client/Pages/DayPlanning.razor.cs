@@ -12,20 +12,10 @@ public partial class DayPlanning
     private bool _isLoading = true;
     private bool _hasLoadError;
     private int _loadVersion;
-    private bool IsToday => _selectedDate == DateOnly.FromDateTime(DateTime.Today);
     
     [Inject] public required IDayPlanningService DayPlanningService { get; set; }
 
     protected override Task OnInitializedAsync() => LoadDayAsync(_selectedDate);
-
-    private Task ShowPreviousDayAsync() =>
-        LoadDayAsync(_selectedDate.AddDays(-1));
-
-    private Task ShowNextDayAsync() =>
-        LoadDayAsync(_selectedDate.AddDays(1));
-
-    private Task ShowTodayAsync() =>
-        LoadDayAsync(DateOnly.FromDateTime(DateTime.Today));
 
     private async Task LoadDayAsync(DateOnly date)
     {

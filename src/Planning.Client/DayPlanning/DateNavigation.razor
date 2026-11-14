@@ -1,0 +1,57 @@
+@using Microsoft.AspNetCore.Components
+
+<nav class="day-navigation" aria-label="Dagnavigatie">
+    <button type="button"
+            class="day-navigation-arrow"
+            data-testid="previous-day-button"
+            aria-label="Vorige dag"
+            @onclick="() => DateSelected.InvokeAsync(SelectedDate.AddDays(-1))">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+        </svg>
+    </button>
+
+    <button type="button"
+            class="day-navigation-today"
+            data-testid="today-button"
+            aria-pressed="@(IsToday ? "true" : "false")"
+            @onclick="() => DateSelected.InvokeAsync(DateOnly.FromDateTime(DateTime.Today))">
+        Vandaag
+    </button>
+
+    <button type="button"
+            class="day-navigation-arrow"
+            data-testid="next-day-button"
+            aria-label="Volgende dag"
+            @onclick="() => DateSelected.InvokeAsync(SelectedDate.AddDays(1))">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+        </svg>
+    </button>
+</nav>
+
+@code {
+    [Parameter, EditorRequired]
+    public DateOnly SelectedDate { get; set; } // Geselecteerde datum, ontvangen van de oudercomponent.
+
+    [Parameter, EditorRequired]
+    public EventCallback<DateOnly> DateSelected { get; set; } 
+    // Meldt een gekozen datum aan de oudercomponent.
+    /*Bij DateSelected gebeurt die melding pas wanneer de component DateSelected.InvokeAsync(nieuweDatum) aanroept.
+     De oudercomponent handelt haar daarna af met LoadDayAsync 
+     
+     Stap voor stap, als SelectedDate 14 november is:
+       1. @onclick koppelt de code aan de klik.
+       2. () => maakt een functie die pas bij de klik wordt uitgevoerd.
+       3. SelectedDate.AddDays(-1) berekent 13 november. SelectedDate zelf verandert hierdoor niet.
+       4. DateSelected.InvokeAsync(...) geeft 13 november door aan de oudercomponent.
+       5. In deze pagina is DateSelected gekoppeld aan LoadDayAsync, dus de ouder laadt de planning voor 13 november.
+       */
+    
+    private bool IsToday =>
+        SelectedDate == DateOnly.FromDateTime(DateTime.Today); 
+}
