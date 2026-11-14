@@ -1,0 +1,14 @@
+@page "/dayplanning"
+@using System.Globalization
+
+<PageTitle>Dagplanning</PageTitle>
+
+<header class="day-planning-header">
+    <p>Vandaag</p>
+    <h1>@DateTime.Today.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))</h1>
+</header>
+
+<section class="day-planning-empty-state" aria-label="Lege dagplanning">
+    <h2>Je dag is nog leeg</h2>
+    <p>Er zijn nog geen activiteiten gepland.</p>
+</section>

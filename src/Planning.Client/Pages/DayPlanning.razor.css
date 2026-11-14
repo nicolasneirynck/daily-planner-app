@@ -1,0 +1,43 @@
+.day-planning-header {
+    margin-bottom: 2rem;
+}
+
+.day-planning-header p {
+    margin-bottom: 0.25rem;
+    color: #ed624d;
+    font-weight: 600;
+}
+
+.day-planning-header h1 {
+    margin: 0;
+    color: #192231;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+@media (min-width: 769px) {
+    .day-planning-header h1 {
+        font-size: 2.25rem;
+    }
+}
+
+.day-planning-empty-state {
+    max-width: 32rem;
+    padding: 1.5rem;
+    border: 1px solid #e7ddcc;
+    border-radius: 1.5rem;
+    background: white;
+    text-align: center;
+}
+
+.day-planning-empty-state h2 {
+    margin-bottom: 0.5rem;
+    color: #192231;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.day-planning-empty-state p {
+    color: #526071;
+}

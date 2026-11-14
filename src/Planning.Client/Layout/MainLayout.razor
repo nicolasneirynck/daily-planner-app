@@ -1,12 +1,10 @@
 ﻿@inherits LayoutComponentBase
-<div>
-    <header>
-        <NavBar/>
-    </header>
-    <main>
-        <section class="section">
-            @Body
-        </section>
+
+<div class="app-shell">
+    <NavBar />
+
+    <main class="app-main">
+        @Body
     </main>
 </div>
 
