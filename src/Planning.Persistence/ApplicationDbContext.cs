@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Planning.Domain.Activities;
+using Planning.Domain.PlannedActivities;
 using Planning.Domain.Products;
 using Planning.Domain.Projects;
+using Planning.Domain.TimeBlocks;
 
 namespace Planning.Persistence;
 
@@ -20,6 +23,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opts) :
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Technician> Technicians => Set<Technician>();
+    public DbSet<Activity> Activities => Set<Activity>();
+    public DbSet<TimeBlock> TimeBlocks => Set<TimeBlock>();
+    public DbSet<PlannedActivity> PlannedActivities => Set<PlannedActivity>();
   
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
