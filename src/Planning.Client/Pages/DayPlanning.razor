@@ -5,8 +5,17 @@
 <PageTitle>Dagplanning</PageTitle>
 
 <header class="day-planning-header">
-    <p>Vandaag</p>
-    <h1>@_selectedDate.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))</h1>
+    <p>Dagplanning</p> @* TODO -> Goedemorgen, Nicolas .. Goedeavond, Nicolas*@
+    <h1 data-testid="selected-date">
+        @_selectedDate.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))
+    </h1>
+    
+    <div class="day-navigation-slot">
+        <DateNavigation SelectedDate="_selectedDate"
+                        DateSelected="LoadDayAsync" />
+    </div>
+    
+    
 </header>
 
 @if (_isLoading)

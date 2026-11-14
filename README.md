@@ -53,8 +53,10 @@ The result should include `20261004181924_Initial`.
 
 ```bash
 dotnet build Planning.sln
-dotnet test Planning.sln
+dotnet test Planning.sln --filter 'FullyQualifiedName!~Planning.E2E.Tests'
 ```
+
+The E2E project is included in the solution so Rider can discover it. To run its browser test, first start the app and database locally, then use the **Dagplanning E2E** Rider configuration. It uses the installed Google Chrome browser and the development account `user@example.com`. The test can also be run with `dotnet test tests/Planning.E2E.Tests/Planning.E2E.Tests.csproj --settings playwright.chrome.runsettings`.
 
 To add a migration from the repository root:
 

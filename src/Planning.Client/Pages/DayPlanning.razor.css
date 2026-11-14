@@ -4,7 +4,7 @@
 
 .day-planning-header p {
     margin-bottom: 0.25rem;
-    color: #ed624d;
+    color: var(--accent-coral);
     font-weight: 600;
 }
 
@@ -16,6 +16,10 @@
     line-height: 1.15;
 }
 
+.day-navigation-slot {
+    margin-top: 1.25rem;
+}
+
 .time-block-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); /*min(100%, 20rem): een kolom is minimaal 20rem breed, behalve als de container smaller is. Dan mag ze krimpen tot de containerbreedte. */
@@ -25,5 +29,27 @@
 @media (min-width: 769px) {
     .day-planning-header h1 {
         font-size: 2.25rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .day-planning-header {
+        display: grid;
+        /* De eerste kolom krijgt de overblijvende ruimte (1fr). Door minmax(0, ...) mag ze ook krimpen wanneer de header smal is.
+           De tweede kolom (auto) wordt zo breed als haar inhoud nodig heeft, bijvoorbeeld de navigatieknoppen */
+        grid-template-columns: minmax(0, 1fr) auto; 
+        column-gap: 1.5rem;
+    }
+
+    .day-planning-header p,
+    .day-planning-header h1 {
+        grid-column: 1;
+    }
+
+    .day-navigation-slot {
+        grid-column: 2;
+        grid-row: 1 / span 2; /* laat haar vanaf rij 1 over twee rijen lopen*/
+        align-self: center; /* centreert haar verticaal binnen deze 2 rijen*/
+        margin-top: 0;
     }
 }
