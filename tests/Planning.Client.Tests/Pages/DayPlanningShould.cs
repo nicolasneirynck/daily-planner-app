@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using System.Globalization;
+using Microsoft.AspNetCore.Components.Web;
 using NSubstitute;
 using Planning.Shared.DayPlanning;
 using Shouldly;
@@ -270,6 +271,62 @@ public class DayPlanningShould : BunitContext
             cut.Find("[data-testid='today-button']")
                 .GetAttribute("aria-pressed").ShouldBe("true");
         });
+    }
+
+    [Fact]
+    public async Task KeepSelectedDayWhenAnOlderRequestFinishesLast()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var tomorrow = today.AddDays(1);
+        var delayedTomorrow = new TaskCompletionSource<Result<DayPlanningResponse>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var date = call.ArgAt<DateOnly>(0);
+                // Vraagt de pagina morgen, dan krijgt ze delayedTomorrow.Task. Die is nog niet klaar, dus de pagina blijft wachten.
+                return date == tomorrow
+                    ? delayedTomorrow.Task
+                    : Task.FromResult(Day(date));
+            });
+        Services.AddSingleton(service);
+
+        var cut = Render<DayPlanning>();
+        await cut.WaitForAssertionAsync(() =>
+            cut.Find("[data-testid='time-block-name']").TextContent.Trim()
+                .ShouldBe($"Day {today:yyyy-MM-dd}"));
+
+        // Act: start loading tomorrow, then return to today
+        var nextClick = cut.Find("[data-testid='next-day-button']")
+            .ClickAsync(new MouseEventArgs());
+
+        await cut.WaitForAssertionAsync(() =>
+        {
+            _ = service.Received(1).GetDayAsync(tomorrow, Arg.Any<CancellationToken>());
+        });
+
+        await cut.Find("[data-testid='previous-day-button']")
+            .ClickAsync(new MouseEventArgs()); // ClickAsync geeft een Task terug -> controle 
+
+        // rond uitgestelde aanvraag voor morgen af
+        delayedTomorrow.SetResult(Day(tomorrow)); // Day(tomorrow) maakt testantwoord via helper, SetResult geeft dat antwoord aan de awachtende GetDayAsync
+        await nextClick; // wachten tot test de eerder gestarte klikafhandeling klaar is
+
+        // Assert
+        await cut.WaitForAssertionAsync(() =>
+            cut.Find("[data-testid='time-block-name']").TextContent.Trim()
+                .ShouldBe($"Day {today:yyyy-MM-dd}"));
+
+        // kleine helper binnen test: maakt snel een geslaagd serviceantwoord voor een gekozen datum
+        static Result<DayPlanningResponse> Day(DateOnly date) =>
+            Result.Success(new DayPlanningResponse
+            {
+                Date = date,
+                TimeBlocks = [Block(1, $"Day {date:yyyy-MM-dd}", 6, 9)]
+            });
     }
 
     private static TimeBlockDto Block(int order, string name, int startHour, int endHour) =>
