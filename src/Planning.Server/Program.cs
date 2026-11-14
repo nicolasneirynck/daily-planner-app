@@ -78,6 +78,8 @@ try
 
             foreach (var userId in userIds)
                 await initializer.EnsureForUserAsync(userId);
+
+            await dbSeeder.SeedPlannedActivitiesAsync();
         }
     }
     // Theses middlewares are strict in order of calling!

@@ -1,0 +1,32 @@
+@using Microsoft.AspNetCore.Components
+@using Planning.Shared.DayPlanning
+
+<section class="time-block time-block-@Block.SortOrder"
+         aria-labelledby="time-block-@Block.Id"
+         data-testid="time-block-@Block.Id">
+    <h2 id="time-block-@Block.Id" data-testid="time-block-name">@Block.Name</h2>
+    <p class="time-block-hours">
+        @Block.StartTime.ToString("HH:mm") - @Block.EndTime.ToString("HH:mm")
+    </p>
+
+    @if (Block.Activities.Count == 0)
+    {
+        <p class="time-block-empty">Niets gepland!</p>
+    }
+    else
+    {
+        <ul class="planned-activity-list">
+            @foreach (var activity in Block.Activities)
+            {
+                <li @key="activity.Id">
+                    <span data-testid="planned-activity-name">@activity.Name</span>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public TimeBlockDto Block { get; set; } = default!;
+}
