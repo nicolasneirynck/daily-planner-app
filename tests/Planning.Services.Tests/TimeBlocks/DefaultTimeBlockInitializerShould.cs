@@ -8,7 +8,7 @@ namespace Planning.Services.Tests.TimeBlocks;
 public class DefaultTimeBlockInitializerShould(PostgreSqlFixture fixture) : IClassFixture<PostgreSqlFixture>
 {
     [Fact]
-    public async Task AddFiveDefaultTimeBlocksForUserWithoutBlocks()
+    public async Task AddSixDefaultTimeBlocksForUserWithoutBlocks()
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
@@ -33,15 +33,26 @@ public class DefaultTimeBlockInitializerShould(PostgreSqlFixture fixture) : ICla
             .ToListAsync();
 
         blocks.Select(block => block.SortOrder).ToArray()
-            .ShouldBe([1, 2, 3, 4, 5]);
+            .ShouldBe([1, 2, 3, 4, 5, 6]);
         blocks.Select(block => block.Name).ToArray()
             .ShouldBe([
                 "Ochtend",
                 "Voormiddag",
+                "Middag",
                 "Vroege namiddag",
                 "Late namiddag",
                 "Avond"
             ]);
+        blocks.Select(block => (block.StartTime, block.EndTime)).ToArray()
+            .ShouldBe(new (TimeOnly StartTime, TimeOnly EndTime)[]
+            {
+                (new TimeOnly(6, 0), new TimeOnly(9, 0)),
+                (new TimeOnly(9, 0), new TimeOnly(12, 0)),
+                (new TimeOnly(12, 0), new TimeOnly(14, 0)),
+                (new TimeOnly(14, 0), new TimeOnly(16, 0)),
+                (new TimeOnly(16, 0), new TimeOnly(18, 0)),
+                (new TimeOnly(18, 0), new TimeOnly(23, 0))
+            });
     }
 
     [Fact]

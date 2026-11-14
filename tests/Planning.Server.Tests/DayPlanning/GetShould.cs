@@ -24,6 +24,11 @@ public class GetShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
         body.RootElement.GetProperty("value")
             .GetProperty("date").GetString()
             .ShouldBe("2026-11-14");
+
+        var block = body.RootElement.GetProperty("value")
+            .GetProperty("timeBlocks")[0];
+        block.GetProperty("startTime").GetString().ShouldBe("06:00:00");
+        block.GetProperty("endTime").GetString().ShouldBe("09:00:00");
     }
 
     [Fact]
