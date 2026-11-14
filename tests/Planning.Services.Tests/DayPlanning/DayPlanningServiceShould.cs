@@ -34,7 +34,17 @@ public class DayPlanningServiceShould(PostgreSqlFixture fixture) : IClassFixture
         result.IsSuccess.ShouldBeTrue();
         result.Value.Date.ShouldBe(date);
         result.Value.TimeBlocks.Select(block => block.Name).ToArray()
-            .ShouldBe(["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"]);
+            .ShouldBe(["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"]);
+        result.Value.TimeBlocks.Select(block => (block.StartTime, block.EndTime)).ToArray()
+            .ShouldBe(new (TimeOnly StartTime, TimeOnly EndTime)[]
+            {
+                (new TimeOnly(1, 0), new TimeOnly(2, 0)),
+                (new TimeOnly(2, 0), new TimeOnly(3, 0)),
+                (new TimeOnly(3, 0), new TimeOnly(4, 0)),
+                (new TimeOnly(4, 0), new TimeOnly(5, 0)),
+                (new TimeOnly(5, 0), new TimeOnly(6, 0)),
+                (new TimeOnly(6, 0), new TimeOnly(7, 0))
+            });
         result.Value.TimeBlocks
             .ShouldAllBe(block => block.Activities.Count == 0);
     }
@@ -211,11 +221,13 @@ public class DayPlanningServiceShould(PostgreSqlFixture fixture) : IClassFixture
             UserName = $"user-{userId}@example.com"
         });
 
-        var blocks = Enumerable.Range(1, 5).Select(order => new TimeBlock
+        var blocks = Enumerable.Range(1, 6).Select(order => new TimeBlock
         {
             UserId = userId,
             Name = $"Block {order}",
-            SortOrder = order
+            SortOrder = order,
+            StartTime = new TimeOnly(order, 0),
+            EndTime = new TimeOnly(order + 1, 0)
         }).ToArray();
 
         dbContext.TimeBlocks.AddRange(blocks);

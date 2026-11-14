@@ -25,7 +25,9 @@ public class DayPlanningService(
             {
                 Id = block.Id,
                 Name = block.Name,
-                SortOrder = block.SortOrder
+                SortOrder = block.SortOrder,
+                StartTime = block.StartTime,
+                EndTime = block.EndTime
             })
             .ToListAsync(ctx);
 

@@ -6,13 +6,14 @@ namespace Planning.Services.TimeBlocks;
 
 public class DefaultTimeBlockInitializer(ApplicationDbContext dbContext)
 {
-    private static readonly (int SortOrder, string Name)[] Defaults =
+    private static readonly (int SortOrder, string Name, TimeOnly StartTime, TimeOnly EndTime)[] Defaults =
     [
-        (1, "Ochtend"),
-        (2, "Voormiddag"),
-        (3, "Vroege namiddag"),
-        (4, "Late namiddag"),
-        (5, "Avond")
+        (1, "Ochtend", new TimeOnly(6, 0), new TimeOnly(9, 0)),
+        (2, "Voormiddag", new TimeOnly(9, 0), new TimeOnly(12, 0)),
+        (3, "Middag", new TimeOnly(12, 0), new TimeOnly(14, 0)),
+        (4, "Vroege namiddag", new TimeOnly(14, 0), new TimeOnly(16, 0)),
+        (5, "Late namiddag", new TimeOnly(16, 0), new TimeOnly(18, 0)),
+        (6, "Avond", new TimeOnly(18, 0), new TimeOnly(23, 0))
     ];
 
     public async Task EnsureForUserAsync(
@@ -24,11 +25,13 @@ public class DefaultTimeBlockInitializer(ApplicationDbContext dbContext)
             .Where(block => block.UserId == userId)
             .ToDictionaryAsync(block => block.SortOrder, ctx);
 
-        foreach (var (sortOrder, name) in Defaults)
+        foreach (var (sortOrder, name, startTime, endTime) in Defaults)
         {
             if (existingBlocks.TryGetValue(sortOrder, out var block))
             {
                 block.Name = name;
+                block.StartTime = startTime;
+                block.EndTime = endTime;
                 block.IsDeleted = false;
             }
             else
@@ -37,7 +40,9 @@ public class DefaultTimeBlockInitializer(ApplicationDbContext dbContext)
                 {
                     UserId = userId,
                     Name = name,
-                    SortOrder = sortOrder
+                    SortOrder = sortOrder,
+                    StartTime = startTime,
+                    EndTime = endTime
                 });
             }
         }
