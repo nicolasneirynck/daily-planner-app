@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Planning.Client;
+using Planning.Client.DayPlanning;
 using Planning.Client.Identity;
 using Planning.Client.Products;
+using Planning.Shared.DayPlanning;
 using Planning.Shared.Products;
 
 try
@@ -32,10 +34,24 @@ try
 // register the account management interface
     builder.Services.AddScoped(sp => (IAccountManager)sp.GetRequiredService<AuthenticationStateProvider>());
 
-// configure client for auth interactions
-    builder.Services.AddHttpClient("SecureApi",opt => opt.BaseAddress = new Uri(builder.Configuration["BackendUrl"] ?? "https://localhost:5001"))
-        .AddHttpMessageHandler<CookieHandler>();
+    // HTTP-client voor aanvragen naar de backend.
+    // CookieHandler stelt "credentials: include" in, zodat de browser
+    // toepasselijke cookies kan meesturen en bv een bij login door de server uitgegeven cookie kan bewaren.
+    // De loginpagina gebruikt deze client via CookieAuthenticationStateProvider; ze roept SecureApi dus niet rechtstreeks aan.
+    builder.Services.AddHttpClient("SecureApi",
+            client => client.BaseAddress = new Uri(builder.Configuration["BackendUrl"] ?? "https://localhost:5001"))
+                        .AddHttpMessageHandler<CookieHandler>();
 
+    // vanaf nu is "SecureApi" een soort opgeslagen recept voor een HTTP-client
+
+    // als iemand IDayPlanningService vraagt, maak dan een DayPlanningApiService
+    // en geef hem een HTTP-client met het "SecureApi"-recept
+    builder.Services.AddScoped<IDayPlanningService>(sp =>
+        new DayPlanningApiService(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient("SecureApi")));
+
+    // als iemand IProductService vraagt, maak dan een ProductService
+    // en geef hem een eigen HTTP-client met dit backendadres
     builder.Services.AddHttpClient<IProductService, ProductService>(client =>
     {
         client.BaseAddress = new Uri(builder.Configuration["BackendUrl"] ?? "https://localhost:5001");
