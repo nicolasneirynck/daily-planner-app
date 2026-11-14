@@ -1,0 +1,101 @@
+.app-navigation {
+    padding: 0.75rem 1.25rem;    
+    border-bottom: 1px solid #e7ddcc;
+}
+
+.app-brand ::deep a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #192231;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.app-brand ::deep .app-brand-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: #ed624d;
+    color: white;
+}
+
+.app-brand ::deep .app-brand-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.app-nav {
+    position: fixed; /* position: fixed haalt de navigatie uit de normale paginastroom en zet haar vast ten opzichte van het scherm. Ze scrolt dus niet mee. */
+    z-index: 10; /* legt de balk vóór gewone pagina-inhoud, zodat die inhoud niet over de navigatie heen wordt getekend. */
+    right: 0;  /* left 0, right 0 => laat de navigatie van links naar rechts lopen*/
+    bottom: 0; /* plaats navigatie aan onderkant scherm */
+    left: 0;
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom)); /* 0.5rem boven, 1rem links en rechts, onder 0.5rem + env(safe-area-inset-bottom) => dat laatste houdt rekening met de veilige ruimte onderaan sommige telefoons, bv rond de home indicator. Waar die extra ruimte niet nodig is isde waarde 0*/
+    border-top: 1px solid #e7ddcc;
+    background: white;
+}
+
+.app-nav ::deep .app-nav-link{ /* in NavBar.razor.css gebruikt Blazor CSS-isolatie -> <NavLink> maakt zelf de uiteindelijke <a> aan, waardoor ".app-nav-link" alleen die link mogelijk niet bereikt. Daarom staat er ::deep.*/
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    width: min(100%, 12rem); /* krijgt kleinste van de twee breedtes -> 100% maximaal de beschikbare breedte in .app-nav, 12rem is +- 192px*/
+    min-height: 3.5rem;
+    padding: 0.35rem;
+    border-radius: 1.5rem;
+    color: #192231;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.app-nav ::deep svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: none; /* link gebruikt display:flex -> dus SVG is een flex-item. Hier ontdoe je dat zodat icoon niet groeit of krimpt wanneer de beschikbare ruimte verandert*/
+}
+
+.app-nav ::deep .app-nav-link.active {
+    background: #ed624d;
+    color: white;
+}
+
+@media (min-width: 769px) {
+    .app-navigation {
+        min-height: 100dvh;
+        padding: 1.5rem 1.25rem;
+        border-right: 1px solid #e7ddcc;
+        border-bottom: 0;
+        background: #f4eddf;
+    }
+
+    .app-nav {
+        position: static; /* position: static haalt de balk los van de onderkant van het scherm. Hij staat weer op zijn normale plek in de pagina. */ 
+        flex-direction: column;
+        align-items: stretch; /* laat de links de breedte van de navigatie benutten */
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+        padding: 0;
+        border-top: 0;
+        background: transparent; /* laat de achtergrondkleur van de zijbalk zien*/
+    }
+
+    .app-nav ::deep .app-nav-link {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.75rem;
+        width: auto;
+        min-height: 2.75rem;
+        padding: 0.65rem 0.9rem;
+        font-size: 1rem;
+    }
+}

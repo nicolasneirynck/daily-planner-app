@@ -1,0 +1,21 @@
+.app-shell {
+    /* min-height: 100dvh -> minstens zo hoog als het zichtbare browservenster */
+    min-height: 100dvh;
+    background: #fbf7ef;
+}
+
+.app-main {
+    min-width: 0;
+    padding: 1.5rem 1.25rem calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 769px) {
+    .app-shell {
+        display: grid;
+        grid-template-columns: 16.5rem minmax(0, 1fr);
+    }
+
+    .app-main {
+        padding: 3rem;
+    }
+}
