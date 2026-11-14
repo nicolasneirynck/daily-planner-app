@@ -101,6 +101,10 @@ try
     app.MapFallbackToFile("index.html"); // Serves the Blazor app from the API, when no routes match.
     app.Run();
 }
+catch (HostAbortedException)
+{
+    // EF Core stops the host after obtaining its services at design time.
+}
 catch (Exception ex)
 {
     Log.Fatal(ex, "An unhandled exception occured during bootstrapping");
