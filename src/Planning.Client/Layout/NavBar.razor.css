@@ -19,7 +19,7 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background: #ed624d;
+    background: var(--accent-coral);
     color: white;
 }
 
@@ -65,7 +65,7 @@
 }
 
 .app-nav ::deep .app-nav-link.active {
-    background: #ed624d;
+    background: var(--accent-coral);
     color: white;
 }
 

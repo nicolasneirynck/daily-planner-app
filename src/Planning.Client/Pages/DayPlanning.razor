@@ -5,8 +5,47 @@
 <PageTitle>Dagplanning</PageTitle>
 
 <header class="day-planning-header">
-    <p>Vandaag</p>
-    <h1>@_selectedDate.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))</h1>
+    <p>Dagplanning</p> @* TODO -> Goedemorgen, Nicolas .. Goedeavond, Nicolas*@
+    <h1 data-testid="selected-date">
+        @_selectedDate.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))
+    </h1>
+    
+    <nav class="day-navigation" aria-label="Dagnavigatie">
+        <button type="button"
+                class="day-navigation-arrow"
+                data-testid="previous-day-button"
+                aria-label="Vorige dag"
+                @onclick="ShowPreviousDayAsync">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+            </svg>
+        </button>
+        
+        <button type="button"
+                class="day-navigation-today"
+                data-testid="today-button"
+                aria-pressed="@(IsToday ? "true" : "false")"
+                @onclick="ShowTodayAsync">
+            Vandaag
+        </button>
+        
+        <button type="button"
+                class="day-navigation-arrow"
+                data-testid="next-day-button"
+                aria-label="Volgende dag"
+                @onclick="ShowNextDayAsync">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+            </svg>
+        </button>
+
+    </nav>
+    
+    
 </header>
 
 @if (_isLoading)

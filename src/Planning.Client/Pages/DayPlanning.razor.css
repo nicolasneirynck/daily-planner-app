@@ -4,7 +4,7 @@
 
 .day-planning-header p {
     margin-bottom: 0.25rem;
-    color: #ed624d;
+    color: var(--accent-coral);
     font-weight: 600;
 }
 
@@ -16,6 +16,66 @@
     line-height: 1.15;
 }
 
+.day-navigation{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.day-navigation button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none; /* = flex-grow: 0; flex-shrink: 0; flex-basis: auto; -> knop wordt niet automatisch breder als er ruimte over is, niet smaller als de rij knap wordt. Zijn breedte volgt de inhoud en eventele andere breedteregels*/
+    height: 3rem;
+    border: 1px solid #e7ddcc;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.day-navigation-arrow {
+    width: 3rem;
+    border-radius: 50%;
+    background: #fbf7ef;
+    color: #192231;
+}
+
+.day-navigation-arrow svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.day-navigation-today {
+    width: 7.5rem;
+    border-radius: 999px; /* hoeken zo sterk mogelijk afronden. Browser beperkt de afronding automatisch tot wat het element past -> bij brede knop een pilvorm*/
+    background: #f5eee1;
+    color: #192231;
+}
+
+.day-navigation-today[aria-pressed="true"] {
+    border-color: var(--accent-coral);
+    background: var(--accent-coral);
+    color: white;
+}
+
+/* Pas deze hoverkleuren alleen toe als het primaire invoerapparaat kan hoveren (muis, trackpad)
+op een aanrachtscherm bestaat geen echte hover. Zonder deze beperking kan een knop na een tik soms in zijn 
+:hover kleur hangen. */
+@media (hover: hover) {
+    .day-navigation-arrow:hover,
+    .day-navigation-today[aria-pressed="false"]:hover {
+        background: #caf0dc;
+    }
+
+    .day-navigation-today[aria-pressed="true"]:hover {
+        border-color: #f47b60;
+        background: #f47b60;
+    }
+}
+
 .time-block-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); /*min(100%, 20rem): een kolom is minimaal 20rem breed, behalve als de container smaller is. Dan mag ze krimpen tot de containerbreedte. */
@@ -25,5 +85,27 @@
 @media (min-width: 769px) {
     .day-planning-header h1 {
         font-size: 2.25rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .day-planning-header {
+        display: grid;
+        /* De eerste kolom krijgt de overblijvende ruimte (1fr). Door minmax(0, ...) mag ze ook krimpen wanneer de header smal is.
+           De tweede kolom (auto) wordt zo breed als haar inhoud nodig heeft, bijvoorbeeld de navigatieknoppen */
+        grid-template-columns: minmax(0, 1fr) auto; 
+        column-gap: 1.5rem;
+    }
+
+    .day-planning-header p,
+    .day-planning-header h1 {
+        grid-column: 1;
+    }
+
+    .day-navigation {
+        grid-column: 2;
+        grid-row: 1 / span 2; /* laat haar vanaf rij 1 over twee rijen lopen*/
+        align-self: center; /* centreert haar verticaal binnen deze 2 rijen*/
+        margin-top: 0;
     }
 }
