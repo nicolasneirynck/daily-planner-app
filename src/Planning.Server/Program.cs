@@ -8,6 +8,7 @@ using Planning.Server.Identity;
 using Planning.Server.Processors;
 using Planning.Services;
 using Planning.Services.Identity;
+using Planning.Services.TimeBlocks;
 using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
@@ -68,6 +69,15 @@ try
 
             dbContext.Database.Migrate(); // Creates the database if it doesn't exist and applies all migrations. See Readme.md for more info.
             await dbSeeder.SeedAsync(); // Seeds the database with some test data.
+
+            // Development accounts are seeded after migrations; remove this when seeding creates their blocks or is retired.
+            var initializer = scope.ServiceProvider.GetRequiredService<DefaultTimeBlockInitializer>();
+            var userIds = await dbContext.Users.AsNoTracking()
+                .Select(user => user.Id)
+                .ToListAsync();
+
+            foreach (var userId in userIds)
+                await initializer.EnsureForUserAsync(userId);
         }
     }
     // Theses middlewares are strict in order of calling!
@@ -100,4 +110,5 @@ finally
     Log.CloseAndFlush();
 }
 
+public partial class Program { }
 
