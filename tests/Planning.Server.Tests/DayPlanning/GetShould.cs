@@ -3,6 +3,7 @@ using System.Text.Json;
 
 namespace Planning.Server.Tests.DayPlanning;
 
+[Collection("DayPlanningServer")]
 public class GetShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
 {
     [Fact]

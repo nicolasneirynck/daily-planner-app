@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Planning.Domain.PlannedActivities;
 using Planning.Persistence;
 using Planning.Services.Identity;
 using Planning.Shared.DayPlanning;
@@ -10,6 +11,40 @@ public class DayPlanningService(
     ApplicationDbContext dbContext,
     ISessionContextProvider sessionContextProvider) : IDayPlanningService
 {
+    public async Task<Result> CreateActivityAsync(
+        CreatePlannedActivityRequest request, CancellationToken ctx = default)
+    {
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Name),
+                ErrorMessage = "Activity name is required."
+            });
+
+        var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>
+            block.Id == request.TimeBlockId &&
+            block.UserId == userId &&
+            !block.IsDeleted, ctx);
+
+        if (!blockExists)
+            return Result.NotFound("Time block was not found.");
+
+        dbContext.PlannedActivities.Add(new PlannedActivity
+        {
+            UserId = userId,
+            Date = request.Date,
+            TimeBlockId = request.TimeBlockId,
+            Name = request.Name
+        });
+
+        await dbContext.SaveChangesAsync(ctx);
+        return Result.Success();
+    }
+
     public async Task<Result<DayPlanningResponse>> GetDayAsync(
         DateOnly date, CancellationToken ctx = default)
     {
