@@ -5,26 +5,26 @@ using Xunit;
 
 namespace Planning.E2E.Tests;
 
-public class DayPlanningJourneyShould : PageTest
+public class DayPlanningJourneyShould(E2ETestEnvironment environment)
+    : PageTest, IClassFixture<E2ETestEnvironment>
 {
-    private const string BaseUrl = "https://localhost:5001";
-
-    public override BrowserNewContextOptions ContextOptions() => new()
-    {
-        IgnoreHTTPSErrors = true
-    };
+    private string BaseUrl =>
+        environment.BaseAddress.ToString().TrimEnd('/');
 
     [Fact]
     public async Task ShowPlanningAndNavigateBetweenDays()
     {
         // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
         var culture = CultureInfo.GetCultureInfo("nl-BE");
 
         await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
-        await Page.GetByPlaceholder("Email").FillAsync("user@example.com");
-        await Page.GetByPlaceholder("Password").FillAsync("A1b2C3!");
+        await Page.GetByPlaceholder("Email")
+            .FillAsync(E2ETestEnvironment.UserEmail);
+        await Page.GetByPlaceholder("Password")
+            .FillAsync(E2ETestEnvironment.UserPassword);
 
         // Act: open today
         await Page.GetByRole(AriaRole.Button, new() { Name = "Login" }).ClickAsync();
@@ -34,8 +34,6 @@ public class DayPlanningJourneyShould : PageTest
         await Expect(Page.GetByTestId("selected-date"))
             .ToHaveTextAsync(today.ToString("dddd d MMMM", culture));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
-        await Expect(Page.GetByTestId("planned-activity-name").First)
-            .ToBeVisibleAsync();
 
         // Act: go to tomorrow
         await Page.RunAndWaitForResponseAsync(

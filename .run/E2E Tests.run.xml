@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration name="Dagplanning E2E" type="ShConfigurationType">
+  <configuration name="E2E Tests" type="ShConfigurationType">
     <option name="SCRIPT_TEXT" value="dotnet test tests/Planning.E2E.Tests/Planning.E2E.Tests.csproj --settings playwright.chrome.runsettings" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
