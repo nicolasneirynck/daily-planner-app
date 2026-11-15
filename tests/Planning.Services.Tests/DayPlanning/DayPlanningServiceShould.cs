@@ -1,17 +1,111 @@
 using System.Security.Claims;
 using Ardalis.Result;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Planning.Domain.PlannedActivities;
 using Planning.Domain.TimeBlocks;
 using Planning.Persistence;
 using Planning.Services.DayPlanning;
 using Planning.Services.Tests.Fakers;
 using Planning.Services.Tests.Fixtures;
+using Planning.Shared.DayPlanning;
 
 namespace Planning.Services.Tests.DayPlanning;
 
 public class DayPlanningServiceShould(PostgreSqlFixture fixture) : IClassFixture<PostgreSqlFixture>
 {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task RejectAnActivityWithoutAName(string? name)
+    {
+        var userId = Guid.NewGuid().ToString();
+
+        await using var dbContext = fixture.CreateContext();
+        var blocks = await AddUserWithTimeBlocksAsync(dbContext, userId);
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, userId)], "test"));
+        var service = new DayPlanningService(
+            dbContext, new FakeSessionContextProvider(user));
+
+        var result = await service.CreateActivityAsync(
+            new CreatePlannedActivityRequest
+            {
+                Date = new DateOnly(2026, 11, 14),
+                TimeBlockId = blocks[0].Id,
+                Name = name!
+            });
+
+        result.Status.ShouldBe(ResultStatus.Invalid);
+        (await dbContext.PlannedActivities.AnyAsync(
+            activity => activity.UserId == userId)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task RejectAnotherUsersTimeBlockWithoutSavingAnActivity()
+    {
+        var currentUserId = Guid.NewGuid().ToString();
+        var otherUserId = Guid.NewGuid().ToString();
+
+        await using var dbContext = fixture.CreateContext();
+        await AddUserWithTimeBlocksAsync(dbContext, currentUserId);
+        var otherUserBlocks =
+            await AddUserWithTimeBlocksAsync(dbContext, otherUserId);
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, currentUserId)], "test"));
+        var service = new DayPlanningService(
+            dbContext, new FakeSessionContextProvider(user));
+
+        var result = await service.CreateActivityAsync(
+            new CreatePlannedActivityRequest
+            {
+                Date = new DateOnly(2026, 11, 14),
+                TimeBlockId = otherUserBlocks[0].Id,
+                Name = "Read a book"
+            });
+
+        result.Status.ShouldBe(ResultStatus.NotFound);
+        (await dbContext.PlannedActivities.AnyAsync(
+            activity => activity.UserId == currentUserId)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task SaveActivityInSelectedTimeBlockAndReturnItWhenDayIsReopened()
+    {
+        var userId = Guid.NewGuid().ToString();
+        var date = new DateOnly(2026, 11, 14);
+
+        await using var dbContext = fixture.CreateContext();
+        var blocks = await AddUserWithTimeBlocksAsync(dbContext, userId);
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, userId)], "test"));
+
+        var service = new DayPlanningService(
+            dbContext, new FakeSessionContextProvider(user));
+
+        var createResult = await service.CreateActivityAsync(
+            new CreatePlannedActivityRequest
+            {
+                Date = date,
+                TimeBlockId = blocks[2].Id,
+                Name = "Read a book"
+            });
+
+        createResult.IsSuccess.ShouldBeTrue();
+
+        await using var reopenedContext = fixture.CreateContext();
+        var reopenedService = new DayPlanningService(
+            reopenedContext, new FakeSessionContextProvider(user));
+        var dayResult = await reopenedService.GetDayAsync(date);
+
+        dayResult.IsSuccess.ShouldBeTrue();
+        dayResult.Value.TimeBlocks
+            .Single(block => block.Id == blocks[2].Id)
+            .Activities.Single().Name.ShouldBe("Read a book");
+    }
+
     [Fact]
     public async Task ReturnEveryTimeBlockWhenTheDayHasNoActivities()
     {

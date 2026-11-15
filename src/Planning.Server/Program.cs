@@ -91,6 +91,8 @@ try
         .UseAuthorization()
         .UseFastEndpoints(o =>
         {
+            o.Errors.UseProblemDetails(); // Geef automatische endpointvalidatie een vaste Problem Details-respons.
+
             o.Endpoints.Configurator = ep =>
             {
                 ep.DontAutoSendResponse();

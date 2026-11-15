@@ -29,7 +29,19 @@ sealed class GlobalResponseSender : IGlobalPostProcessor
                         await ctx.HttpContext.Response.SendAsync(result, StatusCodes.Status401Unauthorized, cancellation: ct);
                         break;
                     case ResultStatus.Invalid:
-                        await ctx.HttpContext.Response.SendAsync(result, StatusCodes.Status400BadRequest, cancellation: ct);
+                        // Convert service validation errors to the format FastEndpoints uses.
+                        var failures = result.ValidationErrors
+                            .Select(error => new FluentValidation.Results.ValidationFailure(
+                                error.Identifier, error.ErrorMessage))
+                            .ToArray();
+
+                        // Let FastEndpoints write the same Problem Details response as endpoint validation.
+                        await new FastEndpoints.ProblemDetails(
+                                failures,
+                                ctx.HttpContext.Request.Path.ToString(),
+                                ctx.HttpContext.TraceIdentifier,
+                                StatusCodes.Status400BadRequest)
+                            .ExecuteAsync(ctx.HttpContext);
                         break;
                     case ResultStatus.NotFound:
                         await ctx.HttpContext.Response.SendAsync(result, StatusCodes.Status404NotFound, cancellation: ct);
