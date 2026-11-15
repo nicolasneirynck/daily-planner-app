@@ -1,10 +1,11 @@
 using System.Net;
 using System.Text;
 using Ardalis.Result;
+using Planning.Client.DayPlanning;
 using Planning.Shared.DayPlanning;
 using Shouldly;
 
-namespace Planning.Client.DayPlanning;
+namespace Planning.Client.Tests.DayPlanning;
 
 public class DayPlanningApiServiceShould
 {
