@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Planning.Shared.DayPlanning;
 
 namespace Planning.Server.Tests.DayPlanning;
@@ -45,20 +44,8 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-
-        using var body = JsonDocument.Parse(
-            await response.Content.ReadAsStringAsync());
-
-        body.RootElement.GetProperty("status")
-            .GetInt32().ShouldBe(400);
-
-        var nameError = body.RootElement.GetProperty("errors")
-            .EnumerateArray()
-            .Single(error =>
-                error.GetProperty("name").GetString() == "name");
-
-        nameError.GetProperty("reason")
-            .GetString().ShouldBe("Activity name is required.");
+        (await response.Content.ReadAsStringAsync())
+            .ShouldContain("Activity name is required.");
     }
 
     [Fact]

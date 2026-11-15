@@ -112,8 +112,6 @@ The solution combines a layered structure with feature-oriented code. Domain rul
 
 In `Program.cs`, FastEndpoints is configured with `DontAutoSendResponse()`. The `GlobalResponseSender` post-processor sends the response centrally, mapping `Ardalis.Result` statuses to HTTP responses. For example, successful results, invalid requests, and missing resources become the appropriate success, client-error, or not-found response. The request and response processors also provide logging around endpoint execution. Keep this setup when adding endpoints, because endpoints rely on the central sender.
 
-Automatic FastEndpoints validation and `ResultStatus.Invalid` returned by a service both produce HTTP 400 as Problem Details. Field errors appear in `errors` with a JSON field `name` and a `reason`. Other non-success statuses sent by `GlobalResponseSender` currently retain the `Ardalis.Result` response body.
-
 ### Client
 
 `Client` is a Blazor WebAssembly application served by `Server`. It has an HTTP client for API calls, a cookie-aware authentication state provider, and pages that demonstrate public, authenticated, and Administrator-only UI. The Products pages show how a feature connects UI components to shared contracts and the API. The client base URL is configured in `wwwroot/appsettings.json` for local development.
