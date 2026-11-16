@@ -15,9 +15,13 @@ public partial class Login
     {
         _result = await AccountManager.LoginAsync(Model.Email!, Model.Password!);
 
-        if (_result.IsSuccess && !string.IsNullOrEmpty(ReturnUrl))
+        if (_result.IsSuccess && !string.IsNullOrEmpty(ReturnUrl) )
         {
-            Navigation.NavigateTo(ReturnUrl);
+            var destination = string.IsNullOrWhiteSpace(ReturnUrl)
+                ? "/dayplanning"
+                : ReturnUrl;
+            
+            Navigation.NavigateTo(destination);
         }
     }
 }
