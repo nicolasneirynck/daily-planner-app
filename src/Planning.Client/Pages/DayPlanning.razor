@@ -1,5 +1,4 @@
 @page "/dayplanning"
-@using System.Globalization
 @using Planning.Client.DayPlanning
 
 <PageTitle>Dagplanning</PageTitle>
@@ -7,7 +6,7 @@
 <header class="day-planning-header">
     <p>Dagplanning</p> @* TODO -> Goedemorgen, Nicolas .. Goedeavond, Nicolas*@
     <h1 data-testid="selected-date">
-        @_selectedDate.ToString("dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE"))
+        @FormatSelectedDate(_selectedDate)
     </h1>
     
     <div class="day-navigation-slot">
@@ -31,7 +30,16 @@ else
     <div class="time-block-grid" aria-label="Tijdsblokken">
         @foreach (var block in _timeBlocks)
         {
-            <TimeBlockCard @key="block.Id" Block="block" />
+            <TimeBlockCard @key="block.Id" 
+                           Block="block" 
+                           OnAddActivity="() => OpenActivityForm(block.Id)" />
         }
     </div>
+}
+@if (_isActivityFormOpen)
+{
+    <AddActivityForm InitialDate="_selectedDate"
+                     InitialTimeBlockId="_initialTimeBlockId"
+                     TimeBlocks="_timeBlocks"
+                     OnClose="CloseActivityForm" />
 }

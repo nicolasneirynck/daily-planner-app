@@ -48,7 +48,7 @@ op een aanrachtscherm bestaat geen echte hover. Zonder deze beperking kan een kn
 @media (hover: hover) {
     .day-navigation-arrow:hover,
     .day-navigation-today[aria-pressed="false"]:hover {
-        background: #caf0dc;
+        background: var(--control-hover-background);
     }
 
     .day-navigation-today[aria-pressed="true"]:hover {

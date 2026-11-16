@@ -5,14 +5,15 @@
 .day-planning-header p {
     margin-bottom: 0.25rem;
     color: var(--accent-coral);
-    font-weight: 600;
+    font-size: 0.9375rem;
+    font-weight: 700;
 }
 
 .day-planning-header h1 {
     margin: 0;
     color: #192231;
-    font-size: 1.75rem;
-    font-weight: 700;
+    font-size: 1.875rem;
+    font-weight: 800;
     line-height: 1.15;
 }
 

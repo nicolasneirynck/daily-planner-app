@@ -1,0 +1,100 @@
+.activity-form-backdrop { /* donkere laag achter het formulier */
+    position: fixed; /* De laag blijft op dezelfde plek ten opzichte van het scherm, ook als de pagina erachter scrolt. */
+    z-index: 100; /* zet donkere laag vóór gewone pagina inhoud */
+    inset: 0; /* top: 0, right: 0; bottom: 0; left: 0 => laag vult hele scherm*/
+    display: flex;
+    align-items: flex-end;
+    background: rgb(25 34 49 / 35%);
+}
+
+.activity-form {
+    width: 100%;
+    
+    max-height: 100dvh; /* dvh houdt rekening met veranderende zichtbare ruimte op mobiel (bv wanneer brwoserbalken verschijnen of verdwijnen*/
+    overflow-y: auto; /* als inhoud niet past binnen die max-height kan je binnen formulier scrollen */
+    
+    padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)); /* boven links/rechts onderaan*/
+    border-radius: 1.5rem 1.5rem 0 0;
+    background: #fefdfb;
+}
+
+.activity-form header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.activity-form h2 {
+    margin: 0; /* Een <h2> krijgt van de browser standaard ruimte boven en onder. Met margin: 0 haal je die automatische ruimte weg. */
+    color: #192231;
+    font-size: 1.25rem;
+}
+
+.activity-form header button {
+    border: 0;
+    background: transparent;
+    color: #192231;
+    font: inherit;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.activity-form label {
+    display: block; /* Een <label> staat standaard inline: het kan op dezelfde regel als het invoerveld staan. Met display: block krijgt het label een eigen regel, zodat het veld eronder begint: */
+    margin: 1rem 0 0.4rem;
+    color: #192231;
+    font-weight: 600;
+}
+
+.activity-form input,
+.activity-form select {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #e7ddcc;
+    border-radius: 0.75rem;
+    background: white;
+    color: #192231;
+    font: inherit;
+}
+
+.activity-form-select {
+    position: relative;
+}
+
+.activity-form-select select {
+    appearance: none;
+    padding-right: 2.75rem; /* houdt rechts ruimte vrij, zodat een lange tijdsbloknaam niet onder onze SVG-pijl komt. */
+}
+
+.activity-form-select svg {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    width: 1rem;
+    height: 1rem;
+    transform: translateY(-50%); /* top zet de bovenrand halverwege, translate schuift de SVG een helft van zichzelf omhoog (zo staat die mooi int midden)*/
+    pointer-events: none;
+    fill: none;
+    stroke: #192231;
+    stroke-width: 2;
+    stroke-linecap: round; /* maakt uiteinden van van de v rond -> bij zo klein wel heel subtiel*/ 
+    stroke-linejoin: round; /* maakt samenkomst van van de v rond -> bij zo klein wel heel subtiel*/
+}
+
+@media (min-width: 769px) {
+    .activity-form-backdrop {
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+    }
+
+    .activity-form {
+        width: min(100%, 32rem); /* De modal wordt maximaal 32rem breed. Is er minder ruimte, dan gebruikt hij 100% van de beschikbare breedte binnen de backdrop. */
+        max-height: calc(100dvh - 3rem); /* De modal mag maximaal de zichtbare schermhoogte min 3rem hoog worden. Daardoor blijft er ruimte van ongeveer 1.5rem boven en onder.*/
+        padding: 1.75rem;
+        border-radius: 1.5rem;
+    }
+}

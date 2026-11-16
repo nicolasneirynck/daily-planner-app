@@ -1,0 +1,55 @@
+<div class="activity-form-backdrop">
+    <section role="dialog"
+             aria-modal="true"
+             aria-labelledby="activity-form-title"
+             class="activity-form">
+        <header>
+            <h2 id="activity-form-title">Activiteit toevoegen</h2>
+            <button type="button"
+                    aria-label="Sluiten"
+                    @onclick="OnClose">x</button>
+        </header>
+        
+        <label for="activity-name">Naam *</label>
+        <input id="activity-name"
+               type="text"
+               data-testid="activity-name"
+               @bind="_name"
+               @oninput="HandleNameInput" />
+        
+        @if (_nameError is not null)
+        {
+            <p id="activity-name-error" role="alert">@_nameError</p>
+        }
+        
+        <label for="activity-date">Datum *</label>
+        <input id="activity-date"
+               type="date"
+               data-testid="activity-date"
+               @bind="_date"
+               @bind:format="yyyy-MM-dd"/>
+        
+        <label for="activity-time-block">Tijdsblok *</label>
+        <div class="activity-form-select">
+            <select id="activity-time-block"
+                    data-testid="activity-time-block"
+                    @bind="_timeBlockId">
+                <option value="">Kies een tijdsblok</option>
+                @foreach (var block in TimeBlocks)
+                {
+                    <option value="@block.Id">@block.Name</option>
+                }
+            </select>
+
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m6 9 6 6 6-6" />
+            </svg>
+        </div>
+        
+        <button type="button"
+                data-testid="submit-activity-button"
+                @onclick="ValidateName">
+            Activiteit toevoegen
+        </button>
+    </section>
+</div>

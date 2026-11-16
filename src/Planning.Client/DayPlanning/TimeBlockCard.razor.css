@@ -3,7 +3,7 @@
     padding: 1.25rem 1.25rem 0.75rem; /* boven, links/rechts, onder*/
     border: 1px solid #e7ddcc;
     border-radius: 1.5rem;
-    background: #fdf9f5;
+    background: #fefdfb;
 }
 
 /* ::before is een CSS pseudo-element: de browser tekent een extra visueel element alsof het vóór de inhoud van.time-block` staat. */
@@ -29,6 +29,7 @@
     margin: 0;
     color: #192231;
     font-size: 1.25rem;
+    font-weight: 800;
 }
 
 .time-block h2,
@@ -43,17 +44,26 @@
 
 .time-block-hours {
     margin: 0.25rem 0 0.75rem; /* boven, links/rechts, onder*/
+    font-size: 0.875rem;
+}
+
+.time-block-content-empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.5rem 0.25rem 0;
+    border-radius: 1rem;
 }
 
 .time-block-empty {
     margin: 0;
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    background: #f6f3ee;
+    font-size: 0.9375rem;
+    line-height: 1.45;
 }
 
 .planned-activity-list {
     display: grid;
+    gap: 0.4rem;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -64,34 +74,50 @@
     min-width: 0; /*zegt dat het li element smaller mag worden dan de minimale breedte die zijn inhoud normaal vraagt*/
     overflow-wrap: anywhere; /*lange aaneengesloten tekst mag op elke plaats afgebroken worden als die niet past*/
 
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e3ded1;
+    border-radius: 1.5rem;
+    background: #fcf9f3;
     color: #192231;
     font-weight: 600;
     line-height: 1.4;
 }
 
-/* li + li selecteert en <li> die direct na een andere <li> staat*/
-.planned-activity-list li + li {
-    border-top: 1px solid #e7ddcc;
+.time-block-add-activity {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 100%;
+    min-height: 2.75rem;
+    margin: 0.75rem auto 0; /* margin: 0.75rem auto 0 centreert + Activiteit onder een activiteitenlijst */
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #192231;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
 }
 
-.planned-activity-list li:last-child {
-    padding-bottom: 0.25rem;
+.time-block-content-empty .time-block-add-activity {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-height: 0;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    line-height: 1;
+    margin: 0 0 0 auto; /* rechts bij een leeg blok*/
 }
 
-@media (min-width: 769px) {
-    .planned-activity-list {
-        gap: 0.4rem;
-    }
+.time-block-content-empty .time-block-add-icon {
+    transform: translateY(-0.15rem); /* + komt iets te laag -> ietske hoger zetten*/
+}
 
-    .planned-activity-list li {
-        padding: 0.75rem 1rem;
-        border: 1px solid #e7ddcc;
-        border-radius: 1rem;
-        background: #fbf8f2;
-    }
-
-    .planned-activity-list li:last-child {
-        padding-bottom: 0.75rem;
+@media (hover: hover) {
+    .time-block-add-activity:hover {
+        background: var(--control-hover-background);
     }
 }

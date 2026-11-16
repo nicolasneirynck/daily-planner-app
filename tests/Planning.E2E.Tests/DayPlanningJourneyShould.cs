@@ -18,7 +18,6 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
-        var culture = CultureInfo.GetCultureInfo("nl-BE");
 
         await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
         await Page.GetByPlaceholder("Email")
@@ -32,7 +31,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         // Assert
         await Expect(Page).ToHaveURLAsync($"{BaseUrl}/dayplanning");
         await Expect(Page.GetByTestId("selected-date"))
-            .ToHaveTextAsync(today.ToString("dddd d MMMM", culture));
+            .ToHaveTextAsync(ExpectedDateLabel(today));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
 
         // Act: go to tomorrow
@@ -43,7 +42,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
 
         // Assert
         await Expect(Page.GetByTestId("selected-date"))
-            .ToHaveTextAsync(tomorrow.ToString("dddd d MMMM", culture));
+            .ToHaveTextAsync(ExpectedDateLabel(tomorrow));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
 
         // Act: return to today
@@ -54,7 +53,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
 
         // Assert
         await Expect(Page.GetByTestId("selected-date"))
-            .ToHaveTextAsync(today.ToString("dddd d MMMM", culture));
+            .ToHaveTextAsync(ExpectedDateLabel(today));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
     }
 
@@ -94,5 +93,12 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         // Assert: it is still there
         await Expect(morning.GetByText(activityName, new() { Exact = true }))
             .ToBeVisibleAsync();
+    }
+
+    private static string ExpectedDateLabel(DateOnly date)
+    {
+        var culture = CultureInfo.GetCultureInfo("nl-BE");
+        var text = date.ToString("dddd d MMMM", culture);
+        return $"{char.ToUpper(text[0], culture)}{text[1..]}";
     }
 }

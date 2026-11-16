@@ -176,8 +176,7 @@ public class DayPlanningShould : BunitContext
                 .ShouldBe([startingDate, startingDate.AddDays(1), expectedDate]);
 
             cut.Find("[data-testid='selected-date']").TextContent.Trim()
-                .ShouldBe(expectedDate.ToString(
-                    "dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE")));
+                .ShouldBe(ExpectedDateLabel(expectedDate));
 
             cut.Find("[data-testid='planned-activity-name']").TextContent.Trim()
                 .ShouldBe($"Task on {expectedDate:yyyy-MM-dd}");
@@ -219,8 +218,7 @@ public class DayPlanningShould : BunitContext
                 .ShouldBe([startingDate, expectedDate]);
 
             cut.Find("[data-testid='selected-date']").TextContent.Trim()
-                .ShouldBe(expectedDate.ToString(
-                    "dddd d MMMM", CultureInfo.GetCultureInfo("nl-BE")));
+                .ShouldBe(ExpectedDateLabel(expectedDate));
         });
     }
 
@@ -427,6 +425,31 @@ public class DayPlanningShould : BunitContext
     }
 
     [Fact]
+    public void ClearNameErrorWhenVisibleTextIsTyped()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='submit-activity-button']").Click();
+
+        // Act and assert
+        cut.Find("[data-testid='activity-name']").Input("   ");
+        cut.Find("[role='alert']").TextContent.ShouldContain("Vul een naam in.");
+
+        cut.Find("[data-testid='activity-name']").Input("   Walk");
+        cut.FindAll("[role='alert']").ShouldBeEmpty();
+    }
+
+    [Fact]
     public void PassEditedTimeBlockAndActivityDetailsToService()
     {
         // Arrange
@@ -568,6 +591,13 @@ public class DayPlanningShould : BunitContext
         _ = service.DidNotReceive().CreateActivityAsync(
             Arg.Any<CreatePlannedActivityRequest>(),
             Arg.Any<CancellationToken>());
+    }
+
+    private static string ExpectedDateLabel(DateOnly date)
+    {
+        var culture = CultureInfo.GetCultureInfo("nl-BE");
+        var text = date.ToString("dddd d MMMM", culture);
+        return $"{char.ToUpper(text[0], culture)}{text[1..]}";
     }
 
     private static TimeBlockDto Block(int order, string name, int startHour, int endHour) =>
