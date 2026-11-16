@@ -7,13 +7,18 @@
             <h2 id="activity-form-title">Activiteit toevoegen</h2>
             <button type="button"
                     aria-label="Sluiten"
-                    @onclick="OnClose">x</button>
+                    @onclick="OnClose">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+            </button>
         </header>
         
         <label for="activity-name">Naam *</label>
         <input id="activity-name"
                type="text"
                data-testid="activity-name"
+               placeholder="Bv. Ochtendwandeling"
                @bind="_name"
                @oninput="HandleNameInput" />
         
@@ -46,9 +51,22 @@
             </svg>
         </div>
         
+        @if (_timeBlockError is not null)
+        {
+            <p id="activity-time-block-error"
+               data-testid="activity-time-block-error"
+               role="alert">@_timeBlockError</p>
+        }
+        
+        @if (SaveError is not null)
+        {
+            <p role="alert" data-testid="activity-save-error">@SaveError</p>
+        }
+        
         <button type="button"
+                class="activity-form-submit"
                 data-testid="submit-activity-button"
-                @onclick="ValidateName">
+                @onclick="SubmitAsync">
             Activiteit toevoegen
         </button>
     </section>

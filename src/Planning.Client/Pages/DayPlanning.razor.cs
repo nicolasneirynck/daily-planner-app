@@ -15,6 +15,7 @@ public partial class DayPlanning
     private int _loadVersion;
     private bool _isActivityFormOpen;
     private int? _initialTimeBlockId;
+    private string? _activitySaveError;
     
     [Inject] public required IDayPlanningService DayPlanningService { get; set; }
 
@@ -66,7 +67,7 @@ public partial class DayPlanning
         }
     }
 
-    private void OpenActivityForm(int timeBlockId)
+    private void OpenActivityForm(int? timeBlockId)
     {
         _initialTimeBlockId = timeBlockId;
         _isActivityFormOpen = true;
@@ -76,5 +77,39 @@ public partial class DayPlanning
     {
         _isActivityFormOpen = false;
         _initialTimeBlockId = null;
+        _activitySaveError = null;
+    }
+
+    private async Task AddActivityAsync(CreatePlannedActivityRequest request)
+    {
+        _activitySaveError = null;
+        bool saved;
+
+        try
+        {
+            saved = (await DayPlanningService.CreateActivityAsync(request)).IsSuccess; 
+            /* De haakjes zorgen ervoor dat C# eerst de async methode afwacht en daarna IsSuccess leest van het teruggegeven Result..
+             is eigenlijk hetzelfde als: 
+                var result = await DayPlanningService.CreateActivityAsync(request); 
+                saved = result.IsSucces; 
+            */
+                                                                                       
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                       or JsonException
+                                       or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not save activity for {Date}", request.Date);
+            saved = false;
+        }
+
+        if (!saved)
+        {
+            _activitySaveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
+            return;
+        }
+        
+        CloseActivityForm();
+        await LoadDayAsync(request.Date);
     }
 }

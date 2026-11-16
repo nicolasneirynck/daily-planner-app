@@ -392,7 +392,7 @@ public class DayPlanningShould : BunitContext
 
         var timeBlock = (IHtmlSelectElement)cut.Find(
             "[role='dialog'] [data-testid='activity-time-block']");
-        timeBlock.Value.ShouldBe("");
+        string.IsNullOrEmpty(timeBlock.Value).ShouldBeTrue();
     }
 
     [Theory]
@@ -591,6 +591,73 @@ public class DayPlanningShould : BunitContext
         _ = service.DidNotReceive().CreateActivityAsync(
             Arg.Any<CreatePlannedActivityRequest>(),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ShowSaveErrorAndKeepFormOpenWhenSavingFails()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Error("Save failed.")));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        cut.Find("[data-testid='submit-activity-button']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            var name = (IHtmlInputElement)cut.Find(
+                "[role='dialog'] [data-testid='activity-name']");
+            name.Value.ShouldBe("Read a book");
+
+            cut.Find("[data-testid='activity-save-error']")
+                .TextContent.ShouldContain("Opslaan is niet gelukt.");
+        });
+    }
+
+    [Fact]
+    public void ShowSaveErrorWhenCreateRequestThrows()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromException<Result>(
+                new HttpRequestException("Connection failed.")));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        cut.Find("[data-testid='submit-activity-button']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+            cut.Find("[data-testid='activity-save-error']")
+                .TextContent.ShouldContain("Opslaan is niet gelukt."));
     }
 
     private static string ExpectedDateLabel(DateOnly date)

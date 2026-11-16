@@ -12,6 +12,18 @@
     <div class="day-navigation-slot">
         <DateNavigation SelectedDate="_selectedDate"
                         DateSelected="LoadDayAsync" />
+        
+        @if (!_isLoading && !_hasLoadError)
+        {
+            <button type="button"
+                    class="global-add-activity"
+                    data-testid="global-add-activity-button"
+                    aria-label="Activiteit toevoegen"
+                    @onclick="() => OpenActivityForm(null)">
+                <span class="global-add-icon" aria-hidden="true">+</span>
+                <span class="global-add-label">Activiteit toevoegen</span>
+            </button>
+        }
     </div>
     
     
@@ -41,5 +53,7 @@ else
     <AddActivityForm InitialDate="_selectedDate"
                      InitialTimeBlockId="_initialTimeBlockId"
                      TimeBlocks="_timeBlocks"
-                     OnClose="CloseActivityForm" />
+                     OnSubmit="AddActivityAsync"
+                     OnClose="CloseActivityForm"
+                     SaveError="@_activitySaveError" />
 }
