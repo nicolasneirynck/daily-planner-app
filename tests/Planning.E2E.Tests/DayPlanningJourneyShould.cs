@@ -5,37 +5,28 @@ using Xunit;
 
 namespace Planning.E2E.Tests;
 
-public class DayPlanningJourneyShould : PageTest
+public class DayPlanningJourneyShould(E2ETestEnvironment environment)
+    : PageTest, IClassFixture<E2ETestEnvironment>
 {
-    private const string BaseUrl = "https://localhost:5001";
-
-    public override BrowserNewContextOptions ContextOptions() => new()
-    {
-        IgnoreHTTPSErrors = true
-    };
+    private string BaseUrl =>
+        environment.BaseAddress.ToString().TrimEnd('/');
 
     [Fact]
     public async Task ShowPlanningAndNavigateBetweenDays()
     {
         // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
-        var culture = CultureInfo.GetCultureInfo("nl-BE");
-
-        await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
-        await Page.GetByPlaceholder("Email").FillAsync("user@example.com");
-        await Page.GetByPlaceholder("Password").FillAsync("A1b2C3!");
 
         // Act: open today
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Login" }).ClickAsync();
+        await LogInToDayPlanningAsync();
 
         // Assert
         await Expect(Page).ToHaveURLAsync($"{BaseUrl}/dayplanning");
         await Expect(Page.GetByTestId("selected-date"))
-            .ToHaveTextAsync(today.ToString("dddd d MMMM", culture));
+            .ToHaveTextAsync(ExpectedDateLabel(today));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
-        await Expect(Page.GetByTestId("planned-activity-name").First)
-            .ToBeVisibleAsync();
 
         // Act: go to tomorrow
         await Page.RunAndWaitForResponseAsync(
@@ -45,7 +36,7 @@ public class DayPlanningJourneyShould : PageTest
 
         // Assert
         await Expect(Page.GetByTestId("selected-date"))
-            .ToHaveTextAsync(tomorrow.ToString("dddd d MMMM", culture));
+            .ToHaveTextAsync(ExpectedDateLabel(tomorrow));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
 
         // Act: return to today
@@ -56,7 +47,92 @@ public class DayPlanningJourneyShould : PageTest
 
         // Assert
         await Expect(Page.GetByTestId("selected-date"))
-            .ToHaveTextAsync(today.ToString("dddd d MMMM", culture));
+            .ToHaveTextAsync(ExpectedDateLabel(today));
         await Expect(Page.GetByTestId("time-block-name")).ToHaveCountAsync(6);
+    }
+
+    [Fact]
+    public async Task AddActivityToTimeBlockAndKeepItAfterReload()
+    {
+        // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
+        var activityName = $"Read a book {Guid.NewGuid():N}";
+
+        await LogInToDayPlanningAsync();
+
+        /* AriaRole.Region betekent: zoek een benoemd gedeelte van de pagina.
+           Name = "Ochtend" -> kiest het gedeelte met de toegankelijke naam “Ochtend”. 
+           In de huidige dagplanning is dat gedeelte een <section> waarvan de naam aan de kop “Ochtend” is gekoppeld. 
+           Zo voorkom je dat de test per ongeluk een knop in een ander tijdsblok gebruikt.*/
+        var morning = Page.GetByRole(AriaRole.Region, new() { Name = "Ochtend" });
+
+        // Act: add an activity to the selected time block
+        await morning.GetByTestId("add-activity-button").ClickAsync();
+        await Page.GetByTestId("activity-name").FillAsync(activityName);
+        await Page.GetByTestId("submit-activity-button").ClickAsync();
+
+        // Assert: it appears immediately in the selected block
+        await Expect(morning.GetByText(activityName, new() { Exact = true })) // Exact = true vraagt om precies de tekst in activityName, zonder extra woorden.
+            .ToBeVisibleAsync();
+
+        // Act: reopen the day
+        await Page.ReloadAsync();
+
+        // Assert: it is still there
+        await Expect(morning.GetByText(activityName, new() { Exact = true }))
+            .ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task FocusActivityNameWhenDialogOpens()
+    {
+        // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
+        await LogInToDayPlanningAsync();
+
+        // Act
+        await Page.GetByTestId("global-add-activity-button").ClickAsync();
+
+        // Assert
+        var dialog = Page.GetByRole(AriaRole.Dialog, new() { Name = "Activiteit toevoegen" });
+        await Expect(dialog.GetByTestId("activity-name")).ToBeFocusedAsync();
+    }
+
+    [Fact]
+    public async Task CloseActivityDialogWithEscapeAndRestoreTriggerFocus()
+    {
+        // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
+        await LogInToDayPlanningAsync();
+
+        var addButton = Page.GetByTestId("global-add-activity-button");
+        await addButton.ClickAsync();
+        var dialog = Page.GetByRole(AriaRole.Dialog, new() { Name = "Activiteit toevoegen" });
+        await Expect(dialog).ToHaveAttributeAsync("open", "");
+
+        // Act
+        await Page.Keyboard.PressAsync("Escape");
+
+        // Assert
+        await Expect(dialog).ToHaveCountAsync(0); // na escape-toets is het formulier gesloten en uit de pagina verdwenen
+        await Expect(addButton).ToBeFocusedAsync();
+    }
+
+    private async Task LogInToDayPlanningAsync()
+    {
+        await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
+        await Page.GetByPlaceholder("Email")
+            .FillAsync(E2ETestEnvironment.UserEmail);
+        await Page.GetByPlaceholder("Password")
+            .FillAsync(E2ETestEnvironment.UserPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Login" })
+            .ClickAsync();
+    }
+
+    private static string ExpectedDateLabel(DateOnly date)
+    {
+        var culture = CultureInfo.GetCultureInfo("nl-BE");
+        var text = date.ToString("dddd d MMMM", culture);
+        return $"{char.ToUpper(text[0], culture)}{text[1..]}";
     }
 }

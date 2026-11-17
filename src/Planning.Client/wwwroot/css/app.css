@@ -2,6 +2,8 @@
 
 :root {
     --accent-coral: #ef6343;
+    --accent-coral-hover: #f47b60;
+    --control-hover-background: #caf0dc;
 }
 
 *,
@@ -12,7 +14,7 @@
 
 html, body {
     margin: 0;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
 }
 
 h1:focus {

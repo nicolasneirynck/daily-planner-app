@@ -9,24 +9,44 @@
         @Block.StartTime.ToString("HH:mm") - @Block.EndTime.ToString("HH:mm")
     </p>
 
-    @if (Block.Activities.Count == 0)
-    {
-        <p class="time-block-empty">Niets gepland!</p>
-    }
-    else
-    {
-        <ul class="planned-activity-list">
-            @foreach (var activity in Block.Activities)
+    <div class="@(Block.Activities.Count == 0 ? "time-block-content-empty" : "")">
+        @if (Block.Activities.Count == 0)
+        {
+            <p class="time-block-empty">Niets gepland!</p>
+        }
+        else
+        {
+            <ul class="planned-activity-list">
+                @foreach (var activity in Block.Activities)
+                {
+                    <li @key="activity.Id">
+                        <span data-testid="planned-activity-name">@activity.Name</span>
+                    </li>
+                }
+            </ul>
+        }
+        
+        <button type="button"
+                class="time-block-add-activity"
+                data-testid="add-activity-button"
+                @ref="_addActivityButton"
+                aria-label="Activiteit toevoegen aan @Block.Name"
+                @onclick="() => OnAddActivity.InvokeAsync(_addActivityButton)">
+            <span class="time-block-add-icon">+</span>
+            @if (Block.Activities.Count > 0)
             {
-                <li @key="activity.Id">
-                    <span data-testid="planned-activity-name">@activity.Name</span>
-                </li>
+                <span>Activiteit</span>
             }
-        </ul>
-    }
+        </button>
+    </div>
 </section>
 
 @code {
+    private ElementReference _addActivityButton;
+
     [Parameter, EditorRequired]
     public TimeBlockDto Block { get; set; } = default!;
+    
+    [Parameter, EditorRequired]
+    public EventCallback<ElementReference> OnAddActivity { get; set; }
 }

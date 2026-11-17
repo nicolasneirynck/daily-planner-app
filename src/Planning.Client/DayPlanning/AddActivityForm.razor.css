@@ -1,0 +1,157 @@
+.activity-form {
+    position: fixed; /* formulier krijgt een positie tenopzichte van het scherm*/
+    inset: auto 0 0; /* top: auto; right: 0; bottom: 0; left: 0;*/
+    width: 100%;
+    max-width: none;
+    max-height: 100dvh; /* dvh houdt rekening met veranderende zichtbare ruimte op mobiel (bv wanneer brwoserbalken verschijnen of verdwijnen*/
+    margin: 0;
+    overflow-y: auto; /* als inhoud niet past binnen die max-height kan je binnen formulier scrollen */
+    padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)); /* boven links/rechts onderaan*/
+    border: 0;
+    border-radius: 1.5rem 1.5rem 0 0;
+    background: #fefdfb;
+    
+    --form-error-color: #b42318;
+}
+
+.activity-form::backdrop {
+    background: rgb(25 34 49 / 35%);
+}
+
+.activity-form header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.activity-form h2 {
+    margin: 0; /* Een <h2> krijgt van de browser standaard ruimte boven en onder. Met margin: 0 haal je die automatische ruimte weg. */
+    color: #192231;
+    font-size: 1.25rem;
+}
+
+.activity-form header button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #192231;
+    font: inherit;
+    cursor: pointer;
+}
+
+.activity-form header button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.activity-form label {
+    display: block; /* Een <label> staat standaard inline: het kan op dezelfde regel als het invoerveld staan. Met display: block krijgt het label een eigen regel, zodat het veld eronder begint: */
+    margin: 1rem 0 0.4rem;
+    color: #192231;
+}
+
+.activity-form input,
+.activity-form select {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #e7ddcc;
+    border-radius: 0.75rem;
+    background: white;
+    color: #192231;
+    font: inherit;
+}
+
+.activity-form [role="alert"] {
+    margin: 0.4rem 0 0;
+    color: var(--form-error-color);
+    font-size: 0.875rem;
+}
+
+.activity-form input[aria-invalid="true"],
+.activity-form select[aria-invalid="true"] {
+    border-color: var(--form-error-color);
+}
+
+.activity-form input::placeholder {
+    color: #6b7280;
+    opacity: 1;
+}
+
+.activity-form input:focus,
+.activity-form select:focus {
+    outline: 1px solid var(--accent-coral);
+}
+
+.activity-form input[aria-invalid="true"]:focus,
+.activity-form select[aria-invalid="true"]:focus {
+    outline: 1px solid var(--form-error-color);
+}
+
+.activity-form-select {
+    position: relative;
+}
+
+.activity-form-select select {
+    appearance: none;
+    padding-right: 2.75rem; /* houdt rechts ruimte vrij, zodat een lange tijdsbloknaam niet onder onze SVG-pijl komt. */
+}
+
+.activity-form-select svg {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    width: 1rem;
+    height: 1rem;
+    transform: translateY(-50%); /* top zet de bovenrand halverwege, translate schuift de SVG een helft van zichzelf omhoog (zo staat die mooi int midden)*/
+    pointer-events: none;
+    fill: none;
+    stroke: #192231;
+    stroke-width: 2;
+    stroke-linecap: round; /* maakt uiteinden van van de v rond -> bij zo klein wel heel subtiel*/ 
+    stroke-linejoin: round; /* maakt samenkomst van van de v rond -> bij zo klein wel heel subtiel*/
+}
+
+.activity-form-submit {
+    width: 100%;
+    min-height: 3.25rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: var(--accent-coral);
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .activity-form-submit:hover {
+        background: var(--accent-coral-hover);
+    }
+}
+
+@media (min-width: 769px) {
+    .activity-form {
+        inset: 0;
+        width: min(100%, 32rem); /* De modal wordt maximaal 32rem breed. Is er minder ruimte, dan gebruikt hij de beschikbare schermbreedte. */
+        max-height: calc(100dvh - 3rem); /* De modal mag maximaal de zichtbare schermhoogte min 3rem hoog worden. Daardoor blijft er ruimte van ongeveer 1.5rem boven en onder.*/
+        margin: auto;
+        padding: 1.75rem;
+        border-radius: 1.5rem;
+    }
+}

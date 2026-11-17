@@ -38,8 +38,9 @@ try
     // CookieHandler stelt "credentials: include" in, zodat de browser
     // toepasselijke cookies kan meesturen en bv een bij login door de server uitgegeven cookie kan bewaren.
     // De loginpagina gebruikt deze client via CookieAuthenticationStateProvider; ze roept SecureApi dus niet rechtstreeks aan.
+    var appBaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
     builder.Services.AddHttpClient("SecureApi",
-            client => client.BaseAddress = new Uri(builder.Configuration["BackendUrl"] ?? "https://localhost:5001"))
+            client => client.BaseAddress = appBaseAddress)
                         .AddHttpMessageHandler<CookieHandler>();
 
     // vanaf nu is "SecureApi" een soort opgeslagen recept voor een HTTP-client
@@ -54,7 +55,7 @@ try
     // en geef hem een eigen HTTP-client met dit backendadres
     builder.Services.AddHttpClient<IProductService, ProductService>(client =>
     {
-        client.BaseAddress = new Uri(builder.Configuration["BackendUrl"] ?? "https://localhost:5001");
+        client.BaseAddress = appBaseAddress;
     });
 
     await builder.Build().RunAsync();
