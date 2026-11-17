@@ -8,6 +8,12 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
     public DateOnly? RequestedDate { get; private set; }
     public CreatePlannedActivityRequest? CreatedActivity { get; private set; }
 
+    public Task<Result> SetActivityCompletionAsync(
+        int activityId, bool isCompleted, CancellationToken ctx = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<Result> CreateActivityAsync(
         CreatePlannedActivityRequest request, CancellationToken ctx = default)
     {

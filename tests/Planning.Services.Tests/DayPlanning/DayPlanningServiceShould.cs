@@ -107,6 +107,45 @@ public class DayPlanningServiceShould(PostgreSqlFixture fixture) : IClassFixture
     }
 
     [Fact]
+    public async Task SaveCompletionStatusAndReturnItWhenDayIsReopened()
+    {
+        var userId = Guid.NewGuid().ToString();
+        var date = new DateOnly(2026, 11, 14);
+
+        await using var dbContext = fixture.CreateContext();
+        var blocks = await AddUserWithTimeBlocksAsync(dbContext, userId);
+        var activity = new PlannedActivity
+        {
+            UserId = userId,
+            Name = "Read a book",
+            Date = date,
+            TimeBlockId = blocks[0].Id
+        };
+        dbContext.PlannedActivities.Add(activity);
+        await dbContext.SaveChangesAsync();
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, userId)], "test"));
+        var service = new DayPlanningService(
+            dbContext, new FakeSessionContextProvider(user));
+
+        var result = await service.SetActivityCompletionAsync(activity.Id, true);
+
+        result.IsSuccess.ShouldBeTrue();
+
+        /* checken of wel wijziging wel degelijk in database staat, ipv in geheugen van de eerste dbContext
+         vergelijkbaar met een gebruiker die na markeren van een activiteit de pagina herlaadt,
+         dezelfde dagplanning daarmee opnieuw opent. De applicatie haalt dan de status opnieuw uit de database op*/
+        await using var reopenedContext = fixture.CreateContext();
+        var reopenedService = new DayPlanningService(
+            reopenedContext, new FakeSessionContextProvider(user));
+        var day = await reopenedService.GetDayAsync(date);
+
+        day.Value.TimeBlocks.Single(block => block.Id == blocks[0].Id)
+            .Activities.Single().IsCompleted.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task ReturnEveryTimeBlockWhenTheDayHasNoActivities()
     {
         // Arrange

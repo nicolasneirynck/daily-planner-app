@@ -11,6 +11,12 @@ public class DayPlanningService(
     ApplicationDbContext dbContext,
     ISessionContextProvider sessionContextProvider) : IDayPlanningService
 {
+    public Task<Result> SetActivityCompletionAsync(
+        int activityId, bool isCompleted, CancellationToken ctx = default)
+    {
+        return Task.FromResult(Result.NotFound("Planned activity was not found."));
+    }
+
     public async Task<Result> CreateActivityAsync(
         CreatePlannedActivityRequest request, CancellationToken ctx = default)
     {

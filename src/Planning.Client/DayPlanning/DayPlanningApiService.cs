@@ -5,6 +5,12 @@ namespace Planning.Client.DayPlanning;
 
 public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningService
 {
+    public Task<Result> SetActivityCompletionAsync(
+        int activityId, bool isCompleted, CancellationToken ctx = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<Result> CreateActivityAsync(
         CreatePlannedActivityRequest request, CancellationToken ctx = default)
     {
