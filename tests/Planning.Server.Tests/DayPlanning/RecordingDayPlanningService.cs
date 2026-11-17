@@ -7,11 +7,15 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
 {
     public DateOnly? RequestedDate { get; private set; }
     public CreatePlannedActivityRequest? CreatedActivity { get; private set; }
+    public int? UpdatedActivityId { get; private set; }
+    public bool? UpdatedIsCompleted { get; private set; }
 
     public Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default)
     {
-        throw new NotImplementedException();
+        UpdatedActivityId = activityId;
+        UpdatedIsCompleted = isCompleted;
+        return Task.FromResult(Result.Success());
     }
 
     public Task<Result> CreateActivityAsync(

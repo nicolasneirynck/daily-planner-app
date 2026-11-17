@@ -11,10 +11,25 @@ public class DayPlanningService(
     ApplicationDbContext dbContext,
     ISessionContextProvider sessionContextProvider) : IDayPlanningService
 {
-    public Task<Result> SetActivityCompletionAsync(
+    public async Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default)
     {
-        return Task.FromResult(Result.NotFound("Planned activity was not found."));
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        var activity = await dbContext.PlannedActivities.SingleOrDefaultAsync(
+            activity => activity.Id == activityId &&
+                        activity.UserId == userId &&
+                        !activity.IsDeleted,
+            ctx);
+
+        if (activity is null)
+            return Result.NotFound("Planned activity was not found.");
+
+        activity.IsCompleted = isCompleted;
+        await dbContext.SaveChangesAsync(ctx);
+        return Result.Success();
     }
 
     public async Task<Result> CreateActivityAsync(
