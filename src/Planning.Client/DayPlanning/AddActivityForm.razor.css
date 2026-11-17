@@ -1,23 +1,21 @@
-.activity-form-backdrop { /* donkere laag achter het formulier */
-    position: fixed; /* De laag blijft op dezelfde plek ten opzichte van het scherm, ook als de pagina erachter scrolt. */
-    z-index: 100; /* zet donkere laag vóór gewone pagina inhoud */
-    inset: 0; /* top: 0, right: 0; bottom: 0; left: 0 => laag vult hele scherm*/
-    display: flex;
-    align-items: flex-end;
-    background: rgb(25 34 49 / 35%);
-}
-
 .activity-form {
+    position: fixed; /* formulier krijgt een positie tenopzichte van het scherm*/
+    inset: auto 0 0; /* top: auto; right: 0; bottom: 0; left: 0;*/
     width: 100%;
-    
+    max-width: none;
     max-height: 100dvh; /* dvh houdt rekening met veranderende zichtbare ruimte op mobiel (bv wanneer brwoserbalken verschijnen of verdwijnen*/
+    margin: 0;
     overflow-y: auto; /* als inhoud niet past binnen die max-height kan je binnen formulier scrollen */
-    
     padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)); /* boven links/rechts onderaan*/
+    border: 0;
     border-radius: 1.5rem 1.5rem 0 0;
     background: #fefdfb;
     
     --form-error-color: #b42318;
+}
+
+.activity-form::backdrop {
+    background: rgb(25 34 49 / 35%);
 }
 
 .activity-form header {
@@ -148,15 +146,11 @@
 }
 
 @media (min-width: 769px) {
-    .activity-form-backdrop {
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem;
-    }
-
     .activity-form {
-        width: min(100%, 32rem); /* De modal wordt maximaal 32rem breed. Is er minder ruimte, dan gebruikt hij 100% van de beschikbare breedte binnen de backdrop. */
+        inset: 0;
+        width: min(100%, 32rem); /* De modal wordt maximaal 32rem breed. Is er minder ruimte, dan gebruikt hij de beschikbare schermbreedte. */
         max-height: calc(100dvh - 3rem); /* De modal mag maximaal de zichtbare schermhoogte min 3rem hoog worden. Daardoor blijft er ruimte van ongeveer 1.5rem boven en onder.*/
+        margin: auto;
         padding: 1.75rem;
         border-radius: 1.5rem;
     }

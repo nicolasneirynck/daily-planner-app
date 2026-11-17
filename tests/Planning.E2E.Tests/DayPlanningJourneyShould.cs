@@ -19,14 +19,8 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
 
-        await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
-        await Page.GetByPlaceholder("Email")
-            .FillAsync(E2ETestEnvironment.UserEmail);
-        await Page.GetByPlaceholder("Password")
-            .FillAsync(E2ETestEnvironment.UserPassword);
-
         // Act: open today
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Login" }).ClickAsync();
+        await LogInToDayPlanningAsync();
 
         // Assert
         await Expect(Page).ToHaveURLAsync($"{BaseUrl}/dayplanning");
@@ -64,13 +58,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
         var activityName = $"Read a book {Guid.NewGuid():N}";
 
-        await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
-        await Page.GetByPlaceholder("Email")
-            .FillAsync(E2ETestEnvironment.UserEmail);
-        await Page.GetByPlaceholder("Password")
-            .FillAsync(E2ETestEnvironment.UserPassword);
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Login" })
-            .ClickAsync();
+        await LogInToDayPlanningAsync();
 
         /* AriaRole.Region betekent: zoek een benoemd gedeelte van de pagina.
            Name = "Ochtend" -> kiest het gedeelte met de toegankelijke naam “Ochtend”. 
@@ -93,6 +81,52 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         // Assert: it is still there
         await Expect(morning.GetByText(activityName, new() { Exact = true }))
             .ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task FocusActivityNameWhenDialogOpens()
+    {
+        // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
+        await LogInToDayPlanningAsync();
+
+        // Act
+        await Page.GetByTestId("global-add-activity-button").ClickAsync();
+
+        // Assert
+        var dialog = Page.GetByRole(AriaRole.Dialog, new() { Name = "Activiteit toevoegen" });
+        await Expect(dialog.GetByTestId("activity-name")).ToBeFocusedAsync();
+    }
+
+    [Fact]
+    public async Task CloseActivityDialogWithEscapeAndRestoreTriggerFocus()
+    {
+        // Arrange
+        await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
+        await LogInToDayPlanningAsync();
+
+        var addButton = Page.GetByTestId("global-add-activity-button");
+        await addButton.ClickAsync();
+        var dialog = Page.GetByRole(AriaRole.Dialog, new() { Name = "Activiteit toevoegen" });
+        await Expect(dialog).ToHaveAttributeAsync("open", "");
+
+        // Act
+        await Page.Keyboard.PressAsync("Escape");
+
+        // Assert
+        await Expect(dialog).ToHaveCountAsync(0); // na escape-toets is het formulier gesloten en uit de pagina verdwenen
+        await Expect(addButton).ToBeFocusedAsync();
+    }
+
+    private async Task LogInToDayPlanningAsync()
+    {
+        await Page.GotoAsync($"{BaseUrl}/login?returnUrl=%2Fdayplanning");
+        await Page.GetByPlaceholder("Email")
+            .FillAsync(E2ETestEnvironment.UserEmail);
+        await Page.GetByPlaceholder("Password")
+            .FillAsync(E2ETestEnvironment.UserPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Login" })
+            .ClickAsync();
     }
 
     private static string ExpectedDateLabel(DateOnly date)

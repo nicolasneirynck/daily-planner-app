@@ -29,8 +29,9 @@
         <button type="button"
                 class="time-block-add-activity"
                 data-testid="add-activity-button"
+                @ref="_addActivityButton"
                 aria-label="Activiteit toevoegen aan @Block.Name"
-                @onclick="OnAddActivity">
+                @onclick="() => OnAddActivity.InvokeAsync(_addActivityButton)">
             <span class="time-block-add-icon">+</span>
             @if (Block.Activities.Count > 0)
             {
@@ -41,9 +42,11 @@
 </section>
 
 @code {
+    private ElementReference _addActivityButton;
+
     [Parameter, EditorRequired]
     public TimeBlockDto Block { get; set; } = default!;
     
     [Parameter, EditorRequired]
-    public EventCallback OnAddActivity { get; set; }
+    public EventCallback<ElementReference> OnAddActivity { get; set; }
 }

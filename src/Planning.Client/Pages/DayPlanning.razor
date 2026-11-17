@@ -18,8 +18,9 @@
             <button type="button"
                     class="global-add-activity"
                     data-testid="global-add-activity-button"
+                    @ref="_globalAddButton"
                     aria-label="Activiteit toevoegen"
-                    @onclick="() => OpenActivityForm(null)">
+                    @onclick="() => OpenActivityForm(null, _globalAddButton)">
                 <span class="global-add-icon" aria-hidden="true">+</span>
                 <span class="global-add-label">Activiteit toevoegen</span>
             </button>
@@ -44,7 +45,7 @@ else
         {
             <TimeBlockCard @key="block.Id" 
                            Block="block" 
-                           OnAddActivity="() => OpenActivityForm(block.Id)" />
+                           OnAddActivity="trigger => OpenActivityForm(block.Id, trigger)" />
         }
     </div>
 }
@@ -54,6 +55,6 @@ else
                      InitialTimeBlockId="_initialTimeBlockId"
                      TimeBlocks="_timeBlocks"
                      OnSubmit="AddActivityAsync"
-                     OnClose="CloseActivityForm"
+                     OnClose="CancelActivityForm"
                      SaveError="@_activitySaveError" />
 }

@@ -1,78 +1,79 @@
-<div class="activity-form-backdrop">
-    <section role="dialog"
-             aria-modal="true"
-             aria-labelledby="activity-form-title"
-             class="activity-form">
-        <header>
-            <h2 id="activity-form-title">Activiteit toevoegen</h2>
-            <button type="button"
-                    aria-label="Sluiten"
-                    @onclick="OnClose">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-            </button>
-        </header>
-        
-        <label for="activity-name">Naam *</label>
-        <input id="activity-name"
-               type="text"
-               data-testid="activity-name"
-               aria-invalid="@(_nameError is not null ? "true" : "false")"
-               aria-describedby="@(_nameError is not null ? "activity-name-error" : null)"
-               placeholder="Bv. Ochtendwandeling"
-               @bind="_name"
-               @oninput="HandleNameInput" />
-        
-        @if (_nameError is not null)
-        {
-            <p id="activity-name-error" role="alert">@_nameError</p>
-        }
-        
-        <label for="activity-date">Datum *</label>
-        <input id="activity-date"
-               type="date"
-               data-testid="activity-date"
-               @bind="_date"
-               @bind:format="yyyy-MM-dd"/>
-        
-        <label for="activity-time-block">Tijdsblok *</label>
-        <div class="activity-form-select">
-            <select id="activity-time-block"
-                    data-testid="activity-time-block"
-                    aria-invalid="@(_timeBlockError is not null ? "true" : "false")"
-                    aria-describedby="@(_timeBlockError is not null ? "activity-time-block-error" : null)"
-                    @bind="_timeBlockId"
-                    @bind:after="HandleTimeBlockChange" > @* @bind:after voert een methode uit nadat @bind de nieuwe waarde heeft opgeslagen. *@
-                <option value="">Kies een tijdsblok</option>
-                @foreach (var block in TimeBlocks)
-                {
-                    <option value="@block.Id">@block.Name</option>
-                }
-            </select>
-
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="m6 9 6 6 6-6" />
-            </svg>
-        </div>
-        
-        @if (_timeBlockError is not null)
-        {
-            <p id="activity-time-block-error"
-               data-testid="activity-time-block-error"
-               role="alert">@_timeBlockError</p>
-        }
-        
-        @if (SaveError is not null)
-        {
-            <p role="alert" data-testid="activity-save-error">@SaveError</p>
-        }
-        
+<dialog @ref="_dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="activity-form-title"
+        class="activity-form"
+        @onclose="OnClose">
+    <header>
+        <h2 id="activity-form-title">Activiteit toevoegen</h2>
         <button type="button"
-                class="activity-form-submit"
-                data-testid="submit-activity-button"
-                @onclick="SubmitAsync">
-            Activiteit toevoegen
+                aria-label="Sluiten"
+                @onclick="OnClose">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
         </button>
-    </section>
-</div>
+    </header>
+
+    <label for="activity-name">Naam *</label>
+    <input id="activity-name"
+           type="text"
+           data-testid="activity-name"
+           @ref="_nameInput"
+           aria-invalid="@(_nameError is not null ? "true" : "false")"
+           aria-describedby="@(_nameError is not null ? "activity-name-error" : null)"
+           placeholder="Bv. Ochtendwandeling"
+           @bind="_name"
+           @oninput="HandleNameInput" />
+
+    @if (_nameError is not null)
+    {
+        <p id="activity-name-error" role="alert">@_nameError</p>
+    }
+
+    <label for="activity-date">Datum *</label>
+    <input id="activity-date"
+           type="date"
+           data-testid="activity-date"
+           @bind="_date"
+           @bind:format="yyyy-MM-dd"/>
+
+    <label for="activity-time-block">Tijdsblok *</label>
+    <div class="activity-form-select">
+        <select id="activity-time-block"
+                data-testid="activity-time-block"
+                aria-invalid="@(_timeBlockError is not null ? "true" : "false")"
+                aria-describedby="@(_timeBlockError is not null ? "activity-time-block-error" : null)"
+                @bind="_timeBlockId"
+                @bind:after="HandleTimeBlockChange" > @* @bind:after voert een methode uit nadat @bind de nieuwe waarde heeft opgeslagen. *@
+            <option value="">Kies een tijdsblok</option>
+            @foreach (var block in TimeBlocks)
+            {
+                <option value="@block.Id">@block.Name</option>
+            }
+        </select>
+
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m6 9 6 6 6-6" />
+        </svg>
+    </div>
+
+    @if (_timeBlockError is not null)
+    {
+        <p id="activity-time-block-error"
+           data-testid="activity-time-block-error"
+           role="alert">@_timeBlockError</p>
+    }
+
+    @if (SaveError is not null)
+    {
+        <p role="alert" data-testid="activity-save-error">@SaveError</p>
+    }
+
+    <button type="button"
+            class="activity-form-submit"
+            data-testid="submit-activity-button"
+            @onclick="SubmitAsync">
+        Activiteit toevoegen
+    </button>
+</dialog>

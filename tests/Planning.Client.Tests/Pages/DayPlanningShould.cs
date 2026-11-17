@@ -10,6 +10,12 @@ namespace Planning.Client.Pages;
 
 public class DayPlanningShould : BunitContext
 {
+    public DayPlanningShould()
+    {
+        JSInterop.SetupModule("./js/activityDialog.js")
+            .SetupVoid("showModal", _ => true);
+    }
+
     [Fact]
     public void ShowAllEmptyTimeBlocksInSortOrder()
     {

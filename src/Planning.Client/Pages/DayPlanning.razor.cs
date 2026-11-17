@@ -16,10 +16,22 @@ public partial class DayPlanning
     private bool _isActivityFormOpen;
     private int? _initialTimeBlockId;
     private string? _activitySaveError;
+    private bool _restoreFocusAfterCancel;
+    private ElementReference _globalAddButton;
+    private ElementReference _activityFormTrigger;
     
     [Inject] public required IDayPlanningService DayPlanningService { get; set; }
 
     protected override Task OnInitializedAsync() => LoadDayAsync(_selectedDate);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_restoreFocusAfterCancel)
+            return;
+
+        _restoreFocusAfterCancel = false;
+        await _activityFormTrigger.FocusAsync();
+    }
 
     private static string FormatSelectedDate(DateOnly date)
     {
@@ -67,8 +79,9 @@ public partial class DayPlanning
         }
     }
 
-    private void OpenActivityForm(int? timeBlockId)
+    private void OpenActivityForm(int? timeBlockId, ElementReference trigger)
     {
+        _activityFormTrigger = trigger;
         _initialTimeBlockId = timeBlockId;
         _isActivityFormOpen = true;
     }
@@ -78,6 +91,12 @@ public partial class DayPlanning
         _isActivityFormOpen = false;
         _initialTimeBlockId = null;
         _activitySaveError = null;
+    }
+
+    private void CancelActivityForm()
+    {
+        CloseActivityForm();
+        _restoreFocusAfterCancel = true;
     }
 
     private async Task AddActivityAsync(CreatePlannedActivityRequest request)
