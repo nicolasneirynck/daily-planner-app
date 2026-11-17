@@ -23,7 +23,7 @@
 
 .time-block-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); /*min(100%, 20rem): een kolom is minimaal 20rem breed, behalve als de container smaller is. Dan mag ze krimpen tot de containerbreedte. */
+    grid-template-columns: minmax(0, 1fr); /* 0 kolom mag zo smal worden als nodig, 1fr de kolom krijgt de beschikbare ruimte van het grid */
     gap: 1rem;
 }
 
