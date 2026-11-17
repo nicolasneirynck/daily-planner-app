@@ -61,4 +61,10 @@ public partial class AddActivityForm
         if (_nameError is not null && !string.IsNullOrWhiteSpace(args.Value?.ToString()))
             _nameError = null;
     }
+    
+    private void HandleTimeBlockChange()
+    {
+        if (_timeBlockId is not null)
+            _timeBlockError = null;
+    }
 }

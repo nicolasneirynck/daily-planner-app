@@ -18,6 +18,8 @@
         <input id="activity-name"
                type="text"
                data-testid="activity-name"
+               aria-invalid="@(_nameError is not null ? "true" : "false")"
+               aria-describedby="@(_nameError is not null ? "activity-name-error" : null)"
                placeholder="Bv. Ochtendwandeling"
                @bind="_name"
                @oninput="HandleNameInput" />
@@ -38,7 +40,10 @@
         <div class="activity-form-select">
             <select id="activity-time-block"
                     data-testid="activity-time-block"
-                    @bind="_timeBlockId">
+                    aria-invalid="@(_timeBlockError is not null ? "true" : "false")"
+                    aria-describedby="@(_timeBlockError is not null ? "activity-time-block-error" : null)"
+                    @bind="_timeBlockId"
+                    @bind:after="HandleTimeBlockChange" > @* @bind:after voert een methode uit nadat @bind de nieuwe waarde heeft opgeslagen. *@
                 <option value="">Kies een tijdsblok</option>
                 @foreach (var block in TimeBlocks)
                 {

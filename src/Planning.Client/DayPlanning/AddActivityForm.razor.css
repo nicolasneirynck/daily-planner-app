@@ -16,6 +16,8 @@
     padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)); /* boven links/rechts onderaan*/
     border-radius: 1.5rem 1.5rem 0 0;
     background: #fefdfb;
+    
+    --form-error-color: #b42318;
 }
 
 .activity-form header {
@@ -61,7 +63,6 @@
     display: block; /* Een <label> staat standaard inline: het kan op dezelfde regel als het invoerveld staan. Met display: block krijgt het label een eigen regel, zodat het veld eronder begint: */
     margin: 1rem 0 0.4rem;
     color: #192231;
-    font-weight: 600;
 }
 
 .activity-form input,
@@ -76,6 +77,17 @@
     font: inherit;
 }
 
+.activity-form [role="alert"] {
+    margin: 0.4rem 0 0;
+    color: var(--form-error-color);
+    font-size: 0.875rem;
+}
+
+.activity-form input[aria-invalid="true"],
+.activity-form select[aria-invalid="true"] {
+    border-color: var(--form-error-color);
+}
+
 .activity-form input::placeholder {
     color: #6b7280;
     opacity: 1;
@@ -84,6 +96,11 @@
 .activity-form input:focus,
 .activity-form select:focus {
     outline: 1px solid var(--accent-coral);
+}
+
+.activity-form input[aria-invalid="true"]:focus,
+.activity-form select[aria-invalid="true"]:focus {
+    outline: 1px solid var(--form-error-color);
 }
 
 .activity-form-select {
