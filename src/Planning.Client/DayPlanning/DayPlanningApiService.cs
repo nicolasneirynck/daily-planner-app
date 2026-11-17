@@ -5,6 +5,21 @@ namespace Planning.Client.DayPlanning;
 
 public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningService
 {
+    public async Task<Result> SetActivityCompletionAsync(
+        int activityId, bool isCompleted, CancellationToken ctx = default)
+    {
+        using var response = await httpClient.PutAsJsonAsync(
+            $"/api/day-planning/activities/{activityId}/completion",
+            new SetActivityCompletionRequest { IsCompleted = isCompleted },
+            ctx);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<Result>(
+            cancellationToken: ctx)
+            ?? throw new InvalidOperationException(
+                "Set activity completion response was empty.");
+    }
+
     public async Task<Result> CreateActivityAsync(
         CreatePlannedActivityRequest request, CancellationToken ctx = default)
     {
