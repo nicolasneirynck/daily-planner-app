@@ -11,80 +11,6 @@ public class DayPlanningService(
     ApplicationDbContext dbContext,
     ISessionContextProvider sessionContextProvider) : IDayPlanningService
 {
-    public async Task<Result> DeletePlannedActivityAsync(
-        int plannedActivityId, CancellationToken ctx = default)
-    {
-        var userId = sessionContextProvider.User?.GetUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-            return Result.Unauthorized();
-
-        var deletedCount = await dbContext.PlannedActivities
-            .Where(activity =>
-                activity.Id == plannedActivityId &&
-                activity.UserId == userId &&
-                !activity.IsDeleted)
-            .ExecuteDeleteAsync(ctx);
-
-        return deletedCount == 0
-            ? Result.NotFound("Planned activity was not found.")
-            : Result.Success();
-    }
-
-    public async Task<Result> SetActivityCompletionAsync(
-        int activityId, bool isCompleted, CancellationToken ctx = default)
-    {
-        var userId = sessionContextProvider.User?.GetUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-            return Result.Unauthorized();
-
-        var activity = await dbContext.PlannedActivities.SingleOrDefaultAsync(
-            activity => activity.Id == activityId &&
-                        activity.UserId == userId &&
-                        !activity.IsDeleted,
-            ctx);
-
-        if (activity is null)
-            return Result.NotFound("Planned activity was not found.");
-
-        activity.IsCompleted = isCompleted;
-        await dbContext.SaveChangesAsync(ctx);
-        return Result.Success();
-    }
-
-    public async Task<Result> CreateActivityAsync(
-        CreatePlannedActivityRequest request, CancellationToken ctx = default)
-    {
-        var userId = sessionContextProvider.User?.GetUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-            return Result.Unauthorized();
-
-        if (string.IsNullOrWhiteSpace(request.Name))
-            return Result.Invalid(new ValidationError
-            {
-                Identifier = nameof(request.Name),
-                ErrorMessage = "Activity name is required."
-            });
-
-        var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>
-            block.Id == request.TimeBlockId &&
-            block.UserId == userId &&
-            !block.IsDeleted, ctx);
-
-        if (!blockExists)
-            return Result.NotFound("Time block was not found.");
-
-        dbContext.PlannedActivities.Add(new PlannedActivity
-        {
-            UserId = userId,
-            Date = request.Date,
-            TimeBlockId = request.TimeBlockId,
-            Name = request.Name
-        });
-
-        await dbContext.SaveChangesAsync(ctx);
-        return Result.Success();
-    }
-
     public async Task<Result<DayPlanningResponse>> GetDayAsync(
         DateOnly date, CancellationToken ctx = default)
     {
@@ -145,5 +71,79 @@ public class DayPlanningService(
             Date = date,
             TimeBlocks = timeBlocks
         });
+    }
+
+    public async Task<Result> CreateActivityAsync(
+        CreatePlannedActivityRequest request, CancellationToken ctx = default)
+    {
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Name),
+                ErrorMessage = "Activity name is required."
+            });
+
+        var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>
+            block.Id == request.TimeBlockId &&
+            block.UserId == userId &&
+            !block.IsDeleted, ctx);
+
+        if (!blockExists)
+            return Result.NotFound("Time block was not found.");
+
+        dbContext.PlannedActivities.Add(new PlannedActivity
+        {
+            UserId = userId,
+            Date = request.Date,
+            TimeBlockId = request.TimeBlockId,
+            Name = request.Name
+        });
+
+        await dbContext.SaveChangesAsync(ctx);
+        return Result.Success();
+    }
+
+    public async Task<Result> SetActivityCompletionAsync(
+        int activityId, bool isCompleted, CancellationToken ctx = default)
+    {
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        var activity = await dbContext.PlannedActivities.SingleOrDefaultAsync(
+            activity => activity.Id == activityId &&
+                        activity.UserId == userId &&
+                        !activity.IsDeleted,
+            ctx);
+
+        if (activity is null)
+            return Result.NotFound("Planned activity was not found.");
+
+        activity.IsCompleted = isCompleted;
+        await dbContext.SaveChangesAsync(ctx);
+        return Result.Success();
+    }
+
+    public async Task<Result> DeletePlannedActivityAsync(
+        int plannedActivityId, CancellationToken ctx = default)
+    {
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        var deletedCount = await dbContext.PlannedActivities
+            .Where(activity =>
+                activity.Id == plannedActivityId &&
+                activity.UserId == userId &&
+                !activity.IsDeleted)
+            .ExecuteDeleteAsync(ctx);
+
+        return deletedCount == 0
+            ? Result.NotFound("Planned activity was not found.")
+            : Result.Success();
     }
 }

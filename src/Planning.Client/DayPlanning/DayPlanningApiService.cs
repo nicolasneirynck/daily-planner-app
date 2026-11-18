@@ -5,17 +5,25 @@ namespace Planning.Client.DayPlanning;
 
 public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningService
 {
-    public async Task<Result> DeletePlannedActivityAsync(
-        int plannedActivityId, CancellationToken ctx = default)
+    public async Task<Result<DayPlanningResponse>> GetDayAsync(
+        DateOnly date, CancellationToken ctx = default)
     {
-        using var response = await httpClient.DeleteAsync(
-            $"/api/day-planning/activities/{plannedActivityId}", ctx);
+        return await httpClient.GetFromJsonAsync<Result<DayPlanningResponse>>(
+            $"/api/day-planning/{date:yyyy-MM-dd}", ctx)
+            ?? throw new InvalidOperationException("Day planning response was empty.");
+    }
+
+    public async Task<Result> CreateActivityAsync(
+        CreatePlannedActivityRequest request, CancellationToken ctx = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            "/api/day-planning/activities", request, ctx);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<Result>(
             cancellationToken: ctx)
             ?? throw new InvalidOperationException(
-                "Delete planned activity response was empty.");
+                "Create activity response was empty.");
     }
 
     public async Task<Result> SetActivityCompletionAsync(
@@ -33,24 +41,16 @@ public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningService
                 "Set activity completion response was empty.");
     }
 
-    public async Task<Result> CreateActivityAsync(
-        CreatePlannedActivityRequest request, CancellationToken ctx = default)
+    public async Task<Result> DeletePlannedActivityAsync(
+        int plannedActivityId, CancellationToken ctx = default)
     {
-        using var response = await httpClient.PostAsJsonAsync(
-            "/api/day-planning/activities", request, ctx);
+        using var response = await httpClient.DeleteAsync(
+            $"/api/day-planning/activities/{plannedActivityId}", ctx);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<Result>(
             cancellationToken: ctx)
             ?? throw new InvalidOperationException(
-                "Create activity response was empty.");
-    }
-
-    public async Task<Result<DayPlanningResponse>> GetDayAsync(
-        DateOnly date, CancellationToken ctx = default)
-    {
-        return await httpClient.GetFromJsonAsync<Result<DayPlanningResponse>>(
-            $"/api/day-planning/{date:yyyy-MM-dd}", ctx)
-            ?? throw new InvalidOperationException("Day planning response was empty.");
+                "Delete planned activity response was empty.");
     }
 }
