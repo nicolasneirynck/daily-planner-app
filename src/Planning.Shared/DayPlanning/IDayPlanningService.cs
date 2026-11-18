@@ -8,6 +8,9 @@ public interface IDayPlanningService
     Task<Result> CreateActivityAsync(
         CreatePlannedActivityRequest request, CancellationToken ctx = default);
 
+    Task<Result> DeletePlannedActivityAsync(
+        int plannedActivityId, CancellationToken ctx = default);
+
     Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default);
 }

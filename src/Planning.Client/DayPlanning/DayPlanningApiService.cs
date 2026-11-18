@@ -5,6 +5,19 @@ namespace Planning.Client.DayPlanning;
 
 public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningService
 {
+    public async Task<Result> DeletePlannedActivityAsync(
+        int plannedActivityId, CancellationToken ctx = default)
+    {
+        using var response = await httpClient.DeleteAsync(
+            $"/api/day-planning/activities/{plannedActivityId}", ctx);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<Result>(
+            cancellationToken: ctx)
+            ?? throw new InvalidOperationException(
+                "Delete planned activity response was empty.");
+    }
+
     public async Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default)
     {
