@@ -84,6 +84,56 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
+    public async Task DeleteSelectedActivityOnlyAfterConfirmationAndKeepItDeletedAfterReload()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var selectedName = $"Morning walk {Guid.NewGuid():N}";
+        var otherName = $"Read a book {Guid.NewGuid():N}";
+        await DayPlanningTestData.SeedMorningActivityAsync(
+            environment, selectedName, today);
+        await DayPlanningTestData.SeedMorningActivityAsync(
+            environment, otherName, today);
+        await LogInToDayPlanningAsync();
+
+        var morning = Page.GetByRole(AriaRole.Region, new() { Name = "Ochtend" });
+        var selected = morning.GetByTestId("planned-activity-row")
+            .Filter(new() { HasText = selectedName });
+        var other = morning.GetByTestId("planned-activity-row")
+            .Filter(new() { HasText = otherName });
+
+        // Act: open the activity and cancel deletion
+        await selected.GetByTestId("activity-open-button").ClickAsync();
+        await Page.GetByTestId("delete-activity-button").ClickAsync();
+
+        // Assert: confirmation is shown before deletion
+        await Expect(Page.GetByRole(AriaRole.Alertdialog)).ToBeVisibleAsync();
+        await Page.GetByTestId("cancel-delete-button").ClickAsync();
+        await Expect(selected).ToBeVisibleAsync();
+
+        // Act: confirm deletion
+        await Page.GetByTestId("delete-activity-button").ClickAsync();
+        /* Begin vóór de klik naar de DELETE-response te luisteren, zodat ook een snel
+         serverantwoord wordt opgevangen. De test wacht op dat antwoord voordat hij verdergaat. */
+        await Page.RunAndWaitForResponseAsync( 
+            () => Page.GetByTestId("confirm-delete-button").ClickAsync(),
+            response => response.Request.Method == "DELETE"
+                        && response.Url.Contains("/api/day-planning/activities/")
+                        && response.Status == 200);
+
+        // Assert: only the selected activity disappeared
+        await Expect(selected).ToHaveCountAsync(0);
+        await Expect(other).ToBeVisibleAsync();
+
+        // Act: reopen the planning
+        await Page.ReloadAsync();
+
+        // Assert: deletion persisted
+        await Expect(selected).ToHaveCountAsync(0);
+        await Expect(other).ToBeVisibleAsync();
+    }
+
+    [Fact]
     public async Task KeepActivityCompletionChangesAfterReload()
     {
         // Arrange
