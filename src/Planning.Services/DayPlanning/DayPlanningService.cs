@@ -11,6 +11,25 @@ public class DayPlanningService(
     ApplicationDbContext dbContext,
     ISessionContextProvider sessionContextProvider) : IDayPlanningService
 {
+    public async Task<Result> DeletePlannedActivityAsync(
+        int plannedActivityId, CancellationToken ctx = default)
+    {
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        var deletedCount = await dbContext.PlannedActivities
+            .Where(activity =>
+                activity.Id == plannedActivityId &&
+                activity.UserId == userId &&
+                !activity.IsDeleted)
+            .ExecuteDeleteAsync(ctx);
+
+        return deletedCount == 0
+            ? Result.NotFound("Planned activity was not found.")
+            : Result.Success();
+    }
+
     public async Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default)
     {
