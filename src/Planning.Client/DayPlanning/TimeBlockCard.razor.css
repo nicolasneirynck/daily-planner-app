@@ -74,13 +74,65 @@
     min-width: 0; /*zegt dat het li element smaller mag worden dan de minimale breedte die zijn inhoud normaal vraagt*/
     overflow-wrap: anywhere; /*lange aaneengesloten tekst mag op elke plaats afgebroken worden als die niet past*/
 
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.875rem;
+
     padding: 0.75rem 1rem;
     border: 1px solid #e3ded1;
     border-radius: 1.5rem;
     background: #fcf9f3;
     color: #192231;
-    font-weight: 600;
+    font-weight: 400;
     line-height: 1.4;
+}
+
+.activity-completion-toggle {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 2px solid #b9b5aa;
+    border-radius: 50%;
+    background: transparent;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+}
+
+.activity-completion-toggle svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.activity-completion-toggle:disabled {
+    cursor: wait;
+}
+
+.is-completed .activity-completion-toggle {
+    border-color: #659157;
+    background: #659157;
+}
+
+.is-completed .planned-activity-name {
+    color: #7c8281;
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+}
+
+.completion-error {
+    grid-column: 2;
+    margin: 0.25rem 0 0;
+    color: var(--error-color);
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 
 .time-block-add-activity {
@@ -117,6 +169,15 @@
 }
 
 @media (hover: hover) {
+    .planned-activity-list li:not(.is-completed) .activity-completion-toggle:not(:disabled):hover {
+        border-color: #9da498;
+    }
+
+    .is-completed .activity-completion-toggle:not(:disabled):hover {
+        border-color: #729e65;
+        background: #729e65;
+    }
+
     .time-block-add-activity:hover {
         background: var(--control-hover-background);
     }

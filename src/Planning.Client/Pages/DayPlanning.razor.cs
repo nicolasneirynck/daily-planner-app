@@ -13,6 +13,8 @@ public partial class DayPlanning
     private bool _isLoading = true;
     private bool _hasLoadError;
     private int _loadVersion;
+    private readonly HashSet<int> _completionUpdatesInProgress = [];
+    private int? _completionErrorActivityId;
     private bool _isActivityFormOpen;
     private int? _initialTimeBlockId;
     private string? _activitySaveError;
@@ -47,6 +49,7 @@ public partial class DayPlanning
         _isLoading = true;
         _hasLoadError = false;
         _timeBlocks = [];
+        _completionErrorActivityId = null;
 
         try
         {
@@ -77,6 +80,38 @@ public partial class DayPlanning
             if (loadVersion == _loadVersion)
                 _isLoading = false;
         }
+    }
+
+    private async Task ToggleActivityCompletionAsync(PlannedActivityDto activity)
+    {
+        if (!_completionUpdatesInProgress.Add(activity.Id)) // geeft true terug als ID nieuw is
+            return;
+
+        _completionErrorActivityId = null;
+        var newStatus = !activity.IsCompleted;
+
+        try
+        {
+            var result = await DayPlanningService.SetActivityCompletionAsync(activity.Id, newStatus);
+
+            if (result.IsSuccess)
+            {
+                activity.IsCompleted = newStatus;
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                       or JsonException
+                                       or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not update completion for activity {ActivityId}", activity.Id);
+        }
+        finally // na return in try en na catch
+        {
+            _completionUpdatesInProgress.Remove(activity.Id);
+        }
+
+        _completionErrorActivityId = activity.Id;
     }
 
     private void OpenActivityForm(int? timeBlockId, ElementReference trigger)
@@ -112,7 +147,6 @@ public partial class DayPlanning
                 var result = await DayPlanningService.CreateActivityAsync(request); 
                 saved = result.IsSucces; 
             */
-                                                                                       
         }
         catch (Exception ex) when (ex is HttpRequestException
                                        or JsonException
