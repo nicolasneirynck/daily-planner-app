@@ -19,8 +19,36 @@
             <ul class="planned-activity-list">
                 @foreach (var activity in Block.Activities)
                 {
-                    <li @key="activity.Id">
-                        <span data-testid="planned-activity-name">@activity.Name</span>
+                    <li @key="activity.Id"
+                        class="@(activity.IsCompleted ? "is-completed" : "")"
+                        data-testid="planned-activity-row">
+                        <button type="button"
+                                class="activity-completion-toggle"
+                                data-testid="activity-completion-toggle"
+                                aria-label="@(activity.IsCompleted
+                                                ? $"Markeer {activity.Name} als niet voltooid"
+                                                : $"Markeer {activity.Name} als voltooid")"
+                                aria-pressed="@(activity.IsCompleted ? "true" : "false")"
+                                disabled="@CompletionUpdatesInProgress.Contains(activity.Id)"
+                                @onclick="() => OnToggleCompletion.InvokeAsync(activity)">
+                            @if (activity.IsCompleted)
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            }
+                        </button>
+
+                        <span class="planned-activity-name" data-testid="planned-activity-name">
+                            @activity.Name
+                        </span>
+
+                        @if (CompletionErrorActivityId == activity.Id)
+                        {
+                            <p class="completion-error" role="alert">
+                                Status wijzigen is niet gelukt. Probeer het opnieuw.
+                            </p>
+                        }
                     </li>
                 }
             </ul>
@@ -48,5 +76,15 @@
     public TimeBlockDto Block { get; set; } = default!;
     
     [Parameter, EditorRequired]
+    public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }
+
+    [Parameter, EditorRequired]
     public EventCallback<ElementReference> OnAddActivity { get; set; }
+
+    [Parameter]
+    public IReadOnlySet<int> CompletionUpdatesInProgress { get; set; }
+        = new HashSet<int>();
+
+    [Parameter]
+    public int? CompletionErrorActivityId { get; set; }
 }

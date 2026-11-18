@@ -45,7 +45,10 @@ else
         {
             <TimeBlockCard @key="block.Id" 
                            Block="block" 
-                           OnAddActivity="trigger => OpenActivityForm(block.Id, trigger)" />
+                           OnAddActivity="trigger => OpenActivityForm(block.Id, trigger)"
+                           OnToggleCompletion="ToggleActivityCompletionAsync"
+                           CompletionUpdatesInProgress="_completionUpdatesInProgress"
+                           CompletionErrorActivityId="_completionErrorActivityId" />
         }
     </div>
 }

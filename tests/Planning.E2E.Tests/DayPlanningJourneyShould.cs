@@ -84,6 +84,45 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
+    public async Task KeepActivityCompletionChangesAfterReload()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var activityName = $"Morning walk {Guid.NewGuid():N}";
+        await DayPlanningTestData.SeedMorningActivityAsync(
+            environment, activityName, today);
+        await LogInToDayPlanningAsync();
+
+        var morning = Page.GetByRole(AriaRole.Region, new() { Name = "Ochtend" });
+        var row = morning.GetByTestId("planned-activity-row")
+            .Filter(new() { HasText = activityName }); // houd alleen de rij over waarvan de tekst activityName bevat
+        var toggle = row.GetByTestId("activity-completion-toggle");
+        var name = row.GetByTestId("planned-activity-name");
+
+        await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "false");
+
+        // Act: complete
+        await toggle.ClickAsync();
+
+        // Assert: visible immediately and retained after reload
+        await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "true");
+        await Expect(name).ToHaveCSSAsync("text-decoration-line", "line-through");
+        await Page.ReloadAsync();
+        await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "true");
+        await Expect(name).ToHaveCSSAsync("text-decoration-line", "line-through");
+
+        // Act: reopen
+        await toggle.ClickAsync();
+
+        // Assert: visible immediately and retained after reload
+        await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "false");
+        await Expect(name).ToHaveCSSAsync("text-decoration-line", "none");
+        await Page.ReloadAsync();
+        await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "false");
+        await Expect(name).ToHaveCSSAsync("text-decoration-line", "none");
+    }
+
+    [Fact]
     public async Task FocusActivityNameWhenDialogOpens()
     {
         // Arrange
