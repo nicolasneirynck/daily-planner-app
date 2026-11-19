@@ -71,6 +71,7 @@
 
 .planned-activity-list li {
     /* deze 2 werken samen*/
+    position: relative;
     min-width: 0; /*zegt dat het li element smaller mag worden dan de minimale breedte die zijn inhoud normaal vraagt*/
     overflow-wrap: anywhere; /*lange aaneengesloten tekst mag op elke plaats afgebroken worden als die niet past*/
 
@@ -88,7 +89,20 @@
     line-height: 1.4;
 }
 
+.activity-open-button {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    cursor: pointer;
+}
+
 .activity-completion-toggle {
+    position: relative;
+    z-index: 1;
     display: grid;
     place-items: center;
     width: 2.5rem;

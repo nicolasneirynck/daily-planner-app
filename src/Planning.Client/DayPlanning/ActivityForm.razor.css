@@ -153,3 +153,71 @@
         border-radius: 1.5rem;
     }
 }
+
+.activity-delete-trigger {
+    display: inline-flex; /* inline -> laat de knop zo breed worden als zijn inhoud*/
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    margin-top: 1rem;
+    padding: 0.5rem 0.5rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: var(--error-color);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.activity-delete-trigger svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: none;
+}
+
+.delete-confirmation {
+    width: min(calc(100% - 2rem), 28rem); /* houd op een klein scherm aan elke kant 1rem over, en max 28 rem breed*/
+    padding: 1.5rem;
+    border: 0;
+    border-radius: 1rem;
+    background: #fefdfb;
+    color: #192231;
+}
+
+.delete-confirmation::backdrop {
+    background: rgb(25 34 49 / 45%);
+}
+
+.delete-confirmation-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.delete-confirmation-actions button {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.delete-confirmation-cancel {
+    border: 1px solid #e7ddcc;
+    background: #f7f3ec;
+    color: #192231;
+}
+
+.delete-confirmation-confirm {
+    border: 1px solid var(--error-color);
+    background: var(--error-color);
+    color: white;
+}
+
+.delete-confirmation-confirm:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
