@@ -8,19 +8,6 @@ Planning is a .NET 10 application based on a starter solution. It has an ASP.NET
 - Docker with Docker Compose, for the local PostgreSQL database
 - Optional: `dotnet-ef` for creating migrations (`dotnet tool install --global dotnet-ef`)
 
-## Adaptation status
-
-The working title is **Planning**. The starter is being adapted in stages:
-
-1. **Solution and project names — done.** The solution, six application projects, and three test projects use `Planning` names and paths.
-2. **Code references — done.** Namespaces, imports, Swagger's API title, EF migration metadata, and the client stylesheet reference use `Planning`.
-3. **Local database — done.** Docker Compose exposes PostgreSQL on host port `5433`. The local `.env` supplies credentials to Compose and the server; Git ignores it.
-4. **URLs and identity — provisionally done.** The hosted app uses `https://localhost:5001`. The server has its own `UserSecretsId`. Registration is public and newly registered accounts receive the `User` role. `Administrator` and `Technician` remain example roles; review access rules when defining the application's real users.
-5. **Choose the examples — pending.** Products and Projects are working examples, not required Planning features. Keep or remove each complete feature across Domain, Shared, Services, Persistence, Server, Client, and tests. Update service registration, `ApplicationDbContext`, development seeding, and EF migrations to match. Make schema changes through a migration.
-6. **Replace example data and presentation — pending.** Replace or disable the example users, fixed development password, products, projects, and addresses in `src/Planning.Persistence/DbSeeder.cs`. Review the browser title, navigation branding, icons, and example pages in the client. Keep the original MIT license notice.
-7. **Verify the adapted app — pending.** Check for remaining starter data and example email addresses, then verify the database migration, login, and relevant endpoints. The app runs locally; build and test verification remain open.
-
-If you change the server port, update `src/Planning.Server/Properties/launchSettings.json` and `src/Planning.Client/wwwroot/appsettings.json` together. The client launch settings matter when running the client separately. Provide deployment database credentials through environment configuration or a secret store. Docker Compose uses its database environment values when it creates the container; recreate an existing container after changing those values, without deleting data you need.
 
 ## Run locally
 
