@@ -16,8 +16,11 @@ public partial class DayPlanning
     private readonly HashSet<int> _completionUpdatesInProgress = [];
     private int? _completionErrorActivityId;
     private bool _isActivityFormOpen;
+    private PlannedActivityDto? _selectedActivity;
     private int? _initialTimeBlockId;
     private string? _activitySaveError;
+    private bool _isDeletingActivity;
+    private string? _activityDeleteError;
     private bool _restoreFocusAfterCancel;
     private ElementReference _globalAddButton;
     private ElementReference _activityFormTrigger;
@@ -32,7 +35,11 @@ public partial class DayPlanning
             return;
 
         _restoreFocusAfterCancel = false;
-        await _activityFormTrigger.FocusAsync();
+
+        if (string.IsNullOrEmpty(_activityFormTrigger.Id))
+            await _globalAddButton.FocusAsync();
+        else
+            await _activityFormTrigger.FocusAsync();
     }
 
     private static string FormatSelectedDate(DateOnly date)
@@ -116,6 +123,15 @@ public partial class DayPlanning
 
     private void OpenActivityForm(int? timeBlockId, ElementReference trigger)
     {
+        _selectedActivity = null;
+        _activityFormTrigger = trigger;
+        _initialTimeBlockId = timeBlockId;
+        _isActivityFormOpen = true;
+    }
+
+    private void OpenExistingActivity(PlannedActivityDto activity, ElementReference trigger, int timeBlockId)
+    {
+        _selectedActivity = activity;
         _activityFormTrigger = trigger;
         _initialTimeBlockId = timeBlockId;
         _isActivityFormOpen = true;
@@ -124,12 +140,17 @@ public partial class DayPlanning
     private void CloseActivityForm()
     {
         _isActivityFormOpen = false;
+        _selectedActivity = null;
         _initialTimeBlockId = null;
         _activitySaveError = null;
+        _activityDeleteError = null;
     }
 
     private void CancelActivityForm()
     {
+        if (!_isActivityFormOpen)
+            return;
+
         CloseActivityForm();
         _restoreFocusAfterCancel = true;
     }
@@ -164,5 +185,39 @@ public partial class DayPlanning
         
         CloseActivityForm();
         await LoadDayAsync(request.Date);
+    }
+
+    private async Task DeleteActivityAsync(int activityId)
+    {
+        if (_isDeletingActivity)
+            return;
+
+        _isDeletingActivity = true;
+        _activityDeleteError = null;
+
+        try
+        {
+            var result = await DayPlanningService.DeletePlannedActivityAsync(activityId);
+
+            if (!result.IsSuccess)
+            {
+                _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+                return;
+            }
+
+            CloseActivityForm();
+            await LoadDayAsync(_selectedDate);
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                       or JsonException
+                                       or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not delete activity {ActivityId}", activityId);
+            _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+        }
+        finally
+        {
+            _isDeletingActivity = false;
+        }
     }
 }

@@ -66,8 +66,10 @@ public class DayPlanningActivityDeletionShould : BunitContext
         cut.Find("[data-testid='delete-activity-button']").Click();
 
         // Assert: confirmation is required
-        cut.Find("[role='alertdialog']").TextContent
-            .ShouldContain("Ben je zeker dat je deze activiteit wilt verwijderen?");
+        var confirmation = cut.Find("[role='alertdialog']");
+        confirmation.TextContent.ShouldContain("Verwijderen uit planning?");
+        confirmation.TextContent.ShouldContain(
+            "“Morning walk” wordt verwijderd uit je dagplanning.");
         /* FindAll("[role='alertdialog']") zoekt alle bevestigingsvensters in de gerenderde component. ShouldBeEmpty() controleert dat er geen gevonden zijn. */
         _ = service.DidNotReceive().DeletePlannedActivityAsync(
             Arg.Any<int>(), Arg.Any<CancellationToken>());

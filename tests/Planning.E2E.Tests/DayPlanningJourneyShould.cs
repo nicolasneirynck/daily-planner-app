@@ -115,7 +115,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Page.GetByTestId("delete-activity-button").ClickAsync();
         /* Begin vóór de klik naar de DELETE-response te luisteren, zodat ook een snel
          serverantwoord wordt opgevangen. De test wacht op dat antwoord voordat hij verdergaat. */
-        await Page.RunAndWaitForResponseAsync( 
+        await Page.RunAndWaitForResponseAsync(
             () => Page.GetByTestId("confirm-delete-button").ClickAsync(),
             response => response.Request.Method == "DELETE"
                         && response.Url.Contains("/api/day-planning/activities/")

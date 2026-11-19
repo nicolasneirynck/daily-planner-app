@@ -39,6 +39,14 @@
                             }
                         </button>
 
+                        <button type="button"
+                                class="activity-open-button"
+                                data-testid="activity-open-button"
+                                @ref="_openButtons[activity.Id]"
+                                aria-label="Open activiteit @activity.Name"
+                                @onclick="() => OnOpenActivity.InvokeAsync((activity, _openButtons[activity.Id]))">
+                        </button>
+
                         <span class="planned-activity-name" data-testid="planned-activity-name">
                             @activity.Name
                         </span>
@@ -71,12 +79,16 @@
 
 @code {
     private ElementReference _addActivityButton;
+    private readonly Dictionary<int, ElementReference> _openButtons = [];
 
     [Parameter, EditorRequired]
     public TimeBlockDto Block { get; set; } = default!;
     
     [Parameter, EditorRequired]
     public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<(PlannedActivityDto Activity, ElementReference Trigger)> OnOpenActivity { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback<ElementReference> OnAddActivity { get; set; }
@@ -87,4 +99,17 @@
 
     [Parameter]
     public int? CompletionErrorActivityId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var visibleActivityIds = Block.Activities
+            .Select(activity => activity.Id)
+            .ToHashSet();
+
+        foreach (var activityId in _openButtons.Keys.ToArray())
+        {
+            if (!visibleActivityIds.Contains(activityId))
+                _openButtons.Remove(activityId);
+        }
+    }
 }
