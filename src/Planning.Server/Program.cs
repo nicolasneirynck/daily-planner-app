@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Planning.Persistence;
 using Planning.Persistence.Triggers;
+using Planning.Server.Errors;
 using Planning.Server.Identity;
 using Planning.Server.Processors;
 using Planning.Services;
@@ -40,6 +41,7 @@ try
             o.UseTriggers(options => options.AddTrigger<EntityBeforeSaveTrigger>()); // Handles all UpdatedAt, CreatedAt stuff.
         })
         .AddHttpContextAccessor()
+        .AddSingleton<ApiProblemResponse>()
         .AddScoped<ISessionContextProvider, HttpContextSessionProvider>() // Provides the current user from the HttpContext to the session provider.
         .AddApplicationServices() // You'll need to add your own services in this function call.
         .AddAuthorization()
@@ -87,10 +89,65 @@ try
         .UseBlazorFrameworkFiles() // Blazor is also served from the API. 
         .UseStaticFiles()
         .UseDefaultExceptionHandler()
+        .Use(async (context, next) => // onverwachte exceptions omzetten naar afgesproken API-foutcontract
+        {
+            try
+            {
+                await next(context); // "Ga verder met de aanvraag; loop de resterende ketting van middleware en endpoints maar af; als verderop een exception ontstaat, vang ik die hier op."
+            }
+            catch (Exception ex) when (
+                context.Request.Path.StartsWithSegments("/api") && // exception enkel opvangen voor een pad op /api
+                !context.Response.HasStarted) // en enkel opvangen zolang de HTTP-respons nog niet naar de client is begonnen
+            {
+                context.Response.Clear(); // wist wat eventueel al voor de respons was ingesteld
+                /* Een onderdeel verderop kan al iets aan de respons hebben ingesteld voordat het een exception gooit, bijvoorbeeld een status of Content-Type. Als je daarna een nieuwe 500-respons schrijft, kunnen die oude gegevens ermee botsen.*/
+
+                var writer = context.RequestServices
+                    .GetRequiredService<ApiProblemResponse>();
+                var problem = writer.Create(
+                    context, StatusCodes.Status500InternalServerError);
+
+                Log.Error(ex,
+                    "Unhandled API exception {Instance} at {Path}",
+                    problem.Instance, context.Request.Path);
+
+                await writer.WriteAsync(
+                    context, problem, context.RequestAborted); // context.RequestAborted: een annuleringssignaal voor als de client de verbinding verbreekt (u cancelation token)
+            }
+        })
+        .UseStatusCodePages(async statusContext => // Statuscodepagina’s behandelen foutstatussen zonder geschreven inhoud. Staat vóór authenticatie en fastendpoints om hun lege 401/403 responses op te vangen
+        {
+            var context = statusContext.HttpContext;
+            if (!context.Request.Path.StartsWithSegments("/api"))
+                return;
+
+            var writer = context.RequestServices
+                .GetRequiredService<ApiProblemResponse>();
+
+            await writer.WriteAsync(
+                context,
+                writer.Create(context, context.Response.StatusCode),
+                context.RequestAborted);
+        })
         .UseAuthentication()
         .UseAuthorization()
         .UseFastEndpoints(o =>
         {
+            o.Errors.ContentType = "application/problem+json";
+            o.Errors.GeneralErrorsField = "$";
+            o.Errors.ProducesMetadataType = typeof(ApiProblemDetails);
+            o.Errors.ResponseBuilder = (failures, context, status) =>
+            {
+                var errors = failures
+                    .Select(failure => ApiFieldError.From(
+                        failure.PropertyName, failure.ErrorMessage))
+                    .ToArray();
+
+                return context.RequestServices
+                    .GetRequiredService<ApiProblemResponse>()
+                    .Create(context, status, errors);
+            };
+
             o.Endpoints.Configurator = ep =>
             {
                 ep.DontAutoSendResponse();
@@ -100,6 +157,8 @@ try
             };
         })
         .UseSwaggerGen();
+    app.Map("/api", WriteApiNotFoundAsync);
+    app.Map("/api/{**path}", WriteApiNotFoundAsync);
     app.MapFallbackToFile("index.html"); // Serves the Blazor app from the API, when no routes match.
     app.Run();
 }
@@ -114,6 +173,17 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+static Task WriteApiNotFoundAsync(HttpContext context)
+{
+    var writer = context.RequestServices
+        .GetRequiredService<ApiProblemResponse>();
+
+    return writer.WriteAsync(
+        context,
+        writer.Create(context, StatusCodes.Status404NotFound),
+        context.RequestAborted);
 }
 
 public partial class Program { }
