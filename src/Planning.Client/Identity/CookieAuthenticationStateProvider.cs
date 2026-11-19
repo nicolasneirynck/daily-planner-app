@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
+using Planning.Client.Http;
 using Planning.Shared.Identity.Accounts;
 
 namespace Planning.Client.Identity
@@ -41,15 +42,15 @@ namespace Planning.Client.Identity
         {
             try
             {
-                var response = await httpClient.PostAsJsonAsync("/api/identity/accounts/register", new AccountRequest.Register
+                using var response = await httpClient.PostAsJsonAsync("/api/identity/accounts/register", new AccountRequest.Register
                 {
                     Email = email,
                     Password = password,
                     ConfirmPassword = confirmPassword,
                 });
-            
-                var result = await response.Content.ReadFromJsonAsync<Result>();
-                return result!;
+
+                var apiResponse = await ApiResponseReader.ReadAsync<Result>(response);
+                return ArdalisResultAdapter.ToResult(apiResponse);
             }
             catch (Exception ex)
             {
@@ -68,19 +69,24 @@ namespace Planning.Client.Identity
         {
             try
             {
-                var response = await httpClient.PostAsJsonAsync("/api/identity/accounts/login", new AccountRequest.Login
+                using var response = await httpClient.PostAsJsonAsync("/api/identity/accounts/login", new AccountRequest.Login
                 {
                     Email = email,
                     Password = password,
                 });
-            
-                var result = await response.Content.ReadFromJsonAsync<Result>();
-                if (response.IsSuccessStatusCode)
+
+                var apiResponse = await ApiResponseReader.ReadAsync<Result>(response);
+                var result = ArdalisResultAdapter.ToResult(apiResponse);
+
+                if (apiResponse.StatusCode == HttpStatusCode.Unauthorized)
+                    return Result.Unauthorized("Invalid email and/or password.");
+
+                if (result.IsSuccess)
                 {
                     NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
                 }
 
-                return result!;
+                return result;
             }
             catch (Exception ex)
             {
@@ -106,9 +112,15 @@ namespace Planning.Client.Identity
 
             try
             {
-                var result = await httpClient.GetFromJsonAsync<Result<AccountResponse.Info>>("/api/identity/accounts/info");
-                
-                if (result!.IsSuccess)
+                using var response = await httpClient.GetAsync("/api/identity/accounts/info");
+                var apiResponse = await ApiResponseReader.ReadAsync<Result<AccountResponse.Info>>(response);
+
+                if (apiResponse.StatusCode == HttpStatusCode.Unauthorized)
+                    return new AuthenticationState(unauthenticated);
+
+                var result = ArdalisResultAdapter.ToResult(apiResponse);
+
+                if (result.IsSuccess)
                 {
                     var claims = new List<Claim>
                     {
@@ -129,10 +141,6 @@ namespace Planning.Client.Identity
                     authenticated = true;
                 }
             }
-            catch (HttpRequestException ex) when (ex.StatusCode != HttpStatusCode.Unauthorized)
-            {
-                Log.Error(ex, "Could not GetAuthenticationStateAsync.");
-            }
             catch (Exception ex)
             {
                 Log.Error(ex, "Could not GetAuthenticationStateAsync.");
@@ -141,10 +149,25 @@ namespace Planning.Client.Identity
             return new AuthenticationState(user);
         }
 
-        public async Task LogoutAsync()
+        public async Task<Result> LogoutAsync()
         {
-            await httpClient.PostAsync("/api/identity/accounts/logout", null);
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            try
+            {
+                using var response =
+                    await httpClient.PostAsync("/api/identity/accounts/logout", null);
+                var apiResponse = await ApiResponseReader.ReadAsync<Result>(response);
+                var result = ArdalisResultAdapter.ToResult(apiResponse);
+
+                if (result.IsSuccess)
+                    NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Could not log out.");
+                return Result.Error("Could not log out. Please try again.");
+            }
         }
 
         public async Task<bool> CheckAuthenticatedAsync()

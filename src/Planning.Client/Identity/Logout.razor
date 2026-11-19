@@ -4,7 +4,14 @@
 
 <AuthorizeView>
     <Authorized>
-        <div class="alert alert-info">Logging you out...</div>
+        @if (_logoutError is not null)
+        {
+            <div class="alert alert-danger">@_logoutError</div>
+        }
+        else
+        {
+            <div class="alert alert-info">Logging you out...</div>
+        }
     </Authorized>
     <NotAuthorized>
         <div class="alert alert-success">You're logged out. <a href="/login">Log in.</a></div>

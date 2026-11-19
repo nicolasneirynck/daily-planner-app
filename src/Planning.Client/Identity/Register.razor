@@ -19,6 +19,18 @@
                     }
                     else
                     {
+                        @if (_result is not null && !_result.IsSuccess)
+                        {
+                            <div class="mt-3">
+                                @foreach (var error in _result.Errors.Concat(
+                                    _result.ValidationErrors
+                                        .Where(error => error.Identifier is not ("email" or "password" or "confirmPassword"))
+                                        .Select(error => error.ErrorMessage)))
+                                {
+                                    <div class="notification is-danger">@error</div>
+                                }
+                            </div>
+                        }
                         <EditForm Model="Model" OnValidSubmit="RegisterUserAsync">
                         <FluentValidationValidator/>
                         <div class="field">
@@ -29,6 +41,14 @@
                                 </span>
                             </p>
                             <ValidationMessage For="() => Model.Email" class="has-text-danger"/>
+                            @if (_result is not null)
+                            {
+                                @foreach (var error in _result.ValidationErrors
+                                    .Where(error => error.Identifier == "email"))
+                                {
+                                    <div class="has-text-danger">@error.ErrorMessage</div>
+                                }
+                            }
                         </div>
                         <div class="field">
                             <p class="control has-icons-left">
@@ -38,6 +58,14 @@
                                 </span>
                             </p>
                             <ValidationMessage For="() => Model.Password" class="has-text-danger"/>
+                            @if (_result is not null)
+                            {
+                                @foreach (var error in _result.ValidationErrors
+                                    .Where(error => error.Identifier == "password"))
+                                {
+                                    <div class="has-text-danger">@error.ErrorMessage</div>
+                                }
+                            }
                         </div>
                         <div class="field">
                             <p class="control has-icons-left">
@@ -47,6 +75,14 @@
                                 </span>
                             </p>
                             <ValidationMessage For="() => Model.ConfirmPassword" class="has-text-danger"/>
+                            @if (_result is not null)
+                            {
+                                @foreach (var error in _result.ValidationErrors
+                                    .Where(error => error.Identifier == "confirmPassword"))
+                                {
+                                    <div class="has-text-danger">@error.ErrorMessage</div>
+                                }
+                            }
                         </div>
                         <div class="field is-grouped is-grouped-right">
                             <p class="control">
@@ -56,15 +92,6 @@
                     </EditForm>
                     }
                     
-                    @if (_result is not null && !_result.IsSuccess)
-                    {
-                        <div class="mt-3">
-                            @foreach (var error in _result.Errors)
-                            {
-                                <div class="notification is-danger">@error</div>
-                            }
-                        </div>
-                    }
                 </section>
             </div>
 

@@ -21,7 +21,10 @@
     </Authorized>
     <NotAuthorized>
         <div class="container">
-            @foreach (var error in _result.Errors)
+            @foreach (var error in _result.Errors.Concat(
+                _result.ValidationErrors
+                    .Where(error => error.Identifier is not ("email" or "password"))
+                    .Select(error => error.ErrorMessage)))
             {
                 <div class="notification is-danger">@error</div>
             }
@@ -37,6 +40,11 @@
                             </span>
                         </p>
                         <ValidationMessage For="() => Model.Email" class="has-text-danger"/>
+                        @foreach (var error in _result.ValidationErrors
+                            .Where(error => error.Identifier == "email"))
+                        {
+                            <div class="has-text-danger">@error.ErrorMessage</div>
+                        }
                     </div>
                     <div class="field">
                         <p class="control has-icons-left">
@@ -46,6 +54,11 @@
                             </span>
                         </p>
                         <ValidationMessage For="() => Model.Password" class="has-text-danger"/>
+                        @foreach (var error in _result.ValidationErrors
+                            .Where(error => error.Identifier == "password"))
+                        {
+                            <div class="has-text-danger">@error.ErrorMessage</div>
+                        }
                     </div>
                     <div class="field is-grouped is-grouped-right">
                         <p class="control">
