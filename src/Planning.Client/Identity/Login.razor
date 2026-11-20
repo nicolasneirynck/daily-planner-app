@@ -23,7 +23,9 @@
         <div class="container">
             @foreach (var error in _result.Errors.Concat(
                 _result.ValidationErrors
-                    .Where(error => error.Identifier is not ("email" or "password"))
+                    .Where(error => error.Identifier is not ("email" or "password")
+                        && (error.Identifier != "$"
+                            || !_result.ValidationErrors.Any(fieldError => fieldError.Identifier != "$")))
                     .Select(error => error.ErrorMessage)))
             {
                 <div class="notification is-danger">@error</div>
