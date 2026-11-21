@@ -97,10 +97,44 @@ public class DayPlanningActivityCreationShould : BunitContext
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
             .Click();
         cut.Find("[data-testid='activity-name']").Change(name);
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.Find("[role='alert']").TextContent.ShouldContain("Vul een naam in.");
+        _ = service.DidNotReceive().CreateActivityAsync(
+            Arg.Any<CreatePlannedActivityRequest>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void RejectActivityNameLongerThan250CharactersWithoutCallingApi()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+
+        Services.AddSingleton(service);
+
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='activity-name']").Change(new string('a', 251));
+        cut.Find("[role='dialog'] form").Submit();
+
+        // Assert
+        cut.Find("#activity-name-error")
+            .TextContent.ShouldContain("maximaal 250 tekens");
+        cut.Find("[data-testid='activity-name']")
+            .GetAttribute("aria-invalid").ShouldBe("true");
+        cut.Find("[data-testid='activity-name']")
+            .GetAttribute("aria-describedby").ShouldBe("activity-name-error");
         _ = service.DidNotReceive().CreateActivityAsync(
             Arg.Any<CreatePlannedActivityRequest>(),
             Arg.Any<CancellationToken>());
@@ -121,7 +155,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         var cut = Render<DayPlanning>();
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
             .Click();
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Act and assert
         cut.Find("[data-testid='activity-name']").Input("   ");
@@ -159,7 +193,7 @@ public class DayPlanningActivityCreationShould : BunitContext
             .Click();
         cut.Find("[data-testid='activity-name']").Change("Read a book");
         cut.Find("[data-testid='activity-time-block']").Change("2");
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -199,7 +233,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         cut.Find("[data-testid='global-add-activity-button']").Click();
         cut.Find("[data-testid='activity-name']").Change("Read a book");
         cut.Find("[data-testid='activity-time-block']").Change("2");
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -236,7 +270,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         cut.Find("[data-testid='activity-name']").Change("Read a book");
         cut.Find("[data-testid='activity-date']")
             .Change(tomorrow.ToString("yyyy-MM-dd"));
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -265,7 +299,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         // Act
         cut.Find("[data-testid='global-add-activity-button']").Click();
         cut.Find("[data-testid='activity-name']").Change("Read a book");
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.Find("[data-testid='activity-time-block-error']")
@@ -297,7 +331,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
             .Click();
         cut.Find("[data-testid='activity-name']").Change("Read a book");
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -340,7 +374,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
             .Click();
         cut.Find("[data-testid='activity-name']").Change("Read a book");
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -380,7 +414,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
             .Click();
         cut.Find("[data-testid='activity-name']").Change("Read a book");
-        cut.Find("[data-testid='submit-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
