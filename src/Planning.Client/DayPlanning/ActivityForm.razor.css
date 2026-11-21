@@ -79,6 +79,14 @@
     font-size: 0.875rem;
 }
 
+.activity-form [role="alert"] > p {
+    margin: 0;
+}
+
+.activity-form [role="alert"] > p + p {
+    margin-top: 0.25rem;
+}
+
 .activity-form input[aria-invalid="true"],
 .activity-form select[aria-invalid="true"] {
     border-color: var(--error-color);
