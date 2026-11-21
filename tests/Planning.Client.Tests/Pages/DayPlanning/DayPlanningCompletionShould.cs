@@ -1,5 +1,7 @@
-using Ardalis.Result;
+using System.Net;
 using NSubstitute;
+using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Shouldly;
 using static Planning.Client.Pages.DayPlanningTestData;
@@ -14,7 +16,7 @@ public class DayPlanningCompletionShould : BunitContext
         // Arrange
         var service = RegisterServiceWithActivity(isCompleted: false);
         service.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success()));
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
 
         var cut = Render<DayPlanning>();
         cut.WaitForAssertion(() =>
@@ -40,7 +42,7 @@ public class DayPlanningCompletionShould : BunitContext
         // Arrange
         var service = RegisterServiceWithActivity(isCompleted: true);
         service.SetActivityCompletionAsync(101, false, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success()));
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
 
         var cut = Render<DayPlanning>();
         cut.WaitForAssertion(() =>
@@ -66,7 +68,8 @@ public class DayPlanningCompletionShould : BunitContext
         // Arrange
         var service = RegisterServiceWithActivity(isCompleted: false);
         service.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Error("Save failed.")));
+            .Returns(Task.FromResult(new ClientResult(
+                HttpStatusCode.UnprocessableEntity, "Save failed.")));
 
         var cut = Render<DayPlanning>();
         cut.WaitForAssertion(() =>
@@ -86,7 +89,7 @@ public class DayPlanningCompletionShould : BunitContext
         });
     }
 
-    private IDayPlanningService RegisterServiceWithActivity(bool isCompleted)
+    private IDayPlanningClient RegisterServiceWithActivity(bool isCompleted)
     {
         var morning = Block(1, "Morning", 6, 9);
         morning.Activities =
@@ -99,9 +102,9 @@ public class DayPlanningCompletionShould : BunitContext
             }
         ];
 
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [morning]

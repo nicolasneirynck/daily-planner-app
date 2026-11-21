@@ -1,5 +1,7 @@
-using Ardalis.Result;
+using System.Net;
 using NSubstitute;
+using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Shouldly;
 using static Planning.Client.Pages.DayPlanningTestData;
@@ -22,9 +24,9 @@ public class DayPlanningDisplayShould : BunitContext
             Block(4, "Vroege namiddag", 14, 16)
         };
 
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = blocks
@@ -70,9 +72,9 @@ public class DayPlanningDisplayShould : BunitContext
             new PlannedActivityDto { Id = 103, Name = "Evening routine" }
         ];
 
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [morning, midday, evening]

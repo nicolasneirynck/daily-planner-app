@@ -1,7 +1,9 @@
-using Ardalis.Result;
+using System.Net;
 using System.Globalization;
 using Microsoft.AspNetCore.Components.Web;
 using NSubstitute;
+using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Shouldly;
 using static Planning.Client.Pages.DayPlanningTestData;
@@ -14,9 +16,9 @@ public class DayPlanningNavigationShould : BunitContext
     public void RequestCurrentDayWhenOpened()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today)
             })));
@@ -41,7 +43,7 @@ public class DayPlanningNavigationShould : BunitContext
     {
         // Arrange
         var requestedDates = new List<DateOnly>();
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
 
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -59,7 +61,7 @@ public class DayPlanningNavigationShould : BunitContext
                     }
                 ];
 
-                return Task.FromResult(Result.Success(new DayPlanningResponse
+                return Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
                 {
                     Date = date,
                     TimeBlocks = [morning]
@@ -95,7 +97,7 @@ public class DayPlanningNavigationShould : BunitContext
     {
         // Arrange
         var requestedDates = new List<DateOnly>();
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
 
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -103,7 +105,7 @@ public class DayPlanningNavigationShould : BunitContext
                 var date = call.ArgAt<DateOnly>(0);
                 requestedDates.Add(date);
 
-                return Task.FromResult(Result.Success(new DayPlanningResponse
+                return Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
                 {
                     Date = date
                 }));
@@ -134,7 +136,7 @@ public class DayPlanningNavigationShould : BunitContext
     {
         // Arrange
         var requestedDates = new List<DateOnly>();
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
 
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -142,7 +144,7 @@ public class DayPlanningNavigationShould : BunitContext
                 var date = call.ArgAt<DateOnly>(0);
                 requestedDates.Add(date);
 
-                return Task.FromResult(Result.Success(new DayPlanningResponse
+                return Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
                 {
                     Date = date
                 }));
@@ -190,10 +192,10 @@ public class DayPlanningNavigationShould : BunitContext
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
-        var delayedTomorrow = new TaskCompletionSource<Result<DayPlanningResponse>>(
+        var delayedTomorrow = new TaskCompletionSource<ClientResult<DayPlanningResponse>>(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
@@ -232,8 +234,8 @@ public class DayPlanningNavigationShould : BunitContext
                 .ShouldBe($"Day {today:yyyy-MM-dd}"));
 
         // kleine helper binnen test: maakt snel een geslaagd serviceantwoord voor een gekozen datum
-        static Result<DayPlanningResponse> Day(DateOnly date) =>
-            Result.Success(new DayPlanningResponse
+        static ClientResult<DayPlanningResponse> Day(DateOnly date) =>
+            new(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = date,
                 TimeBlocks = [Block(1, $"Day {date:yyyy-MM-dd}", 6, 9)]

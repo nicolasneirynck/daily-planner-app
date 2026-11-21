@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 
 namespace Planning.Client.DayPlanning;
@@ -35,7 +36,7 @@ public partial class ActivityForm : IAsyncDisposable
     public string? SaveError { get; set; }
 
     [Parameter]
-    public IReadOnlyList<ValidationError> ServerErrors { get; set; } = [];
+    public IReadOnlyList<ClientFieldError> ServerErrors { get; set; } = [];
 
     [Parameter]
     public string? DeleteError { get; set; }
@@ -53,7 +54,7 @@ public partial class ActivityForm : IAsyncDisposable
     private FieldIdentifier _nameField;
     private FieldIdentifier _timeBlockField;
     private ValidationMessageStore _serverMessages = default!; // een opslag voor validatiemeldingen van de server. Die is gekoppeld aan _editContext, zodat het formulier ze samen met Blazors gewone veldmeldingen kan tonen.
-    private IReadOnlyList<ValidationError>? _appliedServerErrors; // onthoudt welke lijst serverfouten al is verwerkt, zodat dezelfde lijst bij een volgende render niet opnieuw wordt toegevoegd.
+    private IReadOnlyList<ClientFieldError>? _appliedServerErrors; // onthoudt welke lijst serverfouten al is verwerkt, zodat dezelfde lijst bij een volgende render niet opnieuw wordt toegevoegd.
     private bool _isConfirmingDeletion;
     private ElementReference _deleteButton;
     private ElementReference _confirmationDialog;
@@ -79,8 +80,8 @@ public partial class ActivityForm : IAsyncDisposable
 
         _appliedServerErrors = ServerErrors;
         _serverMessages.Clear();
-        foreach (var error in ServerErrors.Where(error => error.Identifier == "name"))
-            _serverMessages.Add(_nameField, error.ErrorMessage); // De foreach loopt door de serverfouten waarvan Identifier gelijk is aan "name". Voor elk van die fouten voegt Add de fouttekst toe aan het naamveld (_nameField) in Blazors validatieopslag.
+        foreach (var error in ServerErrors.Where(error => error.Name == "name"))
+            _serverMessages.Add(_nameField, error.Message); // De foreach loopt door de serverfouten waarvan Name gelijk is aan "name". Voor elk van die fouten voegt Add de fouttekst toe aan het naamveld (_nameField) in Blazors validatieopslag.
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
-using Ardalis.Result;
 using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Shouldly;
 
@@ -9,6 +9,45 @@ namespace Planning.Client.Tests.DayPlanning;
 
 public class DayPlanningApiServiceShould
 {
+    [Fact]
+    public async Task ReadDayThroughClientInterface()
+    {
+        // Arrange
+        using var client = new HttpClient(new StubHandler(request =>
+        {
+            request.RequestUri!.AbsolutePath
+                .ShouldBe("/api/day-planning/2026-11-14");
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {
+                      "value": {
+                        "date": "2026-11-14",
+                        "timeBlocks": []
+                      }
+                    }
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
+            };
+        }))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+        IDayPlanningClient service = new DayPlanningApiService(client);
+
+        // Act
+        var result = await service.GetDayAsync(new DateOnly(2026, 11, 14));
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        result.StatusCode.ShouldBe(HttpStatusCode.OK);
+        result.Value.ShouldNotBeNull();
+        result.Value.Date.ShouldBe(new DateOnly(2026, 11, 14));
+    }
+
     [Fact]
     public async Task MapProblemValidationErrorsToFieldErrors()
     {
@@ -45,7 +84,7 @@ public class DayPlanningApiServiceShould
            BaseAddress is het basisadres voor relatieve verzoeken. Als de geteste code bijvoorbeeld /api/day-planning opvraagt,
            kan HttpClient daar https://example.test/api/day-planning van maken.
          */
-        var service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiService(client);
 
         // Act
         var result = await service.CreateActivityAsync(
@@ -57,10 +96,12 @@ public class DayPlanningApiServiceShould
             });
 
         // Assert
-        result.Status.ShouldBe(ResultStatus.Invalid);
-        result.ValidationErrors.Any(error =>
-            error.Identifier == "name" &&
-            error.ErrorMessage == "Activity name is required.").ShouldBeTrue();
+        result.IsSuccess.ShouldBeFalse();
+        result.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        result.ErrorMessage.ShouldBe("The request is invalid.");
+        result.FieldErrors.Count.ShouldBe(1);
+        result.FieldErrors[0].ShouldBe(new ClientFieldError(
+            "name", "Activity name is required."));
     }
 
     [Fact]
@@ -86,7 +127,7 @@ public class DayPlanningApiServiceShould
         {
             BaseAddress = new Uri("https://example.test")
         };
-        var service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiService(client);
 
         // Act
         var result = await service.CreateActivityAsync(
@@ -98,10 +139,11 @@ public class DayPlanningApiServiceShould
             });
 
         // Assert
-        result.Status.ShouldBe(ResultStatus.Conflict);
-        result.Errors.Any(message =>
-            message == "The request conflicts with the current state.")
-            .ShouldBeTrue();
+        result.IsSuccess.ShouldBeFalse();
+        result.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        result.ErrorMessage.ShouldBe(
+            "The request conflicts with the current state.");
+        result.FieldErrors.ShouldBeEmpty();
     }
 
     [Fact]
@@ -113,13 +155,14 @@ public class DayPlanningApiServiceShould
         {
             BaseAddress = new Uri("https://example.test")
         };
-        var service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiService(client);
 
         // Act
         var result = await service.DeletePlannedActivityAsync(42);
 
         // Assert
-        result.Status.ShouldBe(ResultStatus.NoContent);
+        result.IsSuccess.ShouldBeTrue();
+        result.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     /* nep-HTTP-handler voor tests. Hij laat een test bepalen welk antwoord een HttpClient krijgt, zonder een echte server aan te roepen */
