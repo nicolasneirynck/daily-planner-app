@@ -36,7 +36,13 @@
 }
 else if (_hasLoadError)
 {
-    <p>De dagplanning kon niet geladen worden.</p>
+    <p role="alert">
+        De dagplanning kon niet geladen worden.
+        @if (!string.IsNullOrWhiteSpace(_loadErrorDetail))
+        {
+            <span>@_loadErrorDetail</span>
+        }
+    </p>
 }
 else
 {
@@ -49,7 +55,8 @@ else
                            OnOpenActivity="selection => OpenExistingActivity(selection.Activity, selection.Trigger, block.Id)"
                            OnToggleCompletion="ToggleActivityCompletionAsync"
                            CompletionUpdatesInProgress="_completionUpdatesInProgress"
-                           CompletionErrorActivityId="_completionErrorActivityId" />
+                           CompletionErrorActivityId="_completionErrorActivityId"
+                           CompletionErrorDetail="_completionErrorDetail" />
         }
     </div>
 }
@@ -63,6 +70,7 @@ else
                   OnClose="CancelActivityForm"
                   OnConfirmDelete="DeleteActivityAsync"
                   SaveError="@_activitySaveError"
+                  ServerErrors="_activityFieldErrors"
                   DeleteError="@_activityDeleteError"
                   IsDeleting="_isDeletingActivity" />
 }

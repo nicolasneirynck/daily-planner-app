@@ -16,8 +16,8 @@ namespace Planning.Client.Identity
         /// <summary>
         /// Log out the logged in user.
         /// </summary>
-        /// <returns>The asynchronous task.</returns>
-        public Task LogoutAsync();
+        /// <returns>The result of the logout request.</returns>
+        public Task<Result> LogoutAsync();
 
         /// <summary>
         /// Registration service.

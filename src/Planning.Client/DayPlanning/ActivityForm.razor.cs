@@ -34,6 +34,9 @@ public partial class ActivityForm : IAsyncDisposable
     public string? SaveError { get; set; }
 
     [Parameter]
+    public IReadOnlyList<ValidationError> ServerErrors { get; set; } = [];
+
+    [Parameter]
     public string? DeleteError { get; set; }
 
     [Parameter]
@@ -47,6 +50,7 @@ public partial class ActivityForm : IAsyncDisposable
     private DateOnly _date;
     private int? _timeBlockId;
     private string? _nameError;
+    private IReadOnlyList<ValidationError>? _appliedServerErrors;
     private string? _timeBlockError;
     private bool _isConfirmingDeletion;
     private ElementReference _deleteButton;
@@ -59,6 +63,22 @@ public partial class ActivityForm : IAsyncDisposable
         _name = ExistingActivity?.Name ?? string.Empty;
         _date = InitialDate;
         _timeBlockId = InitialTimeBlockId;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_appliedServerErrors, ServerErrors))
+            return;
+
+        _appliedServerErrors = ServerErrors;
+        var nameErrors = ServerErrors
+            .Where(error => error.Identifier == "name")
+            .Select(error => error.ErrorMessage)
+            .ToArray();
+
+        _nameError = nameErrors.Length > 0
+            ? string.Join(" ", nameErrors)
+            : null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

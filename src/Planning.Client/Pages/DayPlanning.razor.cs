@@ -12,13 +12,16 @@ public partial class DayPlanning
     private IReadOnlyList<TimeBlockDto> _timeBlocks = [];
     private bool _isLoading = true;
     private bool _hasLoadError;
+    private string? _loadErrorDetail;
     private int _loadVersion;
     private readonly HashSet<int> _completionUpdatesInProgress = [];
     private int? _completionErrorActivityId;
+    private string? _completionErrorDetail;
     private bool _isActivityFormOpen;
     private PlannedActivityDto? _selectedActivity;
     private int? _initialTimeBlockId;
     private string? _activitySaveError;
+    private IReadOnlyList<ValidationError> _activityFieldErrors = [];
     private bool _isDeletingActivity;
     private string? _activityDeleteError;
     private bool _restoreFocusAfterCancel;
@@ -55,8 +58,10 @@ public partial class DayPlanning
         _selectedDate = date;
         _isLoading = true;
         _hasLoadError = false;
+        _loadErrorDetail = null;
         _timeBlocks = [];
         _completionErrorActivityId = null;
+        _completionErrorDetail = null;
 
         try
         {
@@ -66,11 +71,16 @@ public partial class DayPlanning
                 return;
 
             if (result.IsSuccess)
+            {
                 _timeBlocks = result.Value.TimeBlocks
                     .OrderBy(block => block.SortOrder)
                     .ToArray();
+            }
             else
+            {
                 _hasLoadError = true;
+                _loadErrorDetail = result.Errors.FirstOrDefault();
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException
@@ -95,6 +105,7 @@ public partial class DayPlanning
             return;
 
         _completionErrorActivityId = null;
+        _completionErrorDetail = null;
         var newStatus = !activity.IsCompleted;
 
         try
@@ -106,6 +117,8 @@ public partial class DayPlanning
                 activity.IsCompleted = newStatus;
                 return;
             }
+
+            _completionErrorDetail = result.Errors.FirstOrDefault();
         }
         catch (Exception ex) when (ex is HttpRequestException
                                        or JsonException
@@ -143,6 +156,7 @@ public partial class DayPlanning
         _selectedActivity = null;
         _initialTimeBlockId = null;
         _activitySaveError = null;
+        _activityFieldErrors = [];
         _activityDeleteError = null;
     }
 
@@ -158,33 +172,49 @@ public partial class DayPlanning
     private async Task AddActivityAsync(CreatePlannedActivityRequest request)
     {
         _activitySaveError = null;
-        bool saved;
+        _activityFieldErrors = [];
 
         try
         {
-            saved = (await DayPlanningService.CreateActivityAsync(request)).IsSuccess; 
-            /* De haakjes zorgen ervoor dat C# eerst de async methode afwacht en daarna IsSuccess leest van het teruggegeven Result..
-             is eigenlijk hetzelfde als: 
-                var result = await DayPlanningService.CreateActivityAsync(request); 
-                saved = result.IsSucces; 
-            */
+            var result = await DayPlanningService.CreateActivityAsync(request);
+
+            if (result.IsSuccess)
+            {
+                CloseActivityForm();
+                await LoadDayAsync(request.Date);
+                return;
+            }
+
+            var errors = result.ValidationErrors.ToArray();
+            _activityFieldErrors = errors
+                .Where(error => error.Identifier == "name")
+                .ToArray();
+
+            var hasFieldErrors = errors.Any(error => error.Identifier != "$");
+
+            var generalMessages = result.Errors.Concat(
+                    errors
+                        .Where(error => error.Identifier != "name"
+                            && (error.Identifier != "$" || !hasFieldErrors))
+                        .Select(error => error.Identifier == "$"
+                            ? error.ErrorMessage
+                            : $"{error.Identifier}: {error.ErrorMessage}"))
+                .Distinct()
+                .ToArray();
+
+            _activitySaveError = generalMessages.Length > 0
+                ? $"Opslaan is niet gelukt. {string.Join(" ", generalMessages)}"
+                : hasFieldErrors
+                    ? null
+                    : "Opslaan is niet gelukt. Probeer het opnieuw.";
         }
         catch (Exception ex) when (ex is HttpRequestException
                                        or JsonException
                                        or InvalidOperationException)
         {
             Log.Warning(ex, "Could not save activity for {Date}", request.Date);
-            saved = false;
-        }
-
-        if (!saved)
-        {
             _activitySaveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
-            return;
         }
-        
-        CloseActivityForm();
-        await LoadDayAsync(request.Date);
     }
 
     private async Task DeleteActivityAsync(int activityId)
@@ -201,7 +231,10 @@ public partial class DayPlanning
 
             if (!result.IsSuccess)
             {
-                _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+                var detail = result.Errors.FirstOrDefault();
+                _activityDeleteError = string.IsNullOrWhiteSpace(detail)
+                    ? "Verwijderen is niet gelukt. Probeer het opnieuw."
+                    : $"Verwijderen is niet gelukt. {detail}";
                 return;
             }
 
