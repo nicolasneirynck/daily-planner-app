@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Planning.Client;
 using Planning.Client.DayPlanning;
 using Planning.Client.Identity;
-using Planning.Client.Products;
-using Planning.Shared.Products;
 
 try
 {
@@ -52,13 +50,6 @@ try
 
     builder.Services.AddScoped<IDayPlanningClient>(sp =>
         sp.GetRequiredService<DayPlanningApiService>());
-
-    // als iemand IProductService vraagt, maak dan een ProductService
-    // en geef hem een eigen HTTP-client met dit backendadres
-    builder.Services.AddHttpClient<IProductService, ProductService>(client =>
-    {
-        client.BaseAddress = appBaseAddress;
-    });
 
     await builder.Build().RunAsync();
 }           

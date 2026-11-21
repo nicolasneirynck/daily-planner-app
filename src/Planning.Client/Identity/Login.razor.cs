@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Planning.Client.Http;
 using Planning.Shared.Identity.Accounts;
 
 namespace Planning.Client.Identity;
@@ -8,7 +9,7 @@ public partial class Login
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
     private AccountRequest.Login Model = new();
-    private Result _result = new();
+    private ClientResult? _result;
     [Inject] public required IAccountManager AccountManager { get; set; }
     [Inject] public required NavigationManager Navigation { get; set; }
     public async Task LoginUser()

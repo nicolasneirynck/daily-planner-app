@@ -1,3 +1,5 @@
+using Planning.Client.Http;
+
 namespace Planning.Client.Identity
 {
     /// <summary>
@@ -10,22 +12,22 @@ namespace Planning.Client.Identity
         /// </summary>
         /// <param name="email">User's email.</param>
         /// <param name="password">User's password.</param>
-        /// <returns>The result of the request serialized to <see cref="FormResult"/>.</returns>
-        public Task<Result> LoginAsync(string email, string password);
+        /// <returns>The result of the login request.</returns>
+        public Task<ClientResult> LoginAsync(string email, string password);
 
         /// <summary>
         /// Log out the logged in user.
         /// </summary>
         /// <returns>The result of the logout request.</returns>
-        public Task<Result> LogoutAsync();
+        public Task<ClientResult> LogoutAsync();
 
         /// <summary>
         /// Registration service.
         /// </summary>
         /// <param name="email">User's email.</param>
         /// <param name="password">User's password.</param>
-        /// <returns>The result of the request serialized to <see cref="FormResult"/>.</returns>
-        public Task<Result> RegisterAsync(string email, string password, string confirmPassword);
+        /// <returns>The result of the registration request.</returns>
+        public Task<ClientResult> RegisterAsync(string email, string password, string confirmPassword);
 
         public Task<bool> CheckAuthenticatedAsync();
     }
