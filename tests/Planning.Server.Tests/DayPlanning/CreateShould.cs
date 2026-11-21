@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Planning.Shared.DayPlanning;
 
 namespace Planning.Server.Tests.DayPlanning;
@@ -64,7 +65,17 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
                 Name = "Read a book"
             });
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        response.Headers.Location?.ToString()
+            .ShouldBe("/api/day-planning/activities/42");
+        response.Content.Headers.ContentType?.MediaType
+            .ShouldBe("application/json");
+
+        using var body = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+        var root = body.RootElement;
+        root.GetProperty("id").GetInt32().ShouldBe(42);
+        root.GetProperty("name").GetString().ShouldBe("Read a book");
         app.DayPlanningService.CreatedActivity.ShouldNotBeNull();
         app.DayPlanningService.CreatedActivity.Date
             .ShouldBe(new DateOnly(2026, 11, 14));

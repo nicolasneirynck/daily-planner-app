@@ -119,7 +119,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
             () => Page.GetByTestId("confirm-delete-button").ClickAsync(),
             response => response.Request.Method == "DELETE"
                         && response.Url.Contains("/api/day-planning/activities/")
-                        && response.Status == 200);
+                        && response.Status == 204);
 
         // Assert: only the selected activity disappeared
         await Expect(selected).ToHaveCountAsync(0);

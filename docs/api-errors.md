@@ -4,7 +4,7 @@ All error responses for requests under `/api` use Problem Details with the
 `application/problem+json` media type. This contract does not apply to Blazor
 pages or static files. Services may continue to use `Ardalis.Result`
 internally; the API converts failures at the HTTP boundary. Successful
-responses retain their existing content, including responses without a body.
+responses follow the contract in `docs/api-success-responses.md`.
 
 ## Error paths and consumers
 

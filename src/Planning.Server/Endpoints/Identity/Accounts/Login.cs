@@ -15,6 +15,7 @@ public class Login(SignInManager<IdentityUser> signInManager) : Endpoint<Account
     public override void Configure()
     {
         Post("/api/identity/accounts/login");
+        Description(b => b.ClearDefaultProduces(200, 204).Produces(204));
         AllowAnonymous();
     }
 

@@ -130,7 +130,8 @@ public partial class ActivityForm : IAsyncDisposable
         await OnSubmit.InvokeAsync(new CreatePlannedActivityRequest
         {
             Date = _model.Date,
-            TimeBlockId = _model.TimeBlockId.Value,
+            TimeBlockId = _model.TimeBlockId
+                ?? throw new InvalidOperationException("A time block is required."),
             Name = _model.Name.Trim()
         });
     }

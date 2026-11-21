@@ -15,7 +15,9 @@ public class DeleteShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
         using var response = await client.DeleteAsync(
             "/api/day-planning/activities/42");
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await response.Content.ReadAsStringAsync()).ShouldBeEmpty();
+        response.Content.Headers.ContentType.ShouldBeNull();
         app.DayPlanningService.DeletedPlannedActivityId.ShouldBe(42);
     }
 

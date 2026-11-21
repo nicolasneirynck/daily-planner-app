@@ -14,6 +14,8 @@ public class Info(UserManager<IdentityUser> userManager) : EndpointWithoutReques
     public override void Configure()
     {
         Get("/api/identity/accounts/info");
+        Description(b => b.ClearDefaultProduces(200)
+            .Produces<AccountResponse.Info>(200));
     }
 
     public override async Task<Result<AccountResponse.Info>> ExecuteAsync(CancellationToken ct)

@@ -73,7 +73,7 @@ public class DayPlanningService(
         });
     }
 
-    public async Task<Result> CreateActivityAsync(
+    public async Task<Result<PlannedActivityDto>> CreateActivityAsync(
         CreatePlannedActivityRequest request, CancellationToken ctx = default)
     {
         var userId = sessionContextProvider.User?.GetUserId();
@@ -95,16 +95,23 @@ public class DayPlanningService(
         if (!blockExists)
             return Result.NotFound("Time block was not found.");
 
-        dbContext.PlannedActivities.Add(new PlannedActivity
+        var activity = new PlannedActivity
         {
             UserId = userId,
             Date = request.Date,
             TimeBlockId = request.TimeBlockId,
             Name = request.Name
-        });
+        };
+        dbContext.PlannedActivities.Add(activity);
 
         await dbContext.SaveChangesAsync(ctx);
-        return Result.Success();
+        return Result.Success(new PlannedActivityDto
+        {
+            Id = activity.Id,
+            Name = activity.Name,
+            Description = activity.Description,
+            IsCompleted = activity.IsCompleted
+        });
     }
 
     public async Task<Result> SetActivityCompletionAsync(

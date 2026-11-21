@@ -38,16 +38,14 @@ internal static class ApiResponseReader
             };
         }
 
-        var body = await response.Content.ReadFromJsonAsync<ApiSuccessEnvelope<T>>(
+        var body = await response.Content.ReadFromJsonAsync<T>(
             cancellationToken: cancellationToken);
 
-        if (body is null || body.Value is null)
+        if (body is null)
             throw new InvalidOperationException("API response was empty.");
 
-        return new ClientResult<T>(response.StatusCode, body.Value);
+        return new ClientResult<T>(response.StatusCode, body);
     }
-
-    private sealed record ApiSuccessEnvelope<T>(T? Value);
 
     private static async Task<ClientResult> ReadFailureAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
