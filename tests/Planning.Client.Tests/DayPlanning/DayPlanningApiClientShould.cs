@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace Planning.Client.Tests.DayPlanning;
 
-public class DayPlanningApiServiceShould
+public class DayPlanningApiClientShould
 {
     [Fact]
     public async Task ReadDayThroughClientInterface()
@@ -36,7 +36,7 @@ public class DayPlanningApiServiceShould
         {
             BaseAddress = new Uri("https://example.test")
         };
-        IDayPlanningClient service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiClient(client);
 
         // Act
         var result = await service.GetDayAsync(new DateOnly(2026, 11, 14));
@@ -84,7 +84,7 @@ public class DayPlanningApiServiceShould
            BaseAddress is het basisadres voor relatieve verzoeken. Als de geteste code bijvoorbeeld /api/day-planning opvraagt,
            kan HttpClient daar https://example.test/api/day-planning van maken.
          */
-        IDayPlanningClient service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiClient(client);
 
         // Act
         var result = await service.CreateActivityAsync(
@@ -127,7 +127,7 @@ public class DayPlanningApiServiceShould
         {
             BaseAddress = new Uri("https://example.test")
         };
-        IDayPlanningClient service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiClient(client);
 
         // Act
         var result = await service.CreateActivityAsync(
@@ -155,7 +155,7 @@ public class DayPlanningApiServiceShould
         {
             BaseAddress = new Uri("https://example.test")
         };
-        IDayPlanningClient service = new DayPlanningApiService(client);
+        IDayPlanningClient service = new DayPlanningApiClient(client);
 
         // Act
         var result = await service.DeletePlannedActivityAsync(42);

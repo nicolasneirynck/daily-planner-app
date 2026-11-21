@@ -9,6 +9,31 @@ namespace Planning.Client.Tests.Identity;
 public class CookieAuthenticationStateProviderShould
 {
     [Fact]
+    public async Task ReturnNoHttpStatusWhenRegistrationRequestFails()
+    {
+        // Arrange
+        using var client = new HttpClient(new StubHandler(_ =>
+            throw new HttpRequestException("Connection failed.")))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("SecureApi").Returns(client);
+        var provider = new CookieAuthenticationStateProvider(factory);
+
+        // Act
+        var result = await provider.RegisterAsync(
+            "alex@example.test", "Password123!", "Password123!");
+
+        // Assert
+        result.IsSuccess.ShouldBeFalse();
+        result.StatusCode.ShouldBeNull();
+        result.ErrorMessage.ShouldBe(
+            "An unknown error prevented registration from succeeding.");
+    }
+
+    [Fact]
     public async Task AcceptNoContentLogoutSuccess()
     {
         // Arrange

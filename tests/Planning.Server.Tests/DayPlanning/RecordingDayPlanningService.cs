@@ -1,4 +1,5 @@
 using Ardalis.Result;
+using Planning.Services.DayPlanning;
 using Planning.Shared.DayPlanning;
 
 namespace Planning.Server.Tests.DayPlanning;

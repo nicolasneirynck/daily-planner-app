@@ -1,4 +1,4 @@
-using Planning.Shared.DayPlanning;
+using Planning.Services.DayPlanning;
 
 namespace Planning.Server.Endpoints.DayPlanning;
 

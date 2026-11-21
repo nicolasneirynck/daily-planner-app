@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Ardalis.Result" Version="10.1.0" />
       <ProjectReference Include="..\Planning.Domain\Planning.Domain.csproj" />
       <ProjectReference Include="..\Planning.Persistence\Planning.Persistence.csproj" />
       <ProjectReference Include="..\Planning.Shared\Planning.Shared.csproj" />

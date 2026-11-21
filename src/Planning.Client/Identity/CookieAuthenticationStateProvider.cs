@@ -49,13 +49,13 @@ namespace Planning.Client.Identity
                     ConfirmPassword = confirmPassword,
                 });
 
-                return await ApiResponseReader.ReadClientAsync(response);
+                return await ApiResponseReader.ReadAsync(response);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Could not register user.");
                 return new ClientResult(
-                    HttpStatusCode.UnprocessableEntity,
+                    null,
                     "An unknown error prevented registration from succeeding.");
             }
          }
@@ -76,7 +76,7 @@ namespace Planning.Client.Identity
                     Password = password,
                 });
 
-                var result = await ApiResponseReader.ReadClientAsync(response);
+                var result = await ApiResponseReader.ReadAsync(response);
 
                 if (result.StatusCode == HttpStatusCode.Unauthorized)
                     return result with
@@ -97,7 +97,7 @@ namespace Planning.Client.Identity
             }
 
             return new ClientResult(
-                HttpStatusCode.UnprocessableEntity,
+                null,
                 "Invalid email and/or password.");
         }
 
@@ -119,7 +119,7 @@ namespace Planning.Client.Identity
             {
                 using var response = await httpClient.GetAsync("/api/identity/accounts/info");
                 var result =
-                    await ApiResponseReader.ReadClientAsync<AccountResponse.Info>(response);
+                    await ApiResponseReader.ReadAsync<AccountResponse.Info>(response);
 
                 if (result.StatusCode == HttpStatusCode.Unauthorized)
                     return new AuthenticationState(unauthenticated);
@@ -159,7 +159,7 @@ namespace Planning.Client.Identity
             {
                 using var response =
                     await httpClient.PostAsync("/api/identity/accounts/logout", null);
-                var result = await ApiResponseReader.ReadClientAsync(response);
+                var result = await ApiResponseReader.ReadAsync(response);
 
                 if (result.IsSuccess)
                     NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
@@ -170,7 +170,7 @@ namespace Planning.Client.Identity
             {
                 Log.Error(ex, "Could not log out.");
                 return new ClientResult(
-                    HttpStatusCode.UnprocessableEntity,
+                    null,
                     "Could not log out. Please try again.");
             }
         }

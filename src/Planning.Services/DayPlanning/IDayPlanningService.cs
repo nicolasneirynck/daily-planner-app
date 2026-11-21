@@ -1,4 +1,6 @@
-namespace Planning.Shared.DayPlanning;
+using Planning.Shared.DayPlanning;
+
+namespace Planning.Services.DayPlanning;
 
 public interface IDayPlanningService
 {

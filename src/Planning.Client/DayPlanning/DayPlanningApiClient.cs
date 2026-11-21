@@ -4,7 +4,7 @@ using Planning.Shared.DayPlanning;
 
 namespace Planning.Client.DayPlanning;
 
-public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningClient
+public class DayPlanningApiClient(HttpClient httpClient) : IDayPlanningClient
 {
     async Task<ClientResult<DayPlanningResponse>> IDayPlanningClient.GetDayAsync(
         DateOnly date, CancellationToken ctx)
@@ -12,7 +12,7 @@ public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningClient
         using var response = await httpClient.GetAsync(
             $"/api/day-planning/{date:yyyy-MM-dd}", ctx);
 
-        return await ApiResponseReader.ReadClientAsync<DayPlanningResponse>(
+        return await ApiResponseReader.ReadAsync<DayPlanningResponse>(
             response, ctx);
     }
 
@@ -22,7 +22,7 @@ public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningClient
         using var response = await httpClient.PostAsJsonAsync(
             "/api/day-planning/activities", request, ctx);
 
-        return await ApiResponseReader.ReadClientAsync(response, ctx);
+        return await ApiResponseReader.ReadAsync(response, ctx);
     }
 
     async Task<ClientResult> IDayPlanningClient.SetActivityCompletionAsync(
@@ -33,7 +33,7 @@ public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningClient
             new SetActivityCompletionRequest { IsCompleted = isCompleted },
             ctx);
 
-        return await ApiResponseReader.ReadClientAsync(response, ctx);
+        return await ApiResponseReader.ReadAsync(response, ctx);
     }
 
     async Task<ClientResult> IDayPlanningClient.DeletePlannedActivityAsync(
@@ -42,7 +42,7 @@ public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningClient
         using var response = await httpClient.DeleteAsync(
             $"/api/day-planning/activities/{plannedActivityId}", ctx);
 
-        return await ApiResponseReader.ReadClientAsync(response, ctx);
+        return await ApiResponseReader.ReadAsync(response, ctx);
     }
 
 }

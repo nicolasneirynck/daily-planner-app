@@ -6,7 +6,7 @@ namespace Planning.Client.Http;
 
 internal static class ApiResponseReader
 {
-    public static async Task<ClientResult> ReadClientAsync(
+    public static async Task<ClientResult> ReadAsync(
         HttpResponseMessage response,
         CancellationToken cancellationToken = default)
     {
@@ -21,7 +21,7 @@ internal static class ApiResponseReader
         return new ClientResult(response.StatusCode);
     }
 
-    public static async Task<ClientResult<T>> ReadClientAsync<T>(
+    public static async Task<ClientResult<T>> ReadAsync<T>(
         HttpResponseMessage response,
         CancellationToken cancellationToken = default)
     {

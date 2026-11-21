@@ -8,22 +8,20 @@ responses retain their existing content, including responses without a body.
 
 ## Error paths and consumers
 
-Products and Projects are template features and are excluded from this
-inventory.
+The inventory covers the remaining API callers in this repository.
 
 | Error path | HTTP status | Response body | Repository consumer |
 | --- | --- | --- | --- |
-| Endpoint request validation | 400 | Problem Details with `errors` | `DayPlanningApiService`; `CookieAuthenticationStateProvider` for identity requests |
-| `DayPlanningService` returns `Result.Invalid`, `Unauthorized`, or `NotFound` | 400, 401, or 404 | Problem Details; `Invalid` also has `errors` | `DayPlanningApiService` |
+| Endpoint request validation | 400 | Problem Details with `errors` | `DayPlanningApiClient`; `CookieAuthenticationStateProvider` for identity requests |
+| `DayPlanningService` returns `Result.Invalid`, `Unauthorized`, or `NotFound` | 400, 401, or 404 | Problem Details; `Invalid` also has `errors` | `DayPlanningApiClient` |
 | Identity account or role endpoint returns a failed `Ardalis.Result` | 401, 404, 409, 422, or 500, depending on the result | Problem Details | `CookieAuthenticationStateProvider` for account requests; no repository production caller found for role requests |
-| Authentication challenge or authorization forbid before endpoint execution | 401 or 403 | Problem Details | `CookieAuthenticationStateProvider` for account information; `DayPlanningApiService` for protected day-planning requests |
+| Authentication challenge or authorization forbid before endpoint execution | 401 or 403 | Problem Details | `CookieAuthenticationStateProvider` for account information; `DayPlanningApiClient` for protected day-planning requests |
 | No route matches under `/api` | 404 | Problem Details | No repository production caller found |
 | Unhandled exception during an API request | 500 | Problem Details with a safe general `detail` | Any API caller |
 
 The response processor also maps service `Conflict` to 409, `Error` to 422,
 `CriticalError` to 500, and `Unavailable` to 503. All use the same Problem
-Details shape. The repository has no other production `/api` caller after
-excluding template features. External consumers cannot be determined from
+Details shape. The repository has no other production `/api` caller. External consumers cannot be determined from
 repository inspection.
 
 ## Response fields

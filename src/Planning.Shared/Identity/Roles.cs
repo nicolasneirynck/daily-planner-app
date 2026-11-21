@@ -8,6 +8,5 @@ namespace Planning.Shared.Identity;
 public static class AppRoles
 {
     public const string Administrator = "Administrator";
-    public const string Technician = "Technician";
     public const string User = "User";
 }

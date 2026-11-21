@@ -21,7 +21,7 @@ public class ApiResponseReaderShould
         };
 
         // Act
-        var result = await ApiResponseReader.ReadClientAsync(response);
+        var result = await ApiResponseReader.ReadAsync(response);
 
         // Assert
         result.IsSuccess.ShouldBeFalse();
@@ -38,7 +38,7 @@ public class ApiResponseReaderShould
 
         // Act
         var result =
-            await ApiResponseReader.ReadClientAsync<DayPlanningResponse>(response);
+            await ApiResponseReader.ReadAsync<DayPlanningResponse>(response);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
@@ -64,7 +64,7 @@ public class ApiResponseReaderShould
         };
 
         // Act
-        var result = await ApiResponseReader.ReadClientAsync(response);
+        var result = await ApiResponseReader.ReadAsync(response);
 
         // Assert
         result.IsSuccess.ShouldBeFalse();
@@ -96,7 +96,7 @@ public class ApiResponseReaderShould
 
         // Act
         var result =
-            await ApiResponseReader.ReadClientAsync<DayPlanningResponse>(response);
+            await ApiResponseReader.ReadAsync<DayPlanningResponse>(response);
 
         // Assert
         result.IsSuccess.ShouldBeFalse();
@@ -129,7 +129,7 @@ public class ApiResponseReaderShould
         };
 
         // Act
-        var result = await ApiResponseReader.ReadClientAsync(response);
+        var result = await ApiResponseReader.ReadAsync(response);
 
         // Assert
         result.IsSuccess.ShouldBeFalse();
@@ -153,7 +153,7 @@ public class ApiResponseReaderShould
         };
 
         // Act
-        var result = await ApiResponseReader.ReadClientAsync(response);
+        var result = await ApiResponseReader.ReadAsync(response);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
@@ -167,7 +167,7 @@ public class ApiResponseReaderShould
         using var response = new HttpResponseMessage(HttpStatusCode.NoContent);
 
         // Act
-        var result = await ApiResponseReader.ReadClientAsync(response);
+        var result = await ApiResponseReader.ReadAsync(response);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
@@ -195,7 +195,7 @@ public class ApiResponseReaderShould
 
         // Act
         var result =
-            await ApiResponseReader.ReadClientAsync<DayPlanningResponse>(response);
+            await ApiResponseReader.ReadAsync<DayPlanningResponse>(response);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
