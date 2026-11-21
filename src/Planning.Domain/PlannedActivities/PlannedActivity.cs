@@ -15,10 +15,30 @@ public class PlannedActivity : Entity
     public required string Name
     {
         get => _name;
-        set => _name = Guard.Against.NullOrWhiteSpace(value);
+        set
+        {
+            var name = Guard.Against.NullOrWhiteSpace(value);
+            if (name.Length > PlannedActivityRules.MaxNameLength)
+                throw new ArgumentOutOfRangeException(
+                    nameof(Name), PlannedActivityRules.NameTooLongMessage);
+
+            _name = name;
+        }
     }
 
-    public string? Description { get; set; }
+    private string? _description;
+    public string? Description
+    {
+        get => _description;
+        set
+        {
+            if (value?.Length > PlannedActivityRules.MaxDescriptionLength)
+                throw new ArgumentOutOfRangeException(
+                    nameof(Description), PlannedActivityRules.DescriptionTooLongMessage);
+
+            _description = value;
+        }
+    }
 
     public required DateOnly Date { get; set; }
     public required int TimeBlockId { get; set; }

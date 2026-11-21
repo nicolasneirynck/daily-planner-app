@@ -84,7 +84,21 @@ public class DayPlanningService(
             return Result.Invalid(new ValidationError
             {
                 Identifier = nameof(request.Name),
-                ErrorMessage = "Activity name is required."
+                ErrorMessage = PlannedActivityRules.NameRequiredMessage
+            });
+
+        if (request.Name.Length > PlannedActivityRules.MaxNameLength)
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Name),
+                ErrorMessage = PlannedActivityRules.NameTooLongMessage
+            });
+
+        if (request.Description?.Length > PlannedActivityRules.MaxDescriptionLength)
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Description),
+                ErrorMessage = PlannedActivityRules.DescriptionTooLongMessage
             });
 
         var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>
@@ -100,7 +114,8 @@ public class DayPlanningService(
             UserId = userId,
             Date = request.Date,
             TimeBlockId = request.TimeBlockId,
-            Name = request.Name
+            Name = request.Name,
+            Description = request.Description
         };
         dbContext.PlannedActivities.Add(activity);
 

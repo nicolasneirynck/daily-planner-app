@@ -13,7 +13,7 @@ internal class PlannedActivityConfiguration : EntityConfiguration<PlannedActivit
     {
         base.Configure(builder);
 
-        builder.Property(x => x.Name).IsRequired().HasMaxLength(250);
+        builder.Property(x => x.Name).IsRequired().HasMaxLength(PlannedActivityRules.MaxNameLength);
         builder.Property(x => x.Description).HasColumnType("text");
         builder.Property(x => x.IsCompleted).HasDefaultValue(false);
 

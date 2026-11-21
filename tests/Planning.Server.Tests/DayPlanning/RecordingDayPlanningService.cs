@@ -29,14 +29,22 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                         Name = "Ochtend",
                         SortOrder = 1,
                         StartTime = new TimeOnly(6, 0),
-                        EndTime = new TimeOnly(9, 0)
+                        EndTime = new TimeOnly(9, 0),
+                        Activities =
+                        [
+                            new PlannedActivityDto
+                            {
+                                Id = 42,
+                                Name = "Read a book",
+                                Description = "Bring the library card"
+                            }
+                        ]
                     }
                 ]
             }));
     }
 
-    public Task<Result<PlannedActivityDto>> CreateActivityAsync(
-        CreatePlannedActivityRequest request, CancellationToken ctx = default)
+    public Task<Result<PlannedActivityDto>> CreateActivityAsync(CreatePlannedActivityRequest request, CancellationToken ctx = default)
     {
         CreatedActivity = request;
         return Task.FromResult(
@@ -45,6 +53,7 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                 {
                     Id = 42,
                     Name = request.Name,
+                    Description = request.Description,
                     IsCompleted = false
                 }));
     }
