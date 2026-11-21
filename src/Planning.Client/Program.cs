@@ -5,7 +5,6 @@ using Planning.Client;
 using Planning.Client.DayPlanning;
 using Planning.Client.Identity;
 using Planning.Client.Products;
-using Planning.Shared.DayPlanning;
 using Planning.Shared.Products;
 
 try
@@ -45,11 +44,14 @@ try
 
     // vanaf nu is "SecureApi" een soort opgeslagen recept voor een HTTP-client
 
-    // als iemand IDayPlanningService vraagt, maak dan een DayPlanningApiService
+    // als iemand een dagplanningclient vraagt, maak dan een DayPlanningApiService
     // en geef hem een HTTP-client met het "SecureApi"-recept
-    builder.Services.AddScoped<IDayPlanningService>(sp =>
+    builder.Services.AddScoped(sp =>
         new DayPlanningApiService(
             sp.GetRequiredService<IHttpClientFactory>().CreateClient("SecureApi")));
+
+    builder.Services.AddScoped<IDayPlanningClient>(sp =>
+        sp.GetRequiredService<DayPlanningApiService>());
 
     // als iemand IProductService vraagt, maak dan een ProductService
     // en geef hem een eigen HTTP-client met dit backendadres

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
+using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Serilog;
 
@@ -19,14 +21,14 @@ public partial class DayPlanning
     private PlannedActivityDto? _selectedActivity;
     private int? _initialTimeBlockId;
     private string? _activitySaveError;
-    private IReadOnlyList<ValidationError> _activityFieldErrors = [];
+    private IReadOnlyList<ClientFieldError> _activityFieldErrors = [];
     private bool _isDeletingActivity;
     private string? _activityDeleteError;
     private bool _restoreFocusAfterCancel;
     private ElementReference _globalAddButton;
     private ElementReference _activityFormTrigger;
     
-    [Inject] public required IDayPlanningService DayPlanningService { get; set; }
+    [Inject] public required IDayPlanningClient DayPlanningService { get; set; }
 
     protected override Task OnInitializedAsync() => LoadDayAsync(_selectedDate);
 
@@ -66,7 +68,7 @@ public partial class DayPlanning
             if (loadVersion != _loadVersion)
                 return;
 
-            if (result.IsSuccess)
+            if (result.IsSuccess && result.Value is not null)
             {
                 _timeBlocks = result.Value.TimeBlocks
                     .OrderBy(block => block.SortOrder)
@@ -177,13 +179,13 @@ public partial class DayPlanning
                 return;
             }
 
-            var errors = result.ValidationErrors.ToArray();
+            var errors = result.FieldErrors.ToArray();
             _activityFieldErrors = errors
-                .Where(error => error.Identifier == "name")
+                .Where(error => error.Name == "name")
                 .ToArray();
 
-            var hasOtherErrors = result.Errors.Any() ||
-                errors.Any(error => error.Identifier is not ("name" or "$"));
+            var hasOtherErrors =
+                errors.Any(error => error.Name is not ("name" or "$"));
 
             _activitySaveError = _activityFieldErrors.Count > 0 && !hasOtherErrors
                 ? null

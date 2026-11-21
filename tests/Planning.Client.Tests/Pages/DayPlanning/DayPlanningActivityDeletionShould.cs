@@ -1,6 +1,8 @@
-using Ardalis.Result;
+using System.Net;
 using AngleSharp.Html.Dom;
 using NSubstitute;
+using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Shouldly;
 using static Planning.Client.Pages.DayPlanningTestData;
@@ -108,7 +110,7 @@ public class DayPlanningActivityDeletionShould : BunitContext
             .Returns(_ =>
             {
                 activities = [other];
-                return Task.FromResult(Result.Success());
+                return Task.FromResult(new ClientResult(HttpStatusCode.OK));
             });
         var cut = Render<DayPlanning>();
 
@@ -142,7 +144,8 @@ public class DayPlanningActivityDeletionShould : BunitContext
             new PlannedActivityDto { Id = 101, Name = "Morning walk" }
         ]);
         service.DeletePlannedActivityAsync(101, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Error("Delete failed.")));
+            .Returns(Task.FromResult(new ClientResult(
+                HttpStatusCode.UnprocessableEntity, "Delete failed.")));
         var cut = Render<DayPlanning>();
 
         // Act
@@ -170,17 +173,17 @@ public class DayPlanningActivityDeletionShould : BunitContext
        Als je één vaste lijst meegeeft, geeft de nepservice bij het herladen steeds diezelfde lijst terug.
        Een veranderbare lijst zou ook kunnen;
        de functie maakt duidelijk dat elke aanroep de huidige toestand moet ophalen.*/
-    private IDayPlanningService RegisterServiceWithActivities(
+    private IDayPlanningClient RegisterServiceWithActivities(
         Func<IReadOnlyList<PlannedActivityDto>> getActivities) // Func<IReadOnlyList<PlannedActivityDto>> getActivities is een functie die de huidige activiteitenlijst teruggeeft.
     {
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 var morning = Block(1, "Morning", 6, 9);
                 morning.Activities = getActivities();
 
-                return Task.FromResult(Result.Success(new DayPlanningResponse
+                return Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
                 {
                     Date = DateOnly.FromDateTime(DateTime.Today),
                     TimeBlocks = [morning]

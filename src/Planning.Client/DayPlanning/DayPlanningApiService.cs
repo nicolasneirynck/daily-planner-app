@@ -4,50 +4,45 @@ using Planning.Shared.DayPlanning;
 
 namespace Planning.Client.DayPlanning;
 
-public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningService
+public class DayPlanningApiService(HttpClient httpClient) : IDayPlanningClient
 {
-    public async Task<Result<DayPlanningResponse>> GetDayAsync(
-        DateOnly date, CancellationToken ctx = default)
+    async Task<ClientResult<DayPlanningResponse>> IDayPlanningClient.GetDayAsync(
+        DateOnly date, CancellationToken ctx)
     {
         using var response = await httpClient.GetAsync(
             $"/api/day-planning/{date:yyyy-MM-dd}", ctx);
 
-        var apiResult =
-            await ApiResponseReader.ReadAsync<Result<DayPlanningResponse>>(
-                response, ctx);
-
-        return ArdalisResultAdapter.ToResult(apiResult);
+        return await ApiResponseReader.ReadClientAsync<DayPlanningResponse>(
+            response, ctx);
     }
 
-    public async Task<Result> CreateActivityAsync(
-        CreatePlannedActivityRequest request, CancellationToken ctx = default)
+    async Task<ClientResult> IDayPlanningClient.CreateActivityAsync(
+        CreatePlannedActivityRequest request, CancellationToken ctx)
     {
         using var response = await httpClient.PostAsJsonAsync(
             "/api/day-planning/activities", request, ctx);
 
-        return ArdalisResultAdapter.ToResult(
-            await ApiResponseReader.ReadAsync<Result>(response, ctx));
+        return await ApiResponseReader.ReadClientAsync(response, ctx);
     }
 
-    public async Task<Result> SetActivityCompletionAsync(
-        int activityId, bool isCompleted, CancellationToken ctx = default)
+    async Task<ClientResult> IDayPlanningClient.SetActivityCompletionAsync(
+        int activityId, bool isCompleted, CancellationToken ctx)
     {
         using var response = await httpClient.PutAsJsonAsync(
             $"/api/day-planning/activities/{activityId}/completion",
             new SetActivityCompletionRequest { IsCompleted = isCompleted },
             ctx);
 
-        return ArdalisResultAdapter.ToResult(
-            await ApiResponseReader.ReadAsync<Result>(response, ctx));
+        return await ApiResponseReader.ReadClientAsync(response, ctx);
     }
 
-    public async Task<Result> DeletePlannedActivityAsync(
-        int plannedActivityId, CancellationToken ctx = default)
+    async Task<ClientResult> IDayPlanningClient.DeletePlannedActivityAsync(
+        int plannedActivityId, CancellationToken ctx)
     {
         using var response = await httpClient.DeleteAsync(
             $"/api/day-planning/activities/{plannedActivityId}", ctx);
 
-        return ArdalisResultAdapter.ToResult(
-            await ApiResponseReader.ReadAsync<Result>(response, ctx));
+        return await ApiResponseReader.ReadClientAsync(response, ctx);
     }
+
 }

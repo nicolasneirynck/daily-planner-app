@@ -1,4 +1,6 @@
-using Ardalis.Result;
+using System.Net;
+using Planning.Client.DayPlanning;
+using Planning.Client.Http;
 using AngleSharp.Html.Dom;
 using NSubstitute;
 using Planning.Shared.DayPlanning;
@@ -20,9 +22,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     {
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = today,
                 TimeBlocks = [Block(1, "Ochtend", 6, 9)]
@@ -50,9 +52,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void PrefillOnlySelectedDateWhenAddingFromGlobalButton()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(call => Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(call => Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = call.ArgAt<DateOnly>(0),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -83,9 +85,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void RejectActivityNamesWithoutVisibleCharacters(string name)
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -110,9 +112,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void RejectActivityNameLongerThan250CharactersWithoutCallingApi()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -144,9 +146,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void ClearNameErrorWhenVisibleTextIsTyped()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -170,9 +172,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     {
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = today,
                 TimeBlocks =
@@ -184,7 +186,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success()));
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
 
@@ -211,9 +213,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void SendChosenTimeBlockWhenAddingFromGlobalButton()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks =
@@ -225,7 +227,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success()));
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
 
@@ -250,9 +252,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     {
         // Arrange
         var tomorrow = DateOnly.FromDateTime(DateTime.Today).AddDays(1);
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -260,7 +262,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success()));
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
 
@@ -286,9 +288,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void RequireTimeBlockWhenAddingFromGlobalButton()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -313,9 +315,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void ShowSaveErrorAndKeepFormOpenWhenSavingFails()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -323,7 +325,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Error("Save failed.")));
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.UnprocessableEntity, "Save failed.")));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
 
@@ -349,9 +351,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void ShowServerNameValidationError()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -359,14 +361,10 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Invalid(new List<ValidationError>
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.BadRequest, "The request is invalid.")
             {
-                new()
-                {
-                    Identifier = "name",
-                    ErrorMessage = "Activity name is required."
-                }
-            })));
+                FieldErrors = [new ClientFieldError("name", "Activity name is required.")]
+            }));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
 
@@ -395,9 +393,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void ClearServerNameValidationErrorWhenNameChanges()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -405,14 +403,10 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Invalid(new List<ValidationError>
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.BadRequest, "The request is invalid.")
             {
-                new()
-                {
-                    Identifier = "name",
-                    ErrorMessage = "Activity name is required."
-                }
-            })));
+                FieldErrors = [new ClientFieldError("name", "Activity name is required.")]
+            }));
 
         Services.AddSingleton(service);
 
@@ -439,9 +433,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void AllowRetryAfterServerNameValidationError()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -449,14 +443,10 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Invalid(new List<ValidationError>
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.BadRequest, "The request is invalid.")
             {
-                new()
-                {
-                    Identifier = "name",
-                    ErrorMessage = "Activity name is required."
-                }
-            })));
+                FieldErrors = [new ClientFieldError("name", "Activity name is required.")]
+            }));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
@@ -484,9 +474,9 @@ public class DayPlanningActivityCreationShould : BunitContext
     public void ShowSaveErrorWhenCreateRequestThrows()
     {
         // Arrange
-        var service = Substitute.For<IDayPlanningService>();
+        var service = Substitute.For<IDayPlanningClient>();
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(HttpStatusCode.OK, new DayPlanningResponse
             {
                 Date = DateOnly.FromDateTime(DateTime.Today),
                 TimeBlocks = [Block(1, "Morning", 6, 9)]
@@ -494,7 +484,7 @@ public class DayPlanningActivityCreationShould : BunitContext
         service.CreateActivityAsync(
                 Arg.Any<CreatePlannedActivityRequest>(),
                 Arg.Any<CancellationToken>())
-            .Returns(_ => Task.FromException<Result>(
+            .Returns(_ => Task.FromException<ClientResult>(
                 new HttpRequestException("Connection failed.")));
         Services.AddSingleton(service);
         var cut = Render<DayPlanning>();
