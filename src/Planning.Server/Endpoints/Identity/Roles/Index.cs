@@ -14,6 +14,8 @@ public class Index(RoleManager<IdentityRole> roleManager) : EndpointWithoutReque
     public override void Configure()
     {
         Get("/api/identity/roles");
+        Description(b => b.ClearDefaultProduces(200)
+            .Produces<List<KeyValuePair<string, string>>>(200));
         Roles(AppRoles.Administrator);
     }
 

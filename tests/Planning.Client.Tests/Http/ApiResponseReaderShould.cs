@@ -183,10 +183,8 @@ public class ApiResponseReaderShould
             Content = new StringContent(
                 """
                 {
-                  "value": {
-                    "date": "2026-11-14",
-                    "timeBlocks": []
-                  }
+                  "date": "2026-11-14",
+                  "timeBlocks": []
                 }
                 """,
                 Encoding.UTF8,

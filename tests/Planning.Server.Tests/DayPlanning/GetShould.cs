@@ -17,17 +17,16 @@ public class GetShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
             "/api/day-planning/2026-11-14");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/json");
         app.DayPlanningService.RequestedDate
             .ShouldBe(new DateOnly(2026, 11, 14));
 
         using var body = JsonDocument.Parse(
             await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("value")
-            .GetProperty("date").GetString()
-            .ShouldBe("2026-11-14");
+        var root = body.RootElement;
 
-        var block = body.RootElement.GetProperty("value")
-            .GetProperty("timeBlocks")[0];
+        root.GetProperty("date").GetString().ShouldBe("2026-11-14");
+        var block = root.GetProperty("timeBlocks")[0];
         block.GetProperty("startTime").GetString().ShouldBe("06:00:00");
         block.GetProperty("endTime").GetString().ShouldBe("09:00:00");
     }

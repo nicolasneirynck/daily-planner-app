@@ -29,7 +29,9 @@ public class SetCompletionShould(DayPlanningApp app) : IClassFixture<DayPlanning
             "/api/day-planning/activities/42/completion",
             new { isCompleted });
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await response.Content.ReadAsStringAsync()).ShouldBeEmpty();
+        response.Content.Headers.ContentType.ShouldBeNull();
         app.DayPlanningService.UpdatedActivityId.ShouldBe(42);
         app.DayPlanningService.UpdatedIsCompleted.ShouldBe(isCompleted);
     }

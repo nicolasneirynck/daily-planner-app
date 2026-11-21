@@ -9,6 +9,8 @@ public class Get(IDayPlanningService dayPlanningService)
     public override void Configure()
     {
         Get("/api/day-planning/{date}");
+        Description(b => b.ClearDefaultProduces(200)
+            .Produces<DayPlanningResponse>(200));
     }
 
     public override Task<Result<DayPlanningResponse>> ExecuteAsync(

@@ -9,6 +9,7 @@ public class SetCompletion(IDayPlanningService dayPlanningService)
     public override void Configure()
     {
         Put("/api/day-planning/activities/{activityId}/completion");
+        Description(b => b.ClearDefaultProduces(200).Produces(204));
     }
 
     public override Task<Result> ExecuteAsync(

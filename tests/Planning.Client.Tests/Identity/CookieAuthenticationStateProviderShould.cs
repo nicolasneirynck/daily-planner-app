@@ -9,6 +9,40 @@ namespace Planning.Client.Tests.Identity;
 public class CookieAuthenticationStateProviderShould
 {
     [Fact]
+    public async Task AcceptCreatedRegistrationResponse()
+    {
+        // Arrange
+        using var client = new HttpClient(new StubHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new StringContent(
+                    """{"id":"account-42","email":"alex@example.test"}""",
+                    Encoding.UTF8,
+                    "application/json")
+            };
+            response.Headers.Location = new Uri(
+                "/api/identity/accounts/account-42", UriKind.Relative);
+            return response;
+        }))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("SecureApi").Returns(client);
+        var provider = new CookieAuthenticationStateProvider(factory);
+
+        // Act
+        var result = await provider.RegisterAsync(
+            "alex@example.test", "Password123!", "Password123!");
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        result.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task ReturnNoHttpStatusWhenRegistrationRequestFails()
     {
         // Arrange
@@ -181,12 +215,10 @@ public class CookieAuthenticationStateProviderShould
                 Content = new StringContent(
                     """
                     {
-                      "value": {
-                        "email": "alex@example.test",
-                        "isEmailConfirmed": true,
-                        "claims": {},
-                        "roles": ["User"]
-                      }
+                      "email": "alex@example.test",
+                      "isEmailConfirmed": true,
+                      "claims": {},
+                      "roles": ["User"]
                     }
                     """,
                     Encoding.UTF8,

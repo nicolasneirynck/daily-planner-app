@@ -7,16 +7,17 @@ namespace Planning.Server.Endpoints.Identity.Accounts;
 /// See https://fast-endpoints.com/
 /// </summary>
 /// <param name="signInManager"></param>
-public class Logout(SignInManager<IdentityUser> signInManager) : EndpointWithoutRequest
+public class Logout(SignInManager<IdentityUser> signInManager) : EndpointWithoutRequest<Result>
 {
     public override void Configure()
     {
         Post("/api/identity/accounts/logout");
+        Description(b => b.ClearDefaultProduces(200, 204).Produces(204));
     }
 
-    public override async Task<Result> HandleAsync(CancellationToken ct)
+    public override async Task<Result> ExecuteAsync(CancellationToken ct)
     {
         await signInManager.SignOutAsync();
-        return Result.NoContent();       
+        return Result.NoContent();
     }
 }

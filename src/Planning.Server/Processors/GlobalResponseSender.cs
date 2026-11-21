@@ -21,21 +21,30 @@ sealed class GlobalResponseSender : IGlobalPostProcessor
             return;
         }
         
-        // succes en fouten worden verschillend verstuurd
-        // verstuurt het bestaande Ardalis.Result door
         switch (result.Status)
         {
             case ResultStatus.Ok:
-                await ctx.HttpContext.Response.SendAsync(
-                    result, StatusCodes.Status200OK, cancellation: ct);
+                var value = result.GetValue();
+                if (value is null)
+                {
+                    ctx.HttpContext.Response.StatusCode = StatusCodes.Status204NoContent;
+                    ctx.HttpContext.Response.ContentType = null;
+                    return;
+                }
+
+                await ctx.HttpContext.Response.SendAsync(value, StatusCodes.Status200OK, cancellation: ct);
                 return;
+
             case ResultStatus.Created:
-                await ctx.HttpContext.Response.SendAsync(
-                    result, StatusCodes.Status201Created, cancellation: ct);
+                if (!string.IsNullOrWhiteSpace(result.Location))
+                    ctx.HttpContext.Response.Headers.Location = result.Location; // de api-url waar de nieuwe bv activiteit staat
+
+                await ctx.HttpContext.Response.SendAsync(result.GetValue(), StatusCodes.Status201Created, cancellation: ct);
                 return;
+
             case ResultStatus.NoContent:
-                await ctx.HttpContext.Response.SendAsync(
-                    result, StatusCodes.Status204NoContent, cancellation: ct);
+                ctx.HttpContext.Response.StatusCode = StatusCodes.Status204NoContent;
+                ctx.HttpContext.Response.ContentType = null;
                 return;
         }
 

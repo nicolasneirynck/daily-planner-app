@@ -51,7 +51,12 @@ To add a migration from the repository root:
 dotnet ef migrations add YourMigrationName --startup-project src/Planning.Server --project src/Planning.Persistence
 ```
 
-## API errors
+## API responses
+
+Successful `/api` responses follow the
+[API success contract](docs/api-success-responses.md).
+
+### Errors
 
 Error responses under `/api` use `application/problem+json` and the
 [API error contract](docs/api-errors.md). The `instance` value is unique for
