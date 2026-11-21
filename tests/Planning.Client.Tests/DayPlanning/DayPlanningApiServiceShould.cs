@@ -1,0 +1,141 @@
+using System.Net;
+using System.Text;
+using Ardalis.Result;
+using Planning.Client.DayPlanning;
+using Planning.Shared.DayPlanning;
+using Shouldly;
+
+namespace Planning.Client.Tests.DayPlanning;
+
+public class DayPlanningApiServiceShould
+{
+    [Fact]
+    public async Task MapProblemValidationErrorsToFieldErrors()
+    {
+        // Arrange
+        const string problem = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "The request is invalid.",
+              "instance": "urn:uuid:00000000-0000-0000-0000-000000000001",
+              "errors": [
+                { "name": "name", "reason": "Activity name is required." }
+              ]
+            }
+            """;
+
+        using var client = new HttpClient(new StubHandler(_ => // using var client ruimt de HttpClient na afloop op. -> betekent dat C# aan het einde van de huidige methode automatisch client.Dispose() -> “Opruimen” betekent hier dat de client zijn gebruikte middelen vrijgeeft;
+            new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(
+                    problem, Encoding.UTF8, "application/problem+json") // zet de tekst in problem in de responsebody, met UTF-8 en het Problem Details-contenttype.
+            }))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+        /*
+         * Dit is een object initializer: tussen de accolades { ... } stel je direct na het maken van de HttpClient een eigenschap in.
+           using var client = new HttpClient(handler)
+           {
+               BaseAddress = new Uri("https://example.test")
+           };
+
+           BaseAddress is het basisadres voor relatieve verzoeken. Als de geteste code bijvoorbeeld /api/day-planning opvraagt,
+           kan HttpClient daar https://example.test/api/day-planning van maken.
+         */
+        var service = new DayPlanningApiService(client);
+
+        // Act
+        var result = await service.CreateActivityAsync(
+            new CreatePlannedActivityRequest
+            {
+                Date = new DateOnly(2026, 11, 14),
+                TimeBlockId = 3,
+                Name = "Read a book"
+            });
+
+        // Assert
+        result.Status.ShouldBe(ResultStatus.Invalid);
+        result.ValidationErrors.Any(error =>
+            error.Identifier == "name" &&
+            error.ErrorMessage == "Activity name is required.").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task MapProblemDetailToGeneralError()
+    {
+        // Arrange
+        const string problem = """
+            {
+              "type": "about:blank",
+              "title": "Conflict",
+              "status": 409,
+              "detail": "The request conflicts with the current state.",
+              "instance": "urn:uuid:00000000-0000-0000-0000-000000000002"
+            }
+            """;
+
+        using var client = new HttpClient(new StubHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.Conflict)
+            {
+                Content = new StringContent(
+                    problem, Encoding.UTF8, "application/problem+json")
+            }))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+        var service = new DayPlanningApiService(client);
+
+        // Act
+        var result = await service.CreateActivityAsync(
+            new CreatePlannedActivityRequest
+            {
+                Date = new DateOnly(2026, 11, 14),
+                TimeBlockId = 3,
+                Name = "Read a book"
+            });
+
+        // Assert
+        result.Status.ShouldBe(ResultStatus.Conflict);
+        result.Errors.Any(message =>
+            message == "The request conflicts with the current state.")
+            .ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task KeepNoContentSuccessWithoutReadingABody()
+    {
+        // Arrange
+        using var client = new HttpClient(new StubHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.NoContent)))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+        var service = new DayPlanningApiService(client);
+
+        // Act
+        var result = await service.DeletePlannedActivityAsync(42);
+
+        // Assert
+        result.Status.ShouldBe(ResultStatus.NoContent);
+    }
+
+    /* nep-HTTP-handler voor tests. Hij laat een test bepalen welk antwoord een HttpClient krijgt, zonder een echte server aan te roepen */
+    private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(respond(request)); // respond is een functie die een HTTP-verzoek ontvangt en een HTTP-response teruggeeft
+            /* De handler geeft het verzoek aan respond(request) en verpakt de gemaakte response
+             met Task.FromResult in het asynchrone type dat HttpClient verwacht.
+
+             Bijvoorbeeld:
+               var handler = new StubHandler(_ =>
+                   new HttpResponseMessage(HttpStatusCode.BadRequest));
+               var client = new HttpClient(handler);
+               Elk verzoek via deze client krijgt dan een 400 Bad Request terug.*/
+    }
+}
