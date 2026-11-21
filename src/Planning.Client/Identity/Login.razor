@@ -21,14 +21,19 @@
     </Authorized>
     <NotAuthorized>
         <div class="container">
-            @foreach (var error in _result.Errors.Concat(
-                _result.ValidationErrors
-                    .Where(error => error.Identifier is not ("email" or "password")
-                        && (error.Identifier != "$"
-                            || !_result.ValidationErrors.Any(fieldError => fieldError.Identifier != "$")))
-                    .Select(error => error.ErrorMessage)))
+            @if (_result is not null && !_result.IsSuccess)
             {
-                <div class="notification is-danger">@error</div>
+                @if (_result.FieldErrors.Count == 0 && !string.IsNullOrWhiteSpace(_result.ErrorMessage))
+                {
+                    <div class="notification is-danger">@_result.ErrorMessage</div>
+                }
+                @foreach (var error in _result.FieldErrors
+                    .Where(error => error.Name is not ("email" or "password")
+                        && (error.Name != "$"
+                            || !_result.FieldErrors.Any(fieldError => fieldError.Name != "$"))))
+                {
+                    <div class="notification is-danger">@error.Message</div>
+                }
             }
         <div class="columns is-centered">
             <section class="column is-one-third">
@@ -42,10 +47,13 @@
                             </span>
                         </p>
                         <ValidationMessage For="() => Model.Email" class="has-text-danger"/>
-                        @foreach (var error in _result.ValidationErrors
-                            .Where(error => error.Identifier == "email"))
+                        @if (_result is not null)
                         {
-                            <div class="has-text-danger">@error.ErrorMessage</div>
+                            @foreach (var error in _result.FieldErrors
+                                .Where(error => error.Name == "email"))
+                            {
+                                <div class="has-text-danger">@error.Message</div>
+                            }
                         }
                     </div>
                     <div class="field">
@@ -56,10 +64,13 @@
                             </span>
                         </p>
                         <ValidationMessage For="() => Model.Password" class="has-text-danger"/>
-                        @foreach (var error in _result.ValidationErrors
-                            .Where(error => error.Identifier == "password"))
+                        @if (_result is not null)
                         {
-                            <div class="has-text-danger">@error.ErrorMessage</div>
+                            @foreach (var error in _result.FieldErrors
+                                .Where(error => error.Name == "password"))
+                            {
+                                <div class="has-text-danger">@error.Message</div>
+                            }
                         }
                     </div>
                     <div class="field is-grouped is-grouped-right">

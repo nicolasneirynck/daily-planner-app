@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Planning.Domain.Activities;
 using Planning.Domain.PlannedActivities;
-using Planning.Domain.Products;
-using Planning.Domain.Projects;
 using Planning.Domain.TimeBlocks;
 
 namespace Planning.Persistence;
@@ -20,9 +18,6 @@ namespace Planning.Persistence;
 /// <param name="opts"></param>
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opts) : IdentityDbContext<IdentityUser>(opts)
 {
-    public DbSet<Product> Products => Set<Product>();
-    public DbSet<Project> Projects => Set<Project>();
-    public DbSet<Technician> Technicians => Set<Technician>();
     public DbSet<Activity> Activities => Set<Activity>();
     public DbSet<TimeBlock> TimeBlocks => Set<TimeBlock>();
     public DbSet<PlannedActivity> PlannedActivities => Set<PlannedActivity>();

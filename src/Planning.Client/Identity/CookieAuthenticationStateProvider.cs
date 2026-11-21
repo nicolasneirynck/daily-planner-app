@@ -36,9 +36,9 @@ namespace Planning.Client.Identity
         /// </summary>
         /// <param name="email">The user's email address.</param>
         /// <param name="password">The user's password.</param>
-        /// <returns>The result serialized to a <see cref="Result"/>.
+        /// <returns>The registration result.
         /// </returns>
-        public async Task<Result> RegisterAsync(string email, string password, string confirmPassword)
+        public async Task<ClientResult> RegisterAsync(string email, string password, string confirmPassword)
         {
             try
             {
@@ -49,13 +49,14 @@ namespace Planning.Client.Identity
                     ConfirmPassword = confirmPassword,
                 });
 
-                var apiResponse = await ApiResponseReader.ReadAsync<Result>(response);
-                return ArdalisResultAdapter.ToResult(apiResponse);
+                return await ApiResponseReader.ReadAsync(response);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Could not register user.");
-                return Result.Error("An unknown error prevented registration from succeeding.");
+                return new ClientResult(
+                    null,
+                    "An unknown error prevented registration from succeeding.");
             }
          }
 
@@ -64,8 +65,8 @@ namespace Planning.Client.Identity
         /// </summary>
         /// <param name="email">The user's email address.</param>
         /// <param name="password">The user's password.</param>
-        /// <returns>The result of the login request serialized to a <see cref="FormResult"/>.</returns>
-        public async Task<Result> LoginAsync(string email, string password)
+        /// <returns>The result of the login request.</returns>
+        public async Task<ClientResult> LoginAsync(string email, string password)
         {
             try
             {
@@ -75,11 +76,13 @@ namespace Planning.Client.Identity
                     Password = password,
                 });
 
-                var apiResponse = await ApiResponseReader.ReadAsync<Result>(response);
-                var result = ArdalisResultAdapter.ToResult(apiResponse);
+                var result = await ApiResponseReader.ReadAsync(response);
 
-                if (apiResponse.StatusCode == HttpStatusCode.Unauthorized)
-                    return Result.Unauthorized("Invalid email and/or password.");
+                if (result.StatusCode == HttpStatusCode.Unauthorized)
+                    return result with
+                    {
+                        ErrorMessage = "Invalid email and/or password."
+                    };
 
                 if (result.IsSuccess)
                 {
@@ -93,7 +96,9 @@ namespace Planning.Client.Identity
                 Log.Error(ex, "Could not login user.");
             }
 
-            return Result.Error("Invalid email and/or password.");
+            return new ClientResult(
+                null,
+                "Invalid email and/or password.");
         }
 
         /// <summary>
@@ -113,28 +118,27 @@ namespace Planning.Client.Identity
             try
             {
                 using var response = await httpClient.GetAsync("/api/identity/accounts/info");
-                var apiResponse = await ApiResponseReader.ReadAsync<Result<AccountResponse.Info>>(response);
+                var result =
+                    await ApiResponseReader.ReadAsync<AccountResponse.Info>(response);
 
-                if (apiResponse.StatusCode == HttpStatusCode.Unauthorized)
+                if (result.StatusCode == HttpStatusCode.Unauthorized)
                     return new AuthenticationState(unauthenticated);
 
-                var result = ArdalisResultAdapter.ToResult(apiResponse);
-
-                if (result.IsSuccess)
+                if (result.IsSuccess && result.Value is { } info) // result.Value is { } info controleert dat Value niet null is en geeft die waarde tegelijk de lokale naam info
                 {
                     var claims = new List<Claim>
                     {
-                        new(ClaimTypes.Name, result.Value.Email),
-                        new(ClaimTypes.Email, result.Value.Email)
+                        new(ClaimTypes.Name, info.Email),
+                        new(ClaimTypes.Email, info.Email)
                     };
                 
                     claims.AddRange(
-                        result.Value.Claims
+                        info.Claims
                             .Where(c => c.Key is not (ClaimTypes.Name or ClaimTypes.Email or ClaimTypes.Role))
                             .Select(c => new Claim(c.Key, c.Value))
                     );
                 
-                    claims.AddRange(result.Value.Roles.Select(r => new Claim(ClaimTypes.Role, r)));
+                    claims.AddRange(info.Roles.Select(r => new Claim(ClaimTypes.Role, r)));
                 
                     var identity = new ClaimsIdentity(claims, nameof(CookieAuthenticationStateProvider));
                     user = new ClaimsPrincipal(identity);
@@ -149,14 +153,13 @@ namespace Planning.Client.Identity
             return new AuthenticationState(user);
         }
 
-        public async Task<Result> LogoutAsync()
+        public async Task<ClientResult> LogoutAsync()
         {
             try
             {
                 using var response =
                     await httpClient.PostAsync("/api/identity/accounts/logout", null);
-                var apiResponse = await ApiResponseReader.ReadAsync<Result>(response);
-                var result = ArdalisResultAdapter.ToResult(apiResponse);
+                var result = await ApiResponseReader.ReadAsync(response);
 
                 if (result.IsSuccess)
                     NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
@@ -166,7 +169,9 @@ namespace Planning.Client.Identity
             catch (Exception ex)
             {
                 Log.Error(ex, "Could not log out.");
-                return Result.Error("Could not log out. Please try again.");
+                return new ClientResult(
+                    null,
+                    "Could not log out. Please try again.");
             }
         }
 

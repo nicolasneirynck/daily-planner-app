@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Planning.Client.Http;
 using Planning.Shared.Identity.Accounts;
 
 namespace Planning.Client.Identity;
@@ -7,7 +8,7 @@ public partial class Register
 {
     [Inject] public required IAccountManager AccountManager { get; set; }
 
-    private Result? _result;
+    private ClientResult? _result;
     private AccountRequest.Register Model { get; set; } = new();
 
     public async Task RegisterUserAsync()

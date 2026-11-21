@@ -13,8 +13,10 @@ public partial class Logout
         {
             var result = await AccountManager.LogoutAsync();
             if (!result.IsSuccess)
-                _logoutError = result.Errors.FirstOrDefault()
-                    ?? result.ValidationErrors.FirstOrDefault()?.ErrorMessage
+                _logoutError = result.FieldErrors
+                        .FirstOrDefault(error => error.Name != "$")?.Message
+                    ?? result.ErrorMessage
+                    ?? result.FieldErrors.FirstOrDefault()?.Message
                     ?? "Could not log out. Please try again.";
         }
     }

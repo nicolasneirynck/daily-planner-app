@@ -92,11 +92,10 @@ Content-Type: application/problem+json
 
 ## Included examples
 
-- **Products:** domain entity, EF mapping, service, shared contracts and validation, API endpoints, Blazor pages, and tests. Listing is public; creating a product requires the Administrator role.
-- **Projects:** domain entities and an address value object, EF mapping, a service and endpoint for editing, and service tests. A Technician can edit a project assigned to their account. The endpoint also accepts the Administrator role, but the service still checks project ownership.
+- **Day planning:** planned activities and time blocks, API endpoints, Blazor components, and tests.
 - **Identity:** registration, login, logout, account information, role endpoints, cookie authentication, and protected example pages. Registration is currently public; new accounts receive the User role. Review access rules for the finished application.
 
-Development seeding creates `admin@example.com`, `user@example.com`, `technician1@example.com`, and `technician2@example.com` with password `A1b2C3!`. The seeded roles are Administrator, Technician, and User; `user@example.com` receives the User role. These accounts and the password are for local development only. Replace or disable this seed data before using real accounts.
+Development seeding creates `admin@example.com` and `user@example.com` with password `A1b2C3!`. The seeded roles are Administrator and User; `user@example.com` receives the User role. These accounts and the password are for local development only. Replace or disable this seed data before using real accounts.
 
 ## Structure
 
@@ -114,37 +113,37 @@ FastEndpoints results are sent through a central response processor. Serilog han
 
 ## Architecture and design
 
-The solution combines a layered structure with feature-oriented code. Domain rules live in `Domain`; the `Products`, `Projects`, and `Identity` folders group related use cases within the other projects. `Server` is the composition root: it registers the application services and connects the API, persistence, and hosted client.
+The solution combines a layered structure with feature-oriented code. Domain rules live in `Domain`; the `DayPlanning` and `Identity` folders group related use cases within the other projects. `Server` is the composition root: it registers the application services and connects the API, persistence, and hosted client.
 
 ### Domain
 
-`Domain` contains entities and value objects without a dependency on the UI or database provider. `Product` is a simple entity example. `Project` shows a relationship to `Technician`, an owned `Address` value object, and an ownership rule used when editing. `Entity` and `ValueObject` provide reusable base behavior. This keeps business rules close to the data they govern.
+`Domain` contains entities and value objects without a dependency on the UI or database provider. Planned activities and time blocks model the daily schedule. `Entity` and `ValueObject` provide reusable base behavior. This keeps business rules close to the data they govern.
 
 ### Shared contracts
 
-`Shared` defines the requests, responses, DTOs, service interfaces, and FluentValidation validators used across the client and server. The client communicates through these contracts instead of depending on domain entities or EF Core types. Changing an API contract can therefore affect both sides and should be treated deliberately.
+`Shared` defines the requests, responses, DTOs, and FluentValidation validators used across the client and server. The client communicates through these contracts instead of depending on domain entities or EF Core types. Changing an API contract can therefore affect both sides and should be treated deliberately.
 
 ### Services
 
-`Services` implements application use cases. It queries or updates the EF Core context and returns `Ardalis.Result` values. `ProductService` demonstrates creation, searching, ordering, and paging. `ProjectService` uses the current user's identity to enforce project ownership. These services are registered in `ServiceCollectionExtensions` and can be tested without an HTTP request.
+`Services` implements application use cases. Day-planning services query or update the EF Core context and return `Ardalis.Result` values. These services are registered in `ServiceCollectionExtensions` and can be tested without an HTTP request.
 
 ### Persistence
 
-`Persistence` contains `ApplicationDbContext`, entity configurations, the EF Core migration, development seeding, and an EF trigger for entity timestamps. The context uses PostgreSQL through Npgsql and includes ASP.NET Core Identity tables. It applies entity configurations from its assembly. Domain entities remain separate from the database mappings. The existing migration covers Identity, Products, Projects, and Technicians.
+`Persistence` contains `ApplicationDbContext`, entity configurations, EF Core migrations, development seeding, and an EF trigger for entity timestamps. The context uses PostgreSQL through Npgsql and includes ASP.NET Core Identity tables. It applies entity configurations from its assembly. Domain entities remain separate from the database mappings. Historical migrations retain the original schema history. The removal migration deletes the obsolete Product, Project, and Technician tables, all accounts with the Technician role and their planning data, and the role itself.
 
 ### Server and HTTP responses
 
-`Server` exposes FastEndpoints routes and hosts the Blazor WebAssembly files. Endpoints delegate use-case work to services and use shared contracts for input and output. Authentication uses ASP.NET Core Identity with cookies; authorization is enforced on protected endpoints and again in the project-editing service where ownership matters. Swagger is available through the server configuration.
+`Server` exposes FastEndpoints routes and hosts the Blazor WebAssembly files. Endpoints delegate use-case work to services and use shared contracts for input and output. Authentication uses ASP.NET Core Identity with cookies; authorization is enforced on protected endpoints. Swagger is available through the server configuration.
 
 In `Program.cs`, FastEndpoints is configured with `DontAutoSendResponse()`. The `GlobalResponseSender` post-processor sends the response centrally, mapping `Ardalis.Result` statuses to HTTP responses. For example, successful results, invalid requests, and missing resources become the appropriate success, client-error, or not-found response. The request and response processors also provide logging around endpoint execution. Keep this setup when adding endpoints, because endpoints rely on the central sender.
 
 ### Client
 
-`Client` is a Blazor WebAssembly application served by `Server`. It has an HTTP client for API calls, a cookie-aware authentication state provider, and pages that demonstrate public, authenticated, and Administrator-only UI. The Products pages show how a feature connects UI components to shared contracts and the API. The client base URL is configured in `wwwroot/appsettings.json` for local development.
+`Client` is a Blazor WebAssembly application served by `Server`. It has an HTTP client for API calls, a cookie-aware authentication state provider, and pages that demonstrate public, authenticated, and Administrator-only UI. Day-planning components use `IDayPlanningClient` and client-owned result types. The client base URL is configured in `wwwroot/appsettings.json` for local development.
 
 ### Tests and extension points
 
-The test projects contain domain tests, service tests, and Blazor component tests with xUnit, Shouldly, NSubstitute, and bUnit. The project-editing service tests use EF Core's in-memory provider; this does not verify PostgreSQL behavior. Add database and API integration tests when a derived project needs that coverage.
+The test projects contain domain tests, service tests, and Blazor component tests with xUnit, Shouldly, NSubstitute, and bUnit. Add database and API integration tests when a derived project needs that coverage.
 
 To add a feature, put its business rules in `Domain`, its API contracts in `Shared`, its use-case logic in `Services`, its EF mapping in `Persistence`, and its HTTP endpoint in `Server`. Add client components only when the feature needs a UI. Register new services and add a migration for schema changes.
 
