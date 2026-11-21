@@ -392,6 +392,95 @@ public class DayPlanningActivityCreationShould : BunitContext
     }
 
     [Fact]
+    public void ClearServerNameValidationErrorWhenNameChanges()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Invalid(new List<ValidationError>
+            {
+                new()
+                {
+                    Identifier = "name",
+                    ErrorMessage = "Activity name is required."
+                }
+            })));
+
+        Services.AddSingleton(service);
+
+        var cut = Render<DayPlanning>();
+
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']").Click();
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        cut.Find("[role='dialog'] form").Submit();
+        cut.WaitForAssertion(() =>
+            cut.Find("#activity-name-error").TextContent
+                .ShouldBe("Activity name is required."));
+
+        // Act
+        cut.Find("[data-testid='activity-name']").Input("Read another book");
+
+        // Assert
+        cut.FindAll("#activity-name-error").ShouldBeEmpty();
+        var nameInput = cut.Find("[data-testid='activity-name']");
+        nameInput.GetAttribute("aria-invalid").ShouldBe("false");
+        nameInput.GetAttribute("aria-describedby").ShouldBeNull();
+    }
+
+    [Fact]
+    public void AllowRetryAfterServerNameValidationError()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Invalid(new List<ValidationError>
+            {
+                new()
+                {
+                    Identifier = "name",
+                    ErrorMessage = "Activity name is required."
+                }
+            })));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        cut.Find("[role='dialog'] form").Submit();
+        cut.WaitForAssertion(() =>
+            cut.Find("#activity-name-error").TextContent
+                .ShouldBe("Activity name is required."));
+
+        // Act
+        cut.Find("[role='dialog'] form").Submit();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = service.Received(2).CreateActivityAsync(
+                Arg.Is<CreatePlannedActivityRequest>(request =>
+                    request.Name == "Read a book"),
+                Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
     public void ShowSaveErrorWhenCreateRequestThrows()
     {
         // Arrange

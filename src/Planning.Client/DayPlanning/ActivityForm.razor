@@ -24,28 +24,32 @@
 
         Een EditContext houdt de toestand van het formulier bij: welk model erbij hoort, welke velden gewijzigd zijn en welke validatiefouten er zijn.
         Met EditContext="_editContext" geven we EditForm die toestand expliciet mee, zodat de code-behind de veldfouten kan opvragen en bijwerken.
-        OnValidSubmit roept SubmitAsync alleen aan bij geldige invoer; OnInvalidSubmit toont de veldfouten.
     *@
     <EditForm EditContext="_editContext"
-              OnValidSubmit="SubmitAsync"
-              OnInvalidSubmit="HandleInvalidSubmit">
+              OnValidSubmit="SubmitAsync">
     <DataAnnotationsValidator />
 
+    @{ var nameErrors = _editContext.GetValidationMessages(_nameField).ToArray(); }
     <label for="activity-name">Naam *</label>
     <input id="activity-name"
            type="text"
            data-testid="activity-name"
            @ref="_nameInput"
            readonly="@(ExistingActivity is not null)"
-           aria-invalid="@(_nameError is not null ? "true" : "false")"
-           aria-describedby="@(_nameError is not null ? "activity-name-error" : null)"
+           aria-invalid="@(nameErrors.Length > 0 ? "true" : "false")"
+           aria-describedby="@(nameErrors.Length > 0 ? "activity-name-error" : null)"
            placeholder="Bv. Ochtendwandeling"
            @bind="_model.Name"
            @oninput="HandleNameInput" />
 
-    @if (_nameError is not null)
+    @if (nameErrors.Length > 0)
     {
-        <p id="activity-name-error" role="alert">@_nameError</p>
+        <div id="activity-name-error" role="alert">
+            @foreach (var error in nameErrors)
+            {
+                <p>@error</p>
+            }
+        </div>
     }
 
     <label for="activity-date">Datum *</label>
@@ -57,12 +61,13 @@
            @bind:format="yyyy-MM-dd"/>
 
     <label for="activity-time-block">Tijdsblok *</label>
+    @{ var timeBlockErrors = _editContext.GetValidationMessages(_timeBlockField).ToArray(); }
     <div class="activity-form-select">
         <select id="activity-time-block"
                 data-testid="activity-time-block"
                 disabled="@(ExistingActivity is not null)"
-                aria-invalid="@(_timeBlockError is not null ? "true" : "false")"
-                aria-describedby="@(_timeBlockError is not null ? "activity-time-block-error" : null)"
+                aria-invalid="@(timeBlockErrors.Length > 0 ? "true" : "false")"
+                aria-describedby="@(timeBlockErrors.Length > 0 ? "activity-time-block-error" : null)"
                 @bind="_model.TimeBlockId"
                 @bind:after="HandleTimeBlockChange" > @* @bind:after voert een methode uit nadat @bind de nieuwe waarde heeft opgeslagen. *@
             <option value="">Kies een tijdsblok</option>
@@ -77,11 +82,16 @@
         </svg>
     </div>
 
-    @if (_timeBlockError is not null)
+    @if (timeBlockErrors.Length > 0)
     {
-        <p id="activity-time-block-error"
-           data-testid="activity-time-block-error"
-           role="alert">@_timeBlockError</p>
+        <div id="activity-time-block-error"
+             data-testid="activity-time-block-error"
+             role="alert">
+            @foreach (var error in timeBlockErrors)
+            {
+                <p>@error</p>
+            }
+        </div>
     }
 
     @if (SaveError is not null)
