@@ -18,7 +18,19 @@ public class PlannedActivity : Entity
         set => _name = Guard.Against.NullOrWhiteSpace(value);
     }
 
-    public string? Description { get; set; }
+    private string? _description;
+    public string? Description
+    {
+        get => _description;
+        set
+        {
+            if (value?.Length > 500)
+                throw new ArgumentOutOfRangeException(
+                    nameof(Description), "Description cannot exceed 500 characters.");
+
+            _description = value;
+        }
+    }
 
     public required DateOnly Date { get; set; }
     public required int TimeBlockId { get; set; }

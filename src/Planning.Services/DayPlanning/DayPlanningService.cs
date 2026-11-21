@@ -87,6 +87,13 @@ public class DayPlanningService(
                 ErrorMessage = "Activity name is required."
             });
 
+        if (request.Description?.Length > 500)
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Description),
+                ErrorMessage = "Description cannot exceed 500 characters."
+            });
+
         var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>
             block.Id == request.TimeBlockId &&
             block.UserId == userId &&
@@ -100,7 +107,8 @@ public class DayPlanningService(
             UserId = userId,
             Date = request.Date,
             TimeBlockId = request.TimeBlockId,
-            Name = request.Name
+            Name = request.Name,
+            Description = request.Description
         };
         dbContext.PlannedActivities.Add(activity);
 

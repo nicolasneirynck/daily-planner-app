@@ -29,6 +29,9 @@ public class GetShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
         var block = root.GetProperty("timeBlocks")[0];
         block.GetProperty("startTime").GetString().ShouldBe("06:00:00");
         block.GetProperty("endTime").GetString().ShouldBe("09:00:00");
+        block.GetProperty("activities")[0]
+            .GetProperty("description").GetString()
+            .ShouldBe("Bring the library card");
     }
 
     [Fact]
