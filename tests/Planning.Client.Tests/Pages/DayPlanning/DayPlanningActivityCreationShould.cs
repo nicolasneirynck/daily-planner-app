@@ -312,6 +312,52 @@ public class DayPlanningActivityCreationShould : BunitContext
     }
 
     [Fact]
+    public void ShowServerNameValidationError()
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningService>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Success(new DayPlanningResponse
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                TimeBlocks = [Block(1, "Morning", 6, 9)]
+            })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result.Invalid(new List<ValidationError>
+            {
+                new()
+                {
+                    Identifier = "name",
+                    ErrorMessage = "Activity name is required."
+                }
+            })));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        cut.Find("[data-testid='submit-activity-button']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Find("#activity-name-error").TextContent
+                .ShouldBe("Activity name is required.");
+            cut.Find("[data-testid='activity-name']")
+                .GetAttribute("aria-invalid").ShouldBe("true");
+            cut.Find("[data-testid='activity-name']")
+                .GetAttribute("aria-describedby").ShouldBe("activity-name-error");
+            _ = service.Received(1).CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
     public void ShowSaveErrorWhenCreateRequestThrows()
     {
         // Arrange

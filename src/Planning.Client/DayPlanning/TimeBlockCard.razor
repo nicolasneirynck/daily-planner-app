@@ -54,15 +54,7 @@
                         @if (CompletionErrorActivityId == activity.Id)
                         {
                             <p class="completion-error" role="alert">
-                                Status wijzigen is niet gelukt.
-                                @if (!string.IsNullOrWhiteSpace(CompletionErrorDetail))
-                                {
-                                    <span>@CompletionErrorDetail</span>
-                                }
-                                else
-                                {
-                                    <span>Probeer het opnieuw.</span>
-                                }
+                                Status wijzigen is niet gelukt. Probeer het opnieuw.
                             </p>
                         }
                     </li>
@@ -107,9 +99,6 @@
 
     [Parameter]
     public int? CompletionErrorActivityId { get; set; }
-
-    [Parameter]
-    public string? CompletionErrorDetail { get; set; }
 
     protected override void OnParametersSet()
     {

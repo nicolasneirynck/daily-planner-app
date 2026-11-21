@@ -1,109 +1,104 @@
-# API error contract (PL-78)
+# API error contract
 
-This document records the current error paths and defines the target error
-contract for requests under `/api`. It is a contract decision, not a description
-of behavior already implemented. Blazor pages and static files are outside its
-scope. Services may continue to use `Ardalis.Result` internally, and successful
-HTTP responses retain their current content, including responses without a body.
+All error responses for requests under `/api` use Problem Details with the
+`application/problem+json` media type. This contract does not apply to Blazor
+pages or static files. Services may continue to use `Ardalis.Result`
+internally; the API converts failures at the HTTP boundary. Successful
+responses retain their existing content, including responses without a body.
 
-## Current error paths
+## Error paths and consumers
 
-The statuses and bodies below follow from the current code and framework
-configuration. Where middleware behavior has not been observed in a running
-server, it is marked for verification rather than presented as a measured
-response. Products and Projects are template features and are excluded from
-this inventory.
+Products and Projects are template features and are excluded from this
+inventory.
 
-| Source and example | Current HTTP status | Current response body | Known consumer |
+| Error path | HTTP status | Response body | Repository consumer |
 | --- | --- | --- | --- |
-| FastEndpoints request validation, such as an invalid activity name or route date | 400 | FastEndpoints validation JSON with `statusCode`, `message`, and an `errors` object keyed by field name; verify the exact serialized shape and content type | `DayPlanningApiService` |
-| `DayPlanningService` returns `Result.Invalid` | 400 | Serialized `Ardalis.Result` with `validationErrors` | `DayPlanningApiService` |
-| `DayPlanningService` returns `Result.Unauthorized` or `Result.NotFound` | 401 or 404 | Serialized `Ardalis.Result` | `DayPlanningApiService` |
-| Login rejects credentials, or account info cannot find the user | 401 or 404 | Serialized `Ardalis.Result` | `CookieAuthenticationStateProvider` |
-| Registration returns `Result.Error` or `Result.CriticalError` | 422 or 500 | Serialized `Ardalis.Result`; the current messages may contain Identity or internal failure details | `CookieAuthenticationStateProvider` |
-| A protected endpoint is challenged or forbidden before it executes | 401 or 403 | Authentication/authorization middleware response, not the global `Ardalis.Result` response; verify the exact body and content type | `CookieAuthenticationStateProvider` for account info; `DayPlanningApiService` for protected day-planning routes |
-| No API route matches, such as `/api/unknown` | Likely 200 for a path without a filename because `MapFallbackToFile("index.html")` also matches it; verify with HTTP | Likely the Blazor HTML shell; paths treated as filenames may instead yield 404 | No repository production consumer found |
-| An unhandled exception during an API request | 500 | FastEndpoints `UseDefaultExceptionHandler()` response; verify its exact body and content type | Any API consumer |
+| Endpoint request validation | 400 | Problem Details with `errors` | `DayPlanningApiService`; `CookieAuthenticationStateProvider` for identity requests |
+| `DayPlanningService` returns `Result.Invalid`, `Unauthorized`, or `NotFound` | 400, 401, or 404 | Problem Details; `Invalid` also has `errors` | `DayPlanningApiService` |
+| Identity account or role endpoint returns a failed `Ardalis.Result` | 401, 404, 409, 422, or 500, depending on the result | Problem Details | `CookieAuthenticationStateProvider` for account requests; no repository production caller found for role requests |
+| Authentication challenge or authorization forbid before endpoint execution | 401 or 403 | Problem Details | `CookieAuthenticationStateProvider` for account information; `DayPlanningApiService` for protected day-planning requests |
+| No route matches under `/api` | 404 | Problem Details | No repository production caller found |
+| Unhandled exception during an API request | 500 | Problem Details with a safe general `detail` | Any API caller |
 
-`GlobalResponseSender` maps other `Ardalis.Result` failures to 403
-(`Forbidden`), 409 (`Conflict`), 422 (`Error`), 500 (`CriticalError`), and 503
-(`Unavailable`). These currently serialize the result object too. Identity role
-endpoints can return `Conflict` or `Error`, but no production client for them
-was found in this repository. The response processor also preserves success
-results: `Ok` becomes 200, `Created` becomes 201, and `NoContent` becomes 204.
+The response processor also maps service `Conflict` to 409, `Error` to 422,
+`CriticalError` to 500, and `Unavailable` to 503. All use the same Problem
+Details shape. The repository has no other production `/api` caller after
+excluding template features. External consumers cannot be determined from
+repository inspection.
 
-The repository contains no other production HTTP caller of `/api` besides
-`DayPlanningApiService` and `CookieAuthenticationStateProvider` after excluding
-the Product template client. Browser-driven end-to-end tests call the API as
-tests, not as a separate production client. External consumers cannot be ruled
-out from repository inspection and remain unknown.
+## Response fields
 
-### Current client behavior
-
-- `DayPlanningApiService` deserializes GET responses directly into
-  `Result<DayPlanningResponse>`. For POST, PUT, and DELETE it calls
-  `EnsureSuccessStatusCode()` before deserializing `Result`. Consequently,
-  error bodies are not read consistently. The day-planning page currently
-  shows generic save, delete, and completion messages rather than field errors.
-- `CookieAuthenticationStateProvider` deserializes registration and login
-  responses into `Result` and displays their `Errors` on the corresponding
-  forms. The account-info request uses `GetFromJsonAsync`, which throws on an
-  unsuccessful status. A 401 leaves the user anonymous, but the provider's
-  general exception handler currently logs it as an error. Logout does not
-  inspect the response body.
-- The `CookieHandler` sends cookies and the `X-Requested-With: XMLHttpRequest`
-  header. ASP.NET Core 10 returns 401/403 for these requests instead of a
-  cookie-login redirect, but this does not give them the target Problem Details
-  body.
-
-## Target contract
-
-Every error response under `/api` uses `Content-Type: application/problem+json`
-and a JSON object with the following camelCase
-members. These five members are required by this API, even where RFC 9457
-would allow them to be absent.
+The following camelCase members are required by this API, even where
+RFC 9457 allows them to be omitted.
 
 | Member | Meaning |
 | --- | --- |
-| `type` | URI identifying the problem type. Use `about:blank` for the currently defined errors, including validation. It means the HTTP status supplies the general problem semantics. Clients must not infer a finer category from this value. |
-| `title` | Stable, human-readable HTTP status title, such as `Bad Request` or `Not Found`. It does not vary by occurrence. |
-| `status` | Numeric HTTP status code, equal to the actual response status. |
-| `detail` | Safe, human-readable explanation of this occurrence. It is not a machine-readable discriminator and must not contain exception, stack-trace, or other internal details. |
-| `instance` | A unique `urn:uuid:<uuid>` URI for this error occurrence. The server logs the same identifier for correlation; the URI is opaque and is not a retrieval endpoint. |
+| `type` | URI identifying the problem type. Current errors, including validation, use `about:blank`. Clients use the HTTP status for the general meaning and must not infer a more specific category from this value. |
+| `title` | Stable HTTP status title, such as `Bad Request` or `Not Found`. |
+| `status` | Numeric HTTP status code. It equals the actual response status. |
+| `detail` | Safe, human-readable explanation for this occurrence. It is not a machine-readable error code. |
+| `instance` | Unique `urn:uuid:<uuid>` URI for this occurrence. The server logs the same identifier for correlation. It is opaque and is not a retrieval URL. |
 
-Validation failures additionally have an `errors` array. Each element has
-`name`, the camelCase JSON request-property name or route/query parameter name,
-and `reason`, a human-readable explanation for that field. Use `name: "$"` for
-a request-level validation error without a specific field. Multiple failures
-for one field remain separate array entries. Clients use `errors` when present
-to show field messages and use `detail` for a general message. The `errors`
-extension does not require a separate `type` URI. A new type URI should only be
-added when the API defines stable, distinct semantics that clients need.
+Validation failures additionally contain an `errors` array. Every entry has
+`name`, the camelCase JSON property name or route/query parameter name, and
+`reason`, a human-readable explanation. A request-level error uses
+`name: "$"`. Multiple failures for one field remain separate entries.
 
-When a service supplies no usable detail, the API supplies a safe default for
-the status. For validation, `detail` summarizes that the request is invalid;
-the individual reasons are in `errors`. For 401 and 403, the text does not
-reveal account or permission details. For 404, the text does not reveal whether
-a protected resource exists. For unexpected errors and internal
-`CriticalError` results, use a generic 500 detail and log the technical cause
-server-side. Service-provided text is not automatically safe to expose,
-especially Identity and internal failure messages.
+The API uses safe, status-based `detail` values. It does not expose service
+messages, exception text, stack traces, account details, or permission details
+automatically. Technical exception details remain in server logs. The shared
+Blazor response reader retains `detail` and `errors`; the current UI shows
+localized general messages and field errors where the form supports them.
 
-The API boundary converts non-success `Ardalis.Result` values to this contract.
-Endpoint validation, authentication challenges, authorization forbids,
-unmatched `/api` routes, and unhandled exceptions use the same contract.
-Unauthenticated account-info requests remain HTTP 401 so that the authentication
-client can treat them as the expected anonymous state. The HTTP status and body
-`status` always match. No error response contains an `Ardalis.Result` body.
+An unauthenticated account-information request remains HTTP 401 so the
+authentication client can treat it as an expected anonymous state. Error
+responses never contain an `Ardalis.Result` body.
 
-## References and verification
+## Examples
+
+Validation failure:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The request is invalid.",
+  "instance": "urn:uuid:00000000-0000-0000-0000-000000000001",
+  "errors": [
+    { "name": "name", "reason": "Activity name is required." }
+  ]
+}
+```
+
+Unexpected failure:
+
+```http
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/problem+json
+
+{
+  "type": "about:blank",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred.",
+  "instance": "urn:uuid:00000000-0000-0000-0000-000000000002"
+}
+```
+
+The `instance` values above are examples; the server generates a new value
+for each error occurrence.
+
+## Verification
+
+Server integration tests cover validation, service errors, 401, 403, API 404,
+and unexpected exceptions. Client tests cover field errors, general details,
+and a successful response without a body.
+
+## References
 
 - [RFC 9457: Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457.html)
 - [FastEndpoints validation responses](https://fast-endpoints.com/docs/validation)
-- [ASP.NET Core 10 cookie API behavior](https://learn.microsoft.com/en-us/aspnet/core/breaking-changes/10/cookie-authentication-api-endpoints?view=aspnetcore-10.0)
-- [ASP.NET Core SPA fallback routing](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.builder.staticfilesendpointroutebuilderextensions.mapfallbacktofile?view=aspnetcore-10.0)
-
-The current middleware body/content-type and unmatched-route behavior should
-be confirmed with HTTP requests when running the server. PL-79 implements the
-target contract, PL-80 updates the clients, and PL-81 adds contract tests and
-request/response examples to the README and API documentation.

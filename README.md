@@ -51,6 +51,45 @@ To add a migration from the repository root:
 dotnet ef migrations add YourMigrationName --startup-project src/Planning.Server --project src/Planning.Persistence
 ```
 
+## API errors
+
+Error responses under `/api` use `application/problem+json` and the
+[API error contract](docs/api-errors.md). The `instance` value is unique for
+each occurrence; the values below are examples.
+
+A validation error:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The request is invalid.",
+  "instance": "urn:uuid:00000000-0000-0000-0000-000000000001",
+  "errors": [
+    { "name": "name", "reason": "Activity name is required." }
+  ]
+}
+```
+
+An unexpected error returns a safe general message:
+
+```http
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/problem+json
+
+{
+  "type": "about:blank",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred.",
+  "instance": "urn:uuid:00000000-0000-0000-0000-000000000002"
+}
+```
+
 ## Included examples
 
 - **Products:** domain entity, EF mapping, service, shared contracts and validation, API endpoints, Blazor pages, and tests. Listing is public; creating a product requires the Administrator role.
@@ -71,7 +110,7 @@ Development seeding creates `admin@example.com`, `user@example.com`, `technician
 | `Planning.Client` | Blazor WebAssembly UI |
 | `Planning.*.Tests` | Domain, service, and Blazor component tests |
 
-FastEndpoints results are sent through a central response processor. Serilog handles structured logging. The tests cover selected example behavior; the solution does not include database or API integration tests.
+FastEndpoints results are sent through a central response processor. Serilog handles structured logging. The tests include API integration tests for the error contract, client response tests, and Blazor component tests. Database behavior is not covered by these API tests.
 
 ## Architecture and design
 
