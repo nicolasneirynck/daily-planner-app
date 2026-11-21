@@ -84,14 +84,21 @@ public class DayPlanningService(
             return Result.Invalid(new ValidationError
             {
                 Identifier = nameof(request.Name),
-                ErrorMessage = "Activity name is required."
+                ErrorMessage = PlannedActivityRules.NameRequiredMessage
             });
 
-        if (request.Description?.Length > 500)
+        if (request.Name.Length > PlannedActivityRules.MaxNameLength)
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Name),
+                ErrorMessage = PlannedActivityRules.NameTooLongMessage
+            });
+
+        if (request.Description?.Length > PlannedActivityRules.MaxDescriptionLength)
             return Result.Invalid(new ValidationError
             {
                 Identifier = nameof(request.Description),
-                ErrorMessage = "Description cannot exceed 500 characters."
+                ErrorMessage = PlannedActivityRules.DescriptionTooLongMessage
             });
 
         var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>

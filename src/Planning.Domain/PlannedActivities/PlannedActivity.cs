@@ -15,7 +15,15 @@ public class PlannedActivity : Entity
     public required string Name
     {
         get => _name;
-        set => _name = Guard.Against.NullOrWhiteSpace(value);
+        set
+        {
+            var name = Guard.Against.NullOrWhiteSpace(value);
+            if (name.Length > PlannedActivityRules.MaxNameLength)
+                throw new ArgumentOutOfRangeException(
+                    nameof(Name), PlannedActivityRules.NameTooLongMessage);
+
+            _name = name;
+        }
     }
 
     private string? _description;
@@ -24,9 +32,9 @@ public class PlannedActivity : Entity
         get => _description;
         set
         {
-            if (value?.Length > 500)
+            if (value?.Length > PlannedActivityRules.MaxDescriptionLength)
                 throw new ArgumentOutOfRangeException(
-                    nameof(Description), "Description cannot exceed 500 characters.");
+                    nameof(Description), PlannedActivityRules.DescriptionTooLongMessage);
 
             _description = value;
         }

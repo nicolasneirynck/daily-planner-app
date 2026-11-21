@@ -4,6 +4,34 @@ namespace Planning.Domain.Tests.PlannedActivities;
 
 public class PlannedActivityShould
 {
+    [Fact]
+    public void AcceptANameOf250Characters()
+    {
+        var name = new string('a', 250);
+
+        var activity = new PlannedActivity
+        {
+            UserId = "user-1",
+            Name = name,
+            Date = new DateOnly(2026, 11, 14),
+            TimeBlockId = 1
+        };
+
+        activity.Name.ShouldBe(name);
+    }
+
+    [Fact]
+    public void RejectANameLongerThan250Characters()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => new PlannedActivity
+        {
+            UserId = "user-1",
+            Name = new string('a', 251),
+            Date = new DateOnly(2026, 11, 14),
+            TimeBlockId = 1
+        });
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData(500)]

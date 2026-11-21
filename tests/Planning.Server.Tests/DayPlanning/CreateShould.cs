@@ -50,6 +50,27 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
     }
 
     [Fact]
+    public async Task ReturnAValidationErrorWhenNameIsTooLong()
+    {
+        using var client = app.CreateClient();
+        client.DefaultRequestHeaders.Add(
+            TestAuthHandler.UserIdHeader, Guid.NewGuid().ToString());
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/day-planning/activities",
+            new CreatePlannedActivityRequest
+            {
+                Date = new DateOnly(2026, 11, 14),
+                TimeBlockId = 3,
+                Name = new string('a', 251)
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync())
+            .ShouldContain("Activity name must be 250 characters or fewer.");
+    }
+
+    [Fact]
     public async Task ReturnAValidationErrorWhenDescriptionIsTooLong()
     {
         using var client = app.CreateClient();

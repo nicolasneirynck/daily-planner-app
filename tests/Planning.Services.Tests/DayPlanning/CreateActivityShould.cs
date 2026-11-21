@@ -30,6 +30,34 @@ public class CreateActivityShould(PostgreSqlFixture fixture)
             });
 
         result.Status.ShouldBe(ResultStatus.Invalid);
+        var error = result.ValidationErrors.Single();
+        error.Identifier.ShouldBe("Name");
+        error.ErrorMessage.ShouldBe("Activity name is required.");
+        (await dbContext.PlannedActivities.AnyAsync(
+            activity => activity.UserId == userId)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task RejectAnActivityWithANameLongerThan250Characters()
+    {
+        var userId = Guid.NewGuid().ToString();
+
+        await using var dbContext = fixture.CreateContext();
+        var blocks = await AddUserWithTimeBlocksAsync(dbContext, userId);
+        var service = CreateAuthenticatedService(dbContext, userId);
+
+        var result = await service.CreateActivityAsync(
+            new CreatePlannedActivityRequest
+            {
+                Date = new DateOnly(2026, 11, 14),
+                TimeBlockId = blocks[0].Id,
+                Name = new string('a', 251)
+            });
+
+        result.Status.ShouldBe(ResultStatus.Invalid);
+        var error = result.ValidationErrors.Single();
+        error.Identifier.ShouldBe("Name");
+        error.ErrorMessage.ShouldBe("Activity name must be 250 characters or fewer.");
         (await dbContext.PlannedActivities.AnyAsync(
             activity => activity.UserId == userId)).ShouldBeFalse();
     }
@@ -147,7 +175,9 @@ public class CreateActivityShould(PostgreSqlFixture fixture)
             });
 
         result.Status.ShouldBe(ResultStatus.Invalid);
-        result.ValidationErrors.Single().Identifier.ShouldBe("Description");
+        var error = result.ValidationErrors.Single();
+        error.Identifier.ShouldBe("Description");
+        error.ErrorMessage.ShouldBe("Description must be 500 characters or fewer.");
         (await dbContext.PlannedActivities.AnyAsync(activity => activity.UserId == userId)).ShouldBeFalse();
     }
 }

@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Planning.Client\Planning.Client.csproj" />
+    <ProjectReference Include="..\Planning.Domain\Planning.Domain.csproj" />
     <ProjectReference Include="..\Planning.Persistence\Planning.Persistence.csproj" />
     <ProjectReference Include="..\Planning.Services\Planning.Services.csproj" />
     <ProjectReference Include="..\Planning.Shared\Planning.Shared.csproj" />
