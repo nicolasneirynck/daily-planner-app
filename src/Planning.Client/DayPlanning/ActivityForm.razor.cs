@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Planning.Shared.DayPlanning;
 
@@ -46,9 +47,11 @@ public partial class ActivityForm : IAsyncDisposable
     private ElementReference _closeButton;
     private ElementReference _nameInput;
     private IJSObjectReference? _dialogModule;
-    private string _name = string.Empty;
-    private DateOnly _date;
-    private int? _timeBlockId;
+    private readonly ActivityFormModel _model = new();
+    private EditContext _editContext = default!; // EditContext: houdt onder meer het formuliermodel, gewijzigde velden en validatiefouten bij.
+                                                 // = default!: zegt tegen de C#-compiler: “Dit veld krijgt later een waarde.” De ! onderdrukt de waarschuwing dat het nu nog null is.
+    private FieldIdentifier _nameField;
+    private FieldIdentifier _timeBlockField;
     private string? _nameError;
     private IReadOnlyList<ValidationError>? _appliedServerErrors;
     private string? _timeBlockError;
@@ -60,9 +63,12 @@ public partial class ActivityForm : IAsyncDisposable
 
     protected override void OnInitialized()
     {
-        _name = ExistingActivity?.Name ?? string.Empty;
-        _date = InitialDate;
-        _timeBlockId = InitialTimeBlockId;
+        _model.Name = ExistingActivity?.Name ?? string.Empty;
+        _model.Date = InitialDate;
+        _model.TimeBlockId = InitialTimeBlockId;
+        _editContext = new EditContext(_model);
+        _nameField = FieldIdentifier.Create(() => _model.Name); // Een FieldIdentifier bewaart welk model en welke eigenschap bedoeld worden. Daarmee kan de code later bijvoorbeeld de foutmeldingen van precies het naamveld opvragen of aan de EditContext melden dat TimeBlockId gewijzigd is.
+        _timeBlockField = FieldIdentifier.Create(() => _model.TimeBlockId);
     }
 
     protected override void OnParametersSet()
@@ -124,35 +130,35 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task SubmitAsync()
     {
-        _nameError = string.IsNullOrWhiteSpace(_name)
-            ? "Vul een naam in."
-            : null;
-
-        _timeBlockError = _timeBlockId is null
-            ? "Kies een tijdsblok."
-            : null;
-
-        if (_nameError is not null || _timeBlockError is not null)
-            return;
-
         await OnSubmit.InvokeAsync(new CreatePlannedActivityRequest
         {
-            Date = _date,
-            TimeBlockId = _timeBlockId!.Value,
-            Name = _name.Trim()
+            Date = _model.Date,
+            TimeBlockId = _model.TimeBlockId.Value,
+            Name = _model.Name.Trim()
         });
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        _nameError = _editContext.GetValidationMessages(_nameField)
+            .FirstOrDefault();
+        _timeBlockError = _editContext.GetValidationMessages(_timeBlockField)
+            .FirstOrDefault();
     }
 
     private void HandleNameInput(ChangeEventArgs args)
     {
-        if (_nameError is not null && !string.IsNullOrWhiteSpace(args.Value?.ToString()))
-            _nameError = null;
+        _model.Name = args.Value?.ToString() ?? string.Empty; // De nieuwe tekst uit args.Value wordt in _model.Name gezet. Als er geen waarde is, wordt dat "".
+        _editContext.NotifyFieldChanged(_nameField); // NotifyFieldChanged(_nameField) meldt aan de EditContext dat de naam is gewijzigd. De DataAnnotationsValidator controleert daardoor opnieuw de regels voor dit veld.
+        _nameError = _editContext.GetValidationMessages(_nameField)
+            .FirstOrDefault(); // GetValidationMessages(_nameField).FirstOrDefault() haalt de eerste actuele naamfout op. Als er geen fout meer is, wordt _nameError null en verdwijnt de foutmelding.
     }
 
     private void HandleTimeBlockChange()
     {
-        if (_timeBlockId is not null)
-            _timeBlockError = null;
+        _editContext.NotifyFieldChanged(_timeBlockField);
+        _timeBlockError = _editContext.GetValidationMessages(_timeBlockField)
+            .FirstOrDefault();
     }
 
     /* opruimmethode van de component. Om onnodig geheugengebruik te voorkomen.

@@ -18,6 +18,19 @@
         </button>
     </header>
 
+    @*
+        <EditForm EditContext="_editContext"> gebruikt de EditContext van ons formuliermodel.
+        <DataAnnotationsValidator /> laat Blazor de validatieattributen op dat model gebruiken, zoals [VisibleText], [StringLength] en [Required].
+
+        Een EditContext houdt de toestand van het formulier bij: welk model erbij hoort, welke velden gewijzigd zijn en welke validatiefouten er zijn.
+        Met EditContext="_editContext" geven we EditForm die toestand expliciet mee, zodat de code-behind de veldfouten kan opvragen en bijwerken.
+        OnValidSubmit roept SubmitAsync alleen aan bij geldige invoer; OnInvalidSubmit toont de veldfouten.
+    *@
+    <EditForm EditContext="_editContext"
+              OnValidSubmit="SubmitAsync"
+              OnInvalidSubmit="HandleInvalidSubmit">
+    <DataAnnotationsValidator />
+
     <label for="activity-name">Naam *</label>
     <input id="activity-name"
            type="text"
@@ -27,7 +40,7 @@
            aria-invalid="@(_nameError is not null ? "true" : "false")"
            aria-describedby="@(_nameError is not null ? "activity-name-error" : null)"
            placeholder="Bv. Ochtendwandeling"
-           @bind="_name"
+           @bind="_model.Name"
            @oninput="HandleNameInput" />
 
     @if (_nameError is not null)
@@ -40,7 +53,7 @@
            type="date"
            disabled="@(ExistingActivity is not null)"
            data-testid="activity-date"
-           @bind="_date"
+           @bind="_model.Date"
            @bind:format="yyyy-MM-dd"/>
 
     <label for="activity-time-block">Tijdsblok *</label>
@@ -50,7 +63,7 @@
                 disabled="@(ExistingActivity is not null)"
                 aria-invalid="@(_timeBlockError is not null ? "true" : "false")"
                 aria-describedby="@(_timeBlockError is not null ? "activity-time-block-error" : null)"
-                @bind="_timeBlockId"
+                @bind="_model.TimeBlockId"
                 @bind:after="HandleTimeBlockChange" > @* @bind:after voert een methode uit nadat @bind de nieuwe waarde heeft opgeslagen. *@
             <option value="">Kies een tijdsblok</option>
             @foreach (var block in TimeBlocks)
@@ -78,10 +91,9 @@
 
     @if (ExistingActivity is null)
     {
-        <button type="button"
+        <button type="submit"
                 class="activity-form-submit"
-                data-testid="submit-activity-button"
-                @onclick="SubmitAsync">
+                data-testid="submit-activity-button">
             Activiteit toevoegen
         </button>
     }
@@ -104,6 +116,7 @@
             <span>Verwijderen uit planning</span>
         </button>
     }
+    </EditForm>
 </dialog>
 
 @if (_isConfirmingDeletion)
