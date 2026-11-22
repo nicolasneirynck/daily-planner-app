@@ -133,6 +133,12 @@ public class DayPlanningService(
         });
     }
 
+    public Task<Result> UpdateActivityAsync(
+        int activityId, UpdatePlannedActivityRequest request, CancellationToken ctx = default)
+    {
+        return Task.FromResult(Result.Error("Planned activity update is not implemented."));
+    }
+
     public async Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default)
     {

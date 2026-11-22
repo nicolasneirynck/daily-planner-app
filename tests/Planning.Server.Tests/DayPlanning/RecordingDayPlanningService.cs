@@ -60,6 +60,12 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                 }));
     }
 
+    public Task<Result> UpdateActivityAsync(
+        int activityId, UpdatePlannedActivityRequest request, CancellationToken ctx = default)
+    {
+        return Task.FromResult(Result.Error("Planned activity update is not implemented."));
+    }
+
     public Task<Result> SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx = default)
     {
