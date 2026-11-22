@@ -15,6 +15,8 @@ internal sealed class ActivityFormModel
 
     [Required(ErrorMessage = "Kies een tijdsblok.")] // bij Name zorgt visible text al voor het required stuk
     public int? TimeBlockId { get; set; }
+
+    public bool IsImportant { get; set; }
 }
 
 internal sealed class VisibleTextAttribute : ValidationAttribute

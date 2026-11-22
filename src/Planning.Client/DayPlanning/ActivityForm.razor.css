@@ -163,6 +163,62 @@
     stroke-linejoin: round; /* maakt samenkomst van van de v rond -> bij zo klein wel heel subtiel*/
 }
 
+.activity-form .activity-important-toggle,
+.activity-form .activity-important-display {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.25rem;
+    margin: 1.5rem 0 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    background: #f8f5f0;
+    color: #192231;
+    font-weight: 700;
+}
+
+.activity-form .activity-important-toggle {
+    cursor: pointer;
+}
+
+.activity-form .activity-important-toggle input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    opacity: 0;
+}
+
+.activity-important-toggle svg,
+.activity-important-display svg {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.activity-important-toggle:focus-within {
+    outline: 1px solid var(--accent-coral);
+    outline-offset: 1px;
+}
+
+.activity-important-toggle input:checked + svg {
+    color: var(--accent-coral);
+    fill: var(--accent-coral);
+}
+
+.activity-important-display svg {
+    color: var(--accent-coral);
+    fill: var(--accent-coral);
+}
+
 .activity-form-submit {
     width: 100%;
     min-height: 3.25rem;
@@ -173,7 +229,7 @@
     background: var(--accent-coral);
     color: white;
     font: inherit;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
 }
 

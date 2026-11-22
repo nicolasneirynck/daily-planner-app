@@ -8,7 +8,7 @@ using static Planning.Client.Pages.DayPlanningTestData;
 
 namespace Planning.Client.Pages;
 
-public class DayPlanningCompletionShould : BunitContext
+public class PlannedActivityCompletionShould : BunitContext
 {
     [Fact]
     public void MarkIncompleteActivityAsCompletedImmediately()

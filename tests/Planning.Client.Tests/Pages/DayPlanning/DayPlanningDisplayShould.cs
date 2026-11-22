@@ -102,4 +102,51 @@ public class DayPlanningDisplayShould : BunitContext
                 .ShouldBe(["Evening routine"]);
         });
     }
+
+    [Fact]
+    public void ShowFlagOnlyForImportantActivities()
+    {
+        // Arrange
+        var morning = Block(1, "Morning", 6, 9);
+        morning.Activities =
+        [
+            new PlannedActivityDto
+            {
+                Id = 101,
+                Name = "Morning walk",
+                IsImportant = true
+            },
+            new PlannedActivityDto
+            {
+                Id = 102,
+                Name = "Read a book",
+                IsImportant = false
+            }
+        ];
+
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = DateOnly.FromDateTime(DateTime.Today),
+                    TimeBlocks = [morning]
+                })));
+        Services.AddSingleton(service);
+
+        // Act
+        var cut = Render<DayPlanning>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            var rows = cut.FindAll("[data-testid='planned-activity-row']");
+            rows.Count.ShouldBe(2);
+            rows[0].QuerySelectorAll("[data-testid='activity-important-flag']")
+                .Length.ShouldBe(1);
+            rows[1].QuerySelectorAll("[data-testid='activity-important-flag']")
+                .ShouldBeEmpty();
+        });
+    }
 }

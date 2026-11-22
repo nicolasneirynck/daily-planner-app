@@ -9,9 +9,9 @@ using static Planning.Client.Pages.DayPlanningTestData;
 
 namespace Planning.Client.Pages;
 
-public class DayPlanningActivityDeletionShould : BunitContext
+public class PlannedActivityDeletionShould : BunitContext
 {
-    public DayPlanningActivityDeletionShould()
+    public PlannedActivityDeletionShould()
     {
         JSInterop.SetupModule("./js/activityDialog.js")
             .SetupVoid("showModal", _ => true);
