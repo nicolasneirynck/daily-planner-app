@@ -8,9 +8,9 @@ using static Planning.Client.Pages.DayPlanningTestData;
 
 namespace Planning.Client.Pages;
 
-public class DayPlanningActivityDescriptionShould : BunitContext
+public class PlannedActivityDescriptionShould : BunitContext
 {
-    public DayPlanningActivityDescriptionShould()
+    public PlannedActivityDescriptionShould()
     {
         JSInterop.SetupModule("./js/activityDialog.js")
             .SetupVoid("showModal", _ => true);
