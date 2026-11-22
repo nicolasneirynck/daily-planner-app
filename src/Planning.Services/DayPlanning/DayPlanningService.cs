@@ -133,10 +133,60 @@ public class DayPlanningService(
         });
     }
 
-    public Task<Result> UpdateActivityAsync(
-        int activityId, UpdatePlannedActivityRequest request, CancellationToken ctx = default)
+    public async Task<Result> UpdateActivityAsync(
+        int activityId, UpdatePlannedActivityRequest request,
+        CancellationToken ctx = default)
     {
-        return Task.FromResult(Result.Error("Planned activity update is not implemented."));
+        var userId = sessionContextProvider.User?.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result.Unauthorized();
+
+        var activity = await dbContext.PlannedActivities.SingleOrDefaultAsync(
+            activity => activity.Id == activityId &&
+                        activity.UserId == userId &&
+                        !activity.IsDeleted,
+            ctx);
+
+        if (activity is null)
+            return Result.NotFound("Planned activity was not found.");
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Name),
+                ErrorMessage = PlannedActivityRules.NameRequiredMessage
+            });
+
+        if (request.Name.Length > PlannedActivityRules.MaxNameLength)
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Name),
+                ErrorMessage = PlannedActivityRules.NameTooLongMessage
+            });
+
+        if (request.Description?.Length > PlannedActivityRules.MaxDescriptionLength)
+            return Result.Invalid(new ValidationError
+            {
+                Identifier = nameof(request.Description),
+                ErrorMessage = PlannedActivityRules.DescriptionTooLongMessage
+            });
+
+        var blockExists = await dbContext.TimeBlocks.AnyAsync(block =>
+            block.Id == request.TimeBlockId &&
+            block.UserId == userId &&
+            !block.IsDeleted, ctx);
+
+        if (!blockExists)
+            return Result.NotFound("Time block was not found.");
+
+        activity.Name = request.Name;
+        activity.Description = request.Description;
+        activity.IsImportant = request.IsImportant;
+        activity.Date = request.Date;
+        activity.TimeBlockId = request.TimeBlockId;
+
+        await dbContext.SaveChangesAsync(ctx);
+        return Result.Success();
     }
 
     public async Task<Result> SetActivityCompletionAsync(
