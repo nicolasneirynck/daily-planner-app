@@ -46,7 +46,7 @@ public class DayPlanningActivityDeletionShould : BunitContext
 
         var description = (IHtmlTextAreaElement)cut.Find(
             "[role='dialog'] [data-testid='activity-description']");
-        description.Value.ShouldBe("Bring the library card");
+        description.GetAttribute("value").ShouldBe("Bring the library card");
         description.GetAttribute("readonly").ShouldNotBeNull();
 
         var date = (IHtmlInputElement)cut.Find(

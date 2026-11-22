@@ -62,7 +62,8 @@
 }
 
 .activity-form input,
-.activity-form select {
+.activity-form select,
+.activity-form textarea {
     width: 100%;
     min-height: 3rem;
     padding: 0.65rem 0.75rem;
@@ -71,6 +72,34 @@
     background: white;
     color: #192231;
     font: inherit;
+}
+
+.activity-form textarea {
+    min-height: 7rem;
+    resize: vertical;
+}
+
+.activity-description-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+}
+
+.activity-description-count,
+.activity-description-limit {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.activity-description-count {
+    margin-left: auto;
+    color: #6b7280;
+}
+
+.activity-description-limit {
+    color: #6b7280;
 }
 
 .activity-form [role="alert"] {
@@ -88,7 +117,8 @@
 }
 
 .activity-form input[aria-invalid="true"],
-.activity-form select[aria-invalid="true"] {
+.activity-form select[aria-invalid="true"],
+.activity-form textarea[aria-invalid="true"] {
     border-color: var(--error-color);
 }
 
@@ -98,12 +128,14 @@
 }
 
 .activity-form input:focus,
-.activity-form select:focus {
+.activity-form select:focus,
+.activity-form textarea:focus {
     outline: 1px solid var(--accent-coral);
 }
 
 .activity-form input[aria-invalid="true"]:focus,
-.activity-form select[aria-invalid="true"]:focus {
+.activity-form select[aria-invalid="true"]:focus,
+.activity-form textarea[aria-invalid="true"]:focus {
     outline: 1px solid var(--error-color);
 }
 

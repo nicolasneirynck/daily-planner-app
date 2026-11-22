@@ -52,6 +52,7 @@ public partial class ActivityForm : IAsyncDisposable
     private EditContext _editContext = default!; // EditContext: houdt onder meer het formuliermodel, gewijzigde velden en validatiefouten bij.
                                                  // = default!: zegt tegen de C#-compiler: “Dit veld krijgt later een waarde.” De ! onderdrukt de waarschuwing dat het nu nog null is.
     private FieldIdentifier _nameField;
+    private FieldIdentifier _descriptionField;
     private FieldIdentifier _timeBlockField;
     private ValidationMessageStore _serverMessages = default!; // een opslag voor validatiemeldingen van de server. Die is gekoppeld aan _editContext, zodat het formulier ze samen met Blazors gewone veldmeldingen kan tonen.
     private IReadOnlyList<ClientFieldError>? _appliedServerErrors; // onthoudt welke lijst serverfouten al is verwerkt, zodat dezelfde lijst bij een volgende render niet opnieuw wordt toegevoegd.
@@ -64,10 +65,12 @@ public partial class ActivityForm : IAsyncDisposable
     protected override void OnInitialized()
     {
         _model.Name = ExistingActivity?.Name ?? string.Empty;
+        _model.Description = ExistingActivity?.Description;
         _model.Date = InitialDate;
         _model.TimeBlockId = InitialTimeBlockId;
         _editContext = new EditContext(_model);
         _nameField = FieldIdentifier.Create(() => _model.Name); // Een FieldIdentifier bewaart welk model en welke eigenschap bedoeld worden. Daarmee kan de code later bijvoorbeeld de foutmeldingen van precies het naamveld opvragen of aan de EditContext melden dat TimeBlockId gewijzigd is.
+        _descriptionField = FieldIdentifier.Create(() => _model.Description);
         _timeBlockField = FieldIdentifier.Create(() => _model.TimeBlockId);
         _serverMessages = new ValidationMessageStore(_editContext); // maakt een opslag voor serverfouten en koppelt die aan het formulier (_editContext)
         _editContext.OnValidationRequested += ClearServerMessagesOnSubmit; // registreert ClearServerMessagesOnSubmit als handler voor een validatieverzoek. Bij het indienen vraagt EditForm om validatie; de handler wist dan eerdere serverfouten uit die opslag.
@@ -82,6 +85,8 @@ public partial class ActivityForm : IAsyncDisposable
         _serverMessages.Clear();
         foreach (var error in ServerErrors.Where(error => error.Name == "name"))
             _serverMessages.Add(_nameField, error.Message); // De foreach loopt door de serverfouten waarvan Name gelijk is aan "name". Voor elk van die fouten voegt Add de fouttekst toe aan het naamveld (_nameField) in Blazors validatieopslag.
+        foreach (var error in ServerErrors.Where(error => error.Name == "description"))
+            _serverMessages.Add(_descriptionField, error.Message);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -132,7 +137,8 @@ public partial class ActivityForm : IAsyncDisposable
             Date = _model.Date,
             TimeBlockId = _model.TimeBlockId
                 ?? throw new InvalidOperationException("A time block is required."),
-            Name = _model.Name.Trim()
+            Name = _model.Name.Trim(),
+            Description = _model.Description?.Trim()
         });
     }
 
@@ -150,6 +156,13 @@ public partial class ActivityForm : IAsyncDisposable
         _model.Name = args.Value?.ToString() ?? string.Empty; // De nieuwe tekst uit args.Value wordt in _model.Name gezet. Als er geen waarde is, wordt dat "".
         _serverMessages.Clear(_nameField);
         _editContext.NotifyFieldChanged(_nameField); // NotifyFieldChanged(_nameField) meldt aan de EditContext dat de naam is gewijzigd. De DataAnnotationsValidator controleert daardoor opnieuw de regels voor dit veld.
+    }
+
+    private void HandleDescriptionInput(ChangeEventArgs args)
+    {
+        _model.Description = args.Value?.ToString();
+        _serverMessages.Clear(_descriptionField);
+        _editContext.NotifyFieldChanged(_descriptionField);
     }
 
     private void HandleTimeBlockChange()

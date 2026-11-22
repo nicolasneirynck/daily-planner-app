@@ -52,11 +52,12 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
-    public async Task AddActivityToTimeBlockAndKeepItAfterReload()
+    public async Task AddActivityWithDescriptionToTimeBlockAndKeepItAfterReload()
     {
         // Arrange
         await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
         var activityName = $"Read a book {Guid.NewGuid():N}";
+        var activityDescription = "Bring the library card";
 
         await LogInToDayPlanningAsync();
 
@@ -69,6 +70,17 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         // Act: add an activity to the selected time block
         await morning.GetByTestId("add-activity-button").ClickAsync();
         await Page.GetByTestId("activity-name").FillAsync(activityName);
+
+        var maxDescription = new string('a', 500);
+        await Page.GetByTestId("activity-description").FillAsync(maxDescription);
+        await Page.GetByTestId("activity-description").PressAsync("b");
+
+        await Expect(Page.GetByTestId("activity-description"))
+            .ToHaveValueAsync(maxDescription);
+        await Expect(Page.GetByTestId("activity-description-limit"))
+            .ToBeVisibleAsync();
+
+        await Page.GetByTestId("activity-description").FillAsync(activityDescription);
         await Page.GetByTestId("submit-activity-button").ClickAsync();
 
         // Assert: it appears immediately in the selected block
@@ -81,6 +93,17 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         // Assert: it is still there
         await Expect(morning.GetByText(activityName, new() { Exact = true }))
             .ToBeVisibleAsync();
+
+        // Act: open the saved activity
+        var activity = morning.GetByTestId("planned-activity-row")
+            .Filter(new() { HasText = activityName });
+        await activity.GetByTestId("activity-open-button").ClickAsync();
+
+        // Assert: the saved description is available to read
+        await Expect(Page.GetByTestId("activity-description"))
+            .ToHaveValueAsync(activityDescription);
+        await Expect(Page.GetByTestId("activity-description"))
+            .ToHaveAttributeAsync("readonly", "");
     }
 
     [Fact]
