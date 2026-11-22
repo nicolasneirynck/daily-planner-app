@@ -9,6 +9,8 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
     public DateOnly? RequestedDate { get; private set; }
     public CreatePlannedActivityRequest? CreatedActivity { get; private set; }
     public Func<CreatePlannedActivityRequest, Result<PlannedActivityDto>>? CreateActivityOverride { get; set; }
+    public int? EditedActivityId { get; private set; }
+    public UpdatePlannedActivityRequest? EditedActivityRequest { get; private set; }
     public int? UpdatedActivityId { get; private set; }
     public bool? UpdatedIsCompleted { get; private set; }
     public int? DeletedPlannedActivityId { get; private set; }
@@ -58,6 +60,14 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                     IsCompleted = false,
                     IsImportant = request.IsImportant
                 }));
+    }
+
+    public Task<Result> UpdateActivityAsync(
+        int activityId, UpdatePlannedActivityRequest request, CancellationToken ctx = default)
+    {
+        EditedActivityId = activityId;
+        EditedActivityRequest = request;
+        return Task.FromResult(Result.Success());
     }
 
     public Task<Result> SetActivityCompletionAsync(
