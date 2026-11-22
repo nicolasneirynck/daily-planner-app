@@ -8,6 +8,9 @@ internal sealed class ActivityFormModel
     [StringLength(250, ErrorMessage = "Gebruik maximaal 250 tekens.")]
     public string Name { get; set; } = string.Empty;
 
+    [StringLength(500, ErrorMessage = "Gebruik maximaal 500 tekens.")]
+    public string? Description { get; set; }
+
     public DateOnly Date { get; set; }
 
     [Required(ErrorMessage = "Kies een tijdsblok.")] // bij Name zorgt visible text al voor het required stuk

@@ -24,7 +24,12 @@ public class DayPlanningActivityDeletionShould : BunitContext
         var today = DateOnly.FromDateTime(DateTime.Today);
         RegisterServiceWithActivities(() =>
         [
-            new PlannedActivityDto { Id = 101, Name = "Morning walk" }
+            new PlannedActivityDto
+            {
+                Id = 101,
+                Name = "Morning walk",
+                Description = "Bring the library card"
+            }
         ]);
         var cut = Render<DayPlanning>();
 
@@ -38,6 +43,11 @@ public class DayPlanningActivityDeletionShould : BunitContext
         /* IHtmlInputElement geeft toegang tot Value: zo controleren we de ingevulde waarde,
            niet alleen tekst die ergens in de dialoog staat (bv in een titel of label).
            Dus met Name.Value controleer je specifiek op wat in het invoerveld staat*/
+
+        var description = (IHtmlTextAreaElement)cut.Find(
+            "[role='dialog'] [data-testid='activity-description']");
+        description.GetAttribute("value").ShouldBe("Bring the library card");
+        description.GetAttribute("readonly").ShouldNotBeNull();
 
         var date = (IHtmlInputElement)cut.Find(
             "[role='dialog'] [data-testid='activity-date']");

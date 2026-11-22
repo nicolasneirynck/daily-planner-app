@@ -52,6 +52,47 @@
         </div>
     }
 
+    @* haalt huidige validatiefouten op*@
+    @{ var descriptionErrors = _editContext.GetValidationMessages(_descriptionField).ToArray(); }
+    <label for="activity-description">Beschrijving (optioneel)</label>
+    <textarea id="activity-description"
+              data-testid="activity-description"
+              maxlength="500"
+              readonly="@(ExistingActivity is not null)"
+              aria-invalid="@(descriptionErrors.Length > 0 ? "true" : "false")"
+              aria-describedby="@(descriptionErrors.Length > 0
+                  ? "activity-description-count activity-description-error"
+                  : "activity-description-count")"
+              @bind="_model.Description"
+              @oninput="HandleDescriptionInput"></textarea>
+
+    <div class="activity-description-meta">
+        @if (ExistingActivity is null && _model.Description?.Length == 500)
+        {
+            <p role="status"
+               class="activity-description-limit"
+               data-testid="activity-description-limit">
+                Maximum van 500 tekens bereikt.
+            </p>
+        }
+
+        <p id="activity-description-count"
+           class="activity-description-count"
+           data-testid="activity-description-count">
+            @(_model.Description?.Length ?? 0)/500
+        </p>
+    </div>
+
+    @if (descriptionErrors.Length > 0)
+    {
+        <div id="activity-description-error" role="alert">
+            @foreach (var error in descriptionErrors)
+            {
+                <p>@error</p>
+            }
+        </div>
+    }
+
     <label for="activity-date">Datum *</label>
     <input id="activity-date"
            type="date"

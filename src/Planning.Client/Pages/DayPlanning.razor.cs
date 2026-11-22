@@ -181,11 +181,11 @@ public partial class DayPlanning
 
             var errors = result.FieldErrors.ToArray();
             _activityFieldErrors = errors
-                .Where(error => error.Name == "name")
+                .Where(error => error.Name is "name" or "description")
                 .ToArray();
 
             var hasOtherErrors =
-                errors.Any(error => error.Name is not ("name" or "$"));
+                errors.Any(error => error.Name is not ("name" or "description" or "$"));
 
             _activitySaveError = _activityFieldErrors.Count > 0 && !hasOtherErrors
                 ? null

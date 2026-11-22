@@ -209,6 +209,46 @@ public class DayPlanningActivityCreationShould : BunitContext
         });
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Bring the library card")]
+    public void PassOptionalDescriptionToService(string? description)
+    {
+        // Arrange
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = DateOnly.FromDateTime(DateTime.Today),
+                    TimeBlocks = [Block(1, "Morning", 6, 9)]
+                })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
+            .Click();
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        if (description is not null)
+            cut.Find("[data-testid='activity-description']").Input(description);
+        cut.Find("[role='dialog'] form").Submit();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = service.Received(1).CreateActivityAsync(
+                Arg.Is<CreatePlannedActivityRequest>(request =>
+                    request.Description == description),
+                Arg.Any<CancellationToken>());
+        });
+    }
+
     [Fact]
     public void SendChosenTimeBlockWhenAddingFromGlobalButton()
     {
