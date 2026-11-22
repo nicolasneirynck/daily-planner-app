@@ -82,23 +82,25 @@ public class DbSeeder(ApplicationDbContext dbContext, RoleManager<IdentityRole> 
             ["Boek lezen", "Film kijken", "Spelletje spelen", "Ontspannen"]
         ];
 
+        var descriptions = new Dictionary<string, string>
+        {
+            ["Ochtendwandeling"] = "Loop een rustige route van ongeveer 20 minuten.",
+            ["Administratie bijwerken"] = "Controleer de post en betaal openstaande rekeningen.",
+            ["Boodschappen doen"] = "Neem de boodschappenlijst en herbruikbare tassen mee.",
+            ["Boek lezen"] = "Lees één hoofdstuk zonder afleiding."
+        };
+
         var today = DateOnly.FromDateTime(DateTime.Today);
         var existing = (await dbContext.PlannedActivities
             .Where(activity =>
                 activity.UserId == user.Id &&
                 activity.Date >= today &&
-                activity.Date <= today.AddDays(6) &&
+                activity.Date <= today.AddDays(13) &&
                 !activity.IsDeleted)
-            .Select(activity => new
-            {
-                activity.Date,
-                activity.TimeBlockId,
-                activity.Name
-            })
             .ToListAsync())
             .ToLookup(activity => (activity.Date, activity.TimeBlockId));
 
-        for (var day = 0; day < 7; day++)
+        for (var day = 0; day < 14; day++)
         {
             var date = today.AddDays(day);
             var random = new Random(date.DayNumber);
@@ -114,6 +116,15 @@ public class DbSeeder(ApplicationDbContext dbContext, RoleManager<IdentityRole> 
             {
                 var blockId = blocks[block];
                 var existingActivities = existing[(date, blockId)].ToList();
+                if (day < 7)
+                {
+                    foreach (var activity in existingActivities.Where(activity => activity.Description is null))
+                    {
+                        if (descriptions.TryGetValue(activity.Name, out var description))
+                            activity.Description = description;
+                    }
+                }
+
                 var existingNames = existingActivities.Select(activity => activity.Name).ToHashSet();
                 var namesToAdd = activityNames[block - 1]
                     .Where(name => !existingNames.Contains(name))
@@ -126,7 +137,8 @@ public class DbSeeder(ApplicationDbContext dbContext, RoleManager<IdentityRole> 
                         UserId = user.Id,
                         Date = date,
                         TimeBlockId = blockId,
-                        Name = name
+                        Name = name,
+                        Description = descriptions.GetValueOrDefault(name)
                     });
                 }
             }
