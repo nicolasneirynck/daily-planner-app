@@ -135,6 +135,32 @@
         </div>
     }
 
+    @if (ExistingActivity is null)
+    {
+        <label class="activity-important-toggle" for="activity-important">
+            <input id="activity-important"
+                   type="checkbox"
+                   data-testid="activity-important"
+                   @bind="_model.IsImportant" />
+
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />
+            </svg>
+
+            <span>Belangrijk</span>
+        </label>
+    }
+    else if (ExistingActivity.IsImportant)
+    {
+        <div class="activity-important-display"
+             data-testid="activity-important-readonly">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />
+            </svg>
+            <span>Belangrijk</span>
+        </div>
+    }
+
     @if (SaveError is not null)
     {
         <p role="alert" data-testid="activity-save-error">@SaveError</p>

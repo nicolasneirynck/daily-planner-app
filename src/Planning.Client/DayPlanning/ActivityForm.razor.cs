@@ -138,7 +138,8 @@ public partial class ActivityForm : IAsyncDisposable
             TimeBlockId = _model.TimeBlockId
                 ?? throw new InvalidOperationException("A time block is required."),
             Name = _model.Name.Trim(),
-            Description = _model.Description?.Trim()
+            Description = _model.Description?.Trim(),
+            IsImportant = _model.IsImportant
         });
     }
 

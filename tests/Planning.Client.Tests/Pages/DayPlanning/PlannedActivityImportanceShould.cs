@@ -96,6 +96,56 @@ public class PlannedActivityImportanceShould : BunitContext
         });
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ShowReadOnlyImportanceWhenOpeningActivity(bool isImportant)
+    {
+        // Arrange
+        var morning = Block(1, "Morning", 6, 9);
+        morning.Activities =
+        [
+            new PlannedActivityDto
+            {
+                Id = 101,
+                Name = "Morning walk",
+                IsImportant = isImportant
+            }
+        ];
+
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = DateOnly.FromDateTime(DateTime.Today),
+                    TimeBlocks = [morning]
+                })));
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+        cut.WaitForAssertion(() =>
+            cut.FindAll("[data-testid='activity-open-button']")
+                .Count.ShouldBe(1));
+
+        // Act
+        cut.Find("[data-testid='activity-open-button']").Click();
+
+        // Assert
+        var dialog = cut.Find("[role='dialog']");
+        var readOnlyIndicators = dialog.QuerySelectorAll(
+            "[data-testid='activity-important-readonly']");
+        readOnlyIndicators.Length.ShouldBe(isImportant ? 1 : 0);
+        if (isImportant)
+        {
+            readOnlyIndicators[0].TextContent.ShouldContain("Belangrijk");
+            readOnlyIndicators[0].QuerySelectorAll("input, button, a")
+                .ShouldBeEmpty();
+        }
+        dialog.QuerySelectorAll("[data-testid='activity-important']")
+            .ShouldBeEmpty();
+    }
+
     [Fact]
     public void ShowImportantFlagAfterReopeningDay()
     {
