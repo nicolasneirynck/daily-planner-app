@@ -43,4 +43,5 @@ public class PlannedActivity : Entity
     public required DateOnly Date { get; set; }
     public required int TimeBlockId { get; set; }
     public bool IsCompleted { get; set; }
+    public bool IsImportant { get; set; }
 }

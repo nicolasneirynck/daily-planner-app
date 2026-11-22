@@ -36,7 +36,8 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                             {
                                 Id = 42,
                                 Name = "Read a book",
-                                Description = "Bring the library card"
+                                Description = "Bring the library card",
+                                IsImportant = true
                             }
                         ]
                     }
@@ -54,7 +55,8 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                     Id = 42,
                     Name = request.Name,
                     Description = request.Description,
-                    IsCompleted = false
+                    IsCompleted = false,
+                    IsImportant = request.IsImportant
                 }));
     }
 

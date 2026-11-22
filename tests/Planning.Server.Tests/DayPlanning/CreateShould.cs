@@ -91,7 +91,7 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
     }
 
     [Fact]
-    public async Task PassTheSelectedDateTimeBlockNameAndDescriptionToTheService()
+    public async Task PassActivityFieldsToTheServiceAndReturnTheCreatedActivity()
     {
         using var client = app.CreateClient();
         client.DefaultRequestHeaders.Add(
@@ -104,7 +104,8 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
                 Date = new DateOnly(2026, 11, 14),
                 TimeBlockId = 3,
                 Name = "Read a book",
-                Description = "Bring the library card"
+                Description = "Bring the library card",
+                IsImportant = true
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -120,6 +121,7 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
         root.GetProperty("name").GetString().ShouldBe("Read a book");
         root.GetProperty("description").GetString()
             .ShouldBe("Bring the library card");
+        root.GetProperty("isImportant").GetBoolean().ShouldBeTrue();
         app.DayPlanningService.CreatedActivity.ShouldNotBeNull();
         app.DayPlanningService.CreatedActivity.Date
             .ShouldBe(new DateOnly(2026, 11, 14));
@@ -127,5 +129,6 @@ public class CreateShould(DayPlanningApp app) : IClassFixture<DayPlanningApp>
         app.DayPlanningService.CreatedActivity.Name.ShouldBe("Read a book");
         app.DayPlanningService.CreatedActivity.Description
             .ShouldBe("Bring the library card");
+        app.DayPlanningService.CreatedActivity.IsImportant.ShouldBeTrue();
     }
 }
