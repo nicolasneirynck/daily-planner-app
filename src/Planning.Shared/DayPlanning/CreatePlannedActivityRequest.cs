@@ -6,4 +6,5 @@ public class CreatePlannedActivityRequest
     public required int TimeBlockId { get; set; }
     public required string Name { get; set; }
     public string? Description { get; set; }
+    public bool IsImportant { get; set; }
 }

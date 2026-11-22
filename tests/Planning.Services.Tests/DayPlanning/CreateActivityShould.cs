@@ -108,6 +108,7 @@ public class CreateActivityShould(PostgreSqlFixture fixture)
 
         createResult.IsSuccess.ShouldBeTrue();
         createResult.Value.Description.ShouldBeNull();
+        createResult.Value.IsImportant.ShouldBeFalse();
 
         await using var reopenedContext = fixture.CreateContext();
         var reopenedService = CreateAuthenticatedService(
@@ -115,16 +116,17 @@ public class CreateActivityShould(PostgreSqlFixture fixture)
         var dayResult = await reopenedService.GetDayAsync(date);
 
         dayResult.IsSuccess.ShouldBeTrue();
-        dayResult.Value.TimeBlocks
+        var savedActivity = dayResult.Value.TimeBlocks
             .Single(block => block.Id == blocks[2].Id)
-            .Activities.Single().Name.ShouldBe("Read a book");
-        dayResult.Value.TimeBlocks
-            .Single(block => block.Id == blocks[2].Id)
-            .Activities.Single().Description.ShouldBeNull();
+            .Activities.Single();
+
+        savedActivity.Name.ShouldBe("Read a book");
+        savedActivity.Description.ShouldBeNull();
+        savedActivity.IsImportant.ShouldBeFalse();
     }
 
     [Fact]
-    public async Task SaveDescriptionAndReturnItWhenDayIsReopened()
+    public async Task SaveDescriptionAndImportanceAndReturnThemWhenDayIsReopened()
     {
         var userId = Guid.NewGuid().ToString();
         var date = new DateOnly(2026, 11, 14);
@@ -140,20 +142,25 @@ public class CreateActivityShould(PostgreSqlFixture fixture)
                 Date = date,
                 TimeBlockId = blocks[2].Id,
                 Name = "Read a book",
-                Description = description
+                Description = description,
+                IsImportant = true
             });
 
         createResult.IsSuccess.ShouldBeTrue();
         createResult.Value.Description.ShouldBe(description);
+        createResult.Value.IsImportant.ShouldBeTrue();
 
         await using var reopenedContext = fixture.CreateContext();
         var reopenedService = CreateAuthenticatedService(reopenedContext, userId);
         var dayResult = await reopenedService.GetDayAsync(date);
 
         dayResult.IsSuccess.ShouldBeTrue();
-        dayResult.Value.TimeBlocks
+        var savedActivity = dayResult.Value.TimeBlocks
             .Single(block => block.Id == blocks[2].Id)
-            .Activities.Single().Description.ShouldBe(description);
+            .Activities.Single();
+
+        savedActivity.Description.ShouldBe(description);
+        savedActivity.IsImportant.ShouldBeTrue();
     }
 
     [Fact]

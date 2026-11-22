@@ -45,7 +45,8 @@ public class DayPlanningService(
                 activity.Id,
                 activity.Name,
                 activity.Description,
-                activity.IsCompleted
+                activity.IsCompleted,
+                activity.IsImportant
             })
             .ToListAsync(ctx);
 
@@ -61,7 +62,8 @@ public class DayPlanningService(
                     Id = activity.Id,
                     Name = activity.Name,
                     Description = activity.Description,
-                    IsCompleted = activity.IsCompleted
+                    IsCompleted = activity.IsCompleted,
+                    IsImportant = activity.IsImportant
                 })
                 .ToArray();
         }
@@ -115,7 +117,8 @@ public class DayPlanningService(
             Date = request.Date,
             TimeBlockId = request.TimeBlockId,
             Name = request.Name,
-            Description = request.Description
+            Description = request.Description,
+            IsImportant = request.IsImportant
         };
         dbContext.PlannedActivities.Add(activity);
 
@@ -125,7 +128,8 @@ public class DayPlanningService(
             Id = activity.Id,
             Name = activity.Name,
             Description = activity.Description,
-            IsCompleted = activity.IsCompleted
+            IsCompleted = activity.IsCompleted,
+            IsImportant = activity.IsImportant
         });
     }
 
