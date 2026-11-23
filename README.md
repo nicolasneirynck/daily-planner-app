@@ -1,78 +1,122 @@
-# Dagplanner
+# Daily Planner
 
-Een webapplicatie om activiteiten per dag en tijdsblok te plannen. Het project is bedoeld voor mensen die meer overzicht in hun dag willen, met ADHD als aanleiding voor de ontwikkeling. De applicatie is in ontwikkeling; hieronder staan alleen functies die al in de codebase aanwezig zijn.
+Daily Planner is a web application designed to help users organize their daily activities and create a clearer overview of their day.
 
-## Wat werkt al?
+Inspired by planning and organizational challenges often associated with ADHD, the application aims to provide a simple and structured approach to daily planning.
 
-- Bekijk een dagplanning met zes vaste tijdsblokken en navigeer tussen dagen.
-- Voeg activiteiten toe en wijzig hun naam, beschrijving, datum en tijdsblok.
-- Markeer activiteiten als belangrijk of voltooid en verwijder ze na bevestiging.
-- Registreer een account en meld je aan. Planningen zijn per gebruiker gescheiden.
+The project is currently under active development.
 
-**Nog niet beschikbaar:** tijdsblokken zelf instellen. Er is in deze repository geen concrete roadmap voor volgende functies vastgelegd.
+## Features
 
-## Lokaal starten
+The application currently supports:
+- Daily planning: View activities organized into six predefined time blocks and navigate between days.
+- Activity management: Create, edit, reschedule, and delete planned activities.
+- Activity tracking: Mark activities as important or completed.
+- Unsaved changes: Receive a warning before discarding unsaved changes.
+- User authentication: Register and sign in.
 
-### Vereisten
+
+## Getting Started
+
+### Prerequisites
 
 - .NET 10 SDK
-- Docker met Docker Compose voor PostgreSQL
-- Een vrije poort `5433` voor PostgreSQL en `5001` voor de webapplicatie
+- Docker with Docker Compose
+- Available ports `5433` (PostgreSQL) and `5001` (application)
 
-Voer vanuit de repositoryroot uit:
+### 1. Configure the Environment
+
+From the repository root, create a local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Bestaat `.env` al, sla deze kopieerstap over.
+Update `.env` with your local database credentials. Make sure the PostgreSQL credentials match those in `ConnectionStrings__DatabaseConnection`.
 
-Kies in `.env` een eigen lokaal databasewachtwoord. Zorg dat `POSTGRES_USER`, `POSTGRES_PASSWORD` en `POSTGRES_DB` overeenkomen met de gebruikersnaam, het wachtwoord en de databasenaam in `ConnectionStrings__DatabaseConnection`. Gebruik voor de verbindingsreeks poort `5433`; Docker Compose koppelt die aan PostgreSQL-poort `5432` in de container. `.env` wordt niet gecommit.
+### 2. Start PostgreSQL
 
 ```bash
 docker compose up -d
+```
+
+### 3. Run the Application
+
+```bash
 ./scripts/run-local.sh
 ```
 
-Open <https://localhost:5001>. Het script laadt `.env` en start de server met het HTTPS-ontwikkelprofiel. Vertrouw zo nodig eerst het lokale ontwikkelcertificaat met `dotnet dev-certs https --trust`.
+Open https://localhost:5001 in your browser.
 
-In de ontwikkelomgeving past de server bij het starten EF Core-migraties toe en maakt voorbeelddata en demoaccounts aan. Registreer je liever een eigen account via `/register`, start de server dan na registratie opnieuw om de zes standaardtijdsblokken voor dat account te laten aanmaken. Registratie is momenteel ook buiten `Development` openbaar; beoordeel die toegangsregel vóór productiegebruik.
+If necessary, trust the local HTTPS development certificate:
 
-### Configuratie
+```bash
+dotnet dev-certs https --trust
+```
 
-| Instelling | Gebruik |
-| --- | --- |
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Initialisatie van de lokale PostgreSQL-container via Docker Compose |
-| `ConnectionStrings__DatabaseConnection` | Verbinding van de .NET-server met PostgreSQL op `localhost:5433` |
+### Development Notes
 
-De dubbele underscore in de naam van de verbindingsreeks komt overeen met `ConnectionStrings:DatabaseConnection` in .NET-configuratie. Voor andere omgevingen moet de verbindingsreeks via omgevingsconfiguratie of een secret store worden aangeleverd; automatische migraties en voorbeelddata draaien alleen in `Development`.
+- The startup script loads the environment variables from `.env` and launches the application using the HTTPS development profile.
+- In `Development`, EF Core migrations are applied automatically, and sample data and demo accounts are created.
+- New accounts currently require an application restart to initialize their six default time blocks.
+- Public registration is currently enabled outside `Development`. Review this behavior before deploying to production.
 
-## Ontwikkelen en testen
+
+## Development & Testing
+
+### Build
+
+Build the solution from the repository root:
 
 ```bash
 dotnet build Planning.sln
+```
+
+### Automated Tests
+
+Run the domain, service, API, and client tests:
+
+```bash
 dotnet test Planning.sln --filter 'FullyQualifiedName!~Planning.E2E.Tests'
 ```
 
-De tweede opdracht voert de domein-, service-, API- en clienttests uit. Houd Docker actief: een deel van de service- en API-tests start een tijdelijke PostgreSQL-container met Testcontainers.
+Docker must be running, as some service and API tests use Testcontainers to create temporary PostgreSQL instances.
 
-Voor de browsertests is daarnaast een geïnstalleerde Google Chrome nodig. De tests starten zelf een tijdelijke database en webserver; de lokaal gestarte applicatie is daarvoor niet nodig.
+### End-to-End Tests
+
+End-to-end browser tests require Google Chrome to be installed.
 
 ```bash
 dotnet test tests/Planning.E2E.Tests/Planning.E2E.Tests.csproj --settings playwright.chrome.runsettings
 ```
 
-## Technische opbouw
+These tests automatically start a temporary database and web server. The application does not need to be running separately.
 
-| Project | Verantwoordelijkheid |
-| --- | --- |
-| `Planning.Client` | Blazor WebAssembly-interface en API-client |
-| `Planning.Server` | ASP.NET Core-host, FastEndpoints-API en authenticatie |
-| `Planning.Shared` | Gedeelde API-contracten en validatie |
-| `Planning.Services` | Toepassingslogica voor de dagplanning |
-| `Planning.Domain` | Domeinmodellen en regels |
-| `Planning.Persistence` | EF Core, PostgreSQL-mapping en migraties |
+## Technical Architecture
 
-De server levert zowel de client als de API via dezelfde origin. ASP.NET Core Identity gebruikt cookies voor aanmelding. De client en server delen DTO's en validatiecontracten; de services houden de planningslogica buiten de HTTP-endpoints. EF Core met Npgsql bewaart accounts en planningen in PostgreSQL. Serilog verzorgt gestructureerde logging.
+### Tech Stack
 
-Succesvolle en foutieve API-antwoorden staan apart beschreven in de [API-succescontracten](docs/api-success-responses.md) en het [API-foutcontract](docs/api-errors.md).
+- **Frontend:** Blazor WebAssembly
+- **Backend:** ASP.NET Core (.NET 10), FastEndpoints
+- **Database:** PostgreSQL, Entity Framework Core (Npgsql)
+- **Authentication:** ASP.NET Core Identity (cookie-based)
+- **Logging:** Serilog
+- **Testing:** Automated tests, Testcontainers, and browser-based end-to-end tests
+
+### Project Structure
+
+The solution is organized into multiple projects with distinct responsibilities:
+
+| Project | Responsibility |
+|---|---|
+| `Planning.Client` | Blazor WebAssembly UI and API client |
+| `Planning.Server` | ASP.NET Core host, API endpoints, and authentication |
+| `Planning.Shared` | Shared API contracts |
+| `Planning.Services` | Application logic for daily planning |
+| `Planning.Domain` | Domain models and business rules |
+| `Planning.Persistence` | EF Core, PostgreSQL configuration, and migrations |
+
+The server hosts both the Blazor client and the API under the same origin. Shared contracts support communication between the client and server, while application logic is separated from HTTP endpoints.
+
+For more details on the architecture and design decisions, see the [architecture documentation](docs/architecture.md).
+
