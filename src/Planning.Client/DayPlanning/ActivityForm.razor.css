@@ -163,8 +163,7 @@
     stroke-linejoin: round; /* maakt samenkomst van van de v rond -> bij zo klein wel heel subtiel*/
 }
 
-.activity-form .activity-important-toggle,
-.activity-form .activity-important-display {
+.activity-form .activity-important-toggle {
     position: relative;
     display: flex;
     align-items: center;
@@ -192,8 +191,7 @@
     opacity: 0;
 }
 
-.activity-important-toggle svg,
-.activity-important-display svg {
+.activity-important-toggle svg {
     flex: none;
     width: 1.5rem;
     height: 1.5rem;
@@ -210,11 +208,6 @@
 }
 
 .activity-important-toggle input:checked + svg {
-    color: var(--accent-coral);
-    fill: var(--accent-coral);
-}
-
-.activity-important-display svg {
     color: var(--accent-coral);
     fill: var(--accent-coral);
 }

@@ -30,6 +30,9 @@ public partial class ActivityForm : IAsyncDisposable
     public EventCallback<CreatePlannedActivityRequest> OnSubmit { get; set; }
 
     [Parameter, EditorRequired]
+    public EventCallback<UpdatePlannedActivityRequest> OnUpdate { get; set; }
+
+    [Parameter, EditorRequired]
     public EventCallback<int> OnConfirmDelete { get; set; }
 
     [Parameter]
@@ -68,6 +71,7 @@ public partial class ActivityForm : IAsyncDisposable
         _model.Description = ExistingActivity?.Description;
         _model.Date = InitialDate;
         _model.TimeBlockId = InitialTimeBlockId;
+        _model.IsImportant = ExistingActivity?.IsImportant ?? false;
         _editContext = new EditContext(_model);
         _nameField = FieldIdentifier.Create(() => _model.Name); // Een FieldIdentifier bewaart welk model en welke eigenschap bedoeld worden. Daarmee kan de code later bijvoorbeeld de foutmeldingen van precies het naamveld opvragen of aan de EditContext melden dat TimeBlockId gewijzigd is.
         _descriptionField = FieldIdentifier.Create(() => _model.Description);
@@ -132,13 +136,30 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task SubmitAsync()
     {
+        var timeBlockId = _model.TimeBlockId
+            ?? throw new InvalidOperationException("A time block is required.");
+        var name = _model.Name.Trim();
+        var description = _model.Description?.Trim();
+
+        if (ExistingActivity is not null)
+        {
+            await OnUpdate.InvokeAsync(new UpdatePlannedActivityRequest
+            {
+                Date = _model.Date,
+                TimeBlockId = timeBlockId,
+                Name = name,
+                Description = string.IsNullOrEmpty(description) ? null : description,
+                IsImportant = _model.IsImportant
+            });
+            return;
+        }
+
         await OnSubmit.InvokeAsync(new CreatePlannedActivityRequest
         {
             Date = _model.Date,
-            TimeBlockId = _model.TimeBlockId
-                ?? throw new InvalidOperationException("A time block is required."),
-            Name = _model.Name.Trim(),
-            Description = _model.Description?.Trim(),
+            TimeBlockId = timeBlockId,
+            Name = name,
+            Description = description,
             IsImportant = _model.IsImportant
         });
     }

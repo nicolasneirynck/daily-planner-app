@@ -66,6 +66,17 @@ public class PlannedActivityEditingShould : BunitContext
 
         cut.Find("[data-testid='update-activity-button']")
             .TextContent.ShouldContain("Wijzigingen opslaan");
+
+        var saveButton = cut.Find("[data-testid='update-activity-button']");
+        saveButton.GetAttribute("disabled").ShouldNotBeNull();
+
+        cut.Find("[data-testid='activity-name']").Input("Evening walk");
+        cut.Find("[data-testid='update-activity-button']")
+            .GetAttribute("disabled").ShouldBeNull();
+
+        cut.Find("[data-testid='activity-name']").Input("Morning walk");
+        cut.Find("[data-testid='update-activity-button']")
+            .GetAttribute("disabled").ShouldNotBeNull();
     }
 
     [Fact]
@@ -113,7 +124,7 @@ public class PlannedActivityEditingShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-name']").Change("Evening walk");
-        cut.Find("[data-testid='update-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -179,7 +190,7 @@ public class PlannedActivityEditingShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-description']").Change(editedDescription);
-        cut.Find("[data-testid='update-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -248,7 +259,7 @@ public class PlannedActivityEditingShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-important']").Change(expectedImportance);
-        cut.Find("[data-testid='update-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -314,7 +325,7 @@ public class PlannedActivityEditingShould : BunitContext
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-date']")
             .Change(tomorrow.ToString("yyyy-MM-dd"));
-        cut.Find("[data-testid='update-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -376,7 +387,7 @@ public class PlannedActivityEditingShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-time-block']").Change("2");
-        cut.Find("[data-testid='update-activity-button']").Click();
+        cut.Find("[role='dialog'] form").Submit();
 
         // Assert
         cut.WaitForAssertion(() =>
@@ -423,7 +434,7 @@ public class PlannedActivityEditingShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-name']").Change("Evening walk");
-        cut.Find("[data-testid='cancel-edit-button']").Click();
+        cut.Find("[role='dialog'] button[aria-label='Sluiten']").Click();
 
         // Assert
         cut.FindAll("[role='dialog']").ShouldBeEmpty();
