@@ -1,154 +1,134 @@
-# Planning
+# Daily Planner
 
-Planning is a .NET 10 application based on a starter solution. It has an ASP.NET Core API, a hosted Blazor WebAssembly client, PostgreSQL persistence, authentication, and example features.
+Daily Planner is a web application designed to help users organize their daily activities and create a clearer overview of their day.
 
-## Requirements
+Inspired by planning and organizational challenges often associated with ADHD, the application aims to provide a simple and structured approach to daily planning.
+
+The project is currently under active development.
+
+<p align="center">
+  <img src="docs/images/dailyplanner.jpg" alt="Daily Planner overview" width="400">
+</p>
+
+## Features
+
+The application currently supports:
+- Daily planning: View activities organized into six predefined time blocks and navigate between days.
+- Activity management: Create, edit, reschedule, and delete planned activities.
+- Activity tracking: Mark activities as important or completed.
+- Unsaved changes: Receive a warning before discarding unsaved changes.
+- User authentication: Register and sign in.
+
+
+## Getting Started
+
+### Prerequisites
 
 - .NET 10 SDK
-- Docker with Docker Compose, for the local PostgreSQL database
-- Optional: `dotnet-ef` for creating migrations (`dotnet tool install --global dotnet-ef`)
+- Docker with Docker Compose
+- Available ports `5433` (PostgreSQL) and `5001` (application)
 
+### 1. Configure the Environment
 
-## Run locally
-
-From the repository root:
+From the repository root, create a local environment file:
 
 ```bash
 cp .env.example .env
-# Set the same database, user, and password in the POSTGRES_* values and connection string.
+```
+
+Update `.env` with your local database credentials. Make sure the PostgreSQL credentials match those in `ConnectionStrings__DatabaseConnection`.
+
+### 2. Start PostgreSQL
+
+```bash
 docker compose up -d
+```
+
+### 3. Run the Application
+
+```bash
 ./scripts/run-local.sh
 ```
 
-If `.env` already exists, keep it and skip the copy command. The start script exports its values as environment variables before running the server.
+Open https://localhost:5001 in your browser.
 
-Open `https://localhost:5001`. The server hosts the Blazor client and API at the same origin. The server launch profile sets `ASPNETCORE_ENVIRONMENT=Development`. If the development certificate is not trusted, run `dotnet dev-certs https --trust`.
-
-The local database is exposed on host port `5433` (container port `5432`). `.env.example` uses database `adhd-planning` and user `devusr`; choose your own local password. Docker Compose reads the `POSTGRES_*` values from `.env`. The start script exports `ConnectionStrings__DatabaseConnection`; .NET maps the double underscore to `ConnectionStrings:DatabaseConnection`. This environment value takes precedence over the optional, ignored `src/Planning.Server/appsettings.Development.json`. For deployment, provide the connection string through environment configuration or a secret store; no production connection string is included.
-
-In Development, the server applies EF Core migrations and seeds example data on startup. This requires PostgreSQL to be running. In other environments, apply migrations as part of deployment before starting the server.
-
-To confirm that the initial migration was applied to the local database:
+If necessary, trust the local HTTPS development certificate:
 
 ```bash
-docker compose exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT \"MigrationId\" FROM \"__EFMigrationsHistory\" ORDER BY \"MigrationId\";"'
+dotnet dev-certs https --trust
 ```
 
-The result should include `20261004181924_Initial`.
+### Development Notes
 
-## Build and test
+- The startup script loads the environment variables from `.env` and launches the application using the HTTPS development profile.
+- In `Development`, EF Core migrations are applied automatically, and sample data and demo accounts are created.
+
+
+## Development & Testing
+
+### Build
+
+Build the solution from the repository root:
 
 ```bash
 dotnet build Planning.sln
+```
+
+### Automated Tests
+
+Run the domain, service, API, and client tests:
+
+```bash
 dotnet test Planning.sln --filter 'FullyQualifiedName!~Planning.E2E.Tests'
 ```
 
-The E2E project is included in the solution so Rider can discover it. Start Docker, then use the **E2E Tests** Rider configuration or run `dotnet test tests/Planning.E2E.Tests/Planning.E2E.Tests.csproj --settings playwright.chrome.runsettings`. The tests use the installed Google Chrome browser and start their own temporary PostgreSQL database and app server with a test account; the local app and database do not need to be running.
+Docker must be running, as some service and API tests use Testcontainers to create temporary PostgreSQL instances.
 
-To add a migration from the repository root:
+### End-to-End Tests
+
+End-to-end browser tests require Google Chrome to be installed.
 
 ```bash
-dotnet ef migrations add YourMigrationName --startup-project src/Planning.Server --project src/Planning.Persistence
+dotnet test tests/Planning.E2E.Tests/Planning.E2E.Tests.csproj --settings playwright.chrome.runsettings
 ```
 
-## API responses
+These tests automatically start a temporary database and web server. The application does not need to be running separately.
 
-Successful `/api` responses follow the
-[API success contract](docs/api-success-responses.md).
+## Technical Architecture
 
-### Errors
+### Tech Stack
 
-Error responses under `/api` use `application/problem+json` and the
-[API error contract](docs/api-errors.md). The `instance` value is unique for
-each occurrence; the values below are examples.
+- **Frontend:** Blazor WebAssembly
+- **Backend:** ASP.NET Core (.NET 10), FastEndpoints
+- **Database:** PostgreSQL, Entity Framework Core (Npgsql)
+- **Authentication:** ASP.NET Core Identity (cookie-based)
+- **Logging:** Serilog
+- **Testing:** Automated tests, Testcontainers, and browser-based end-to-end tests
 
-A validation error:
+### Project Structure
 
-```http
-HTTP/1.1 400 Bad Request
-Content-Type: application/problem+json
-
-{
-  "type": "about:blank",
-  "title": "Bad Request",
-  "status": 400,
-  "detail": "The request is invalid.",
-  "instance": "urn:uuid:00000000-0000-0000-0000-000000000001",
-  "errors": [
-    { "name": "name", "reason": "Activity name is required." }
-  ]
-}
-```
-
-An unexpected error returns a safe general message:
-
-```http
-HTTP/1.1 500 Internal Server Error
-Content-Type: application/problem+json
-
-{
-  "type": "about:blank",
-  "title": "Internal Server Error",
-  "status": 500,
-  "detail": "An unexpected error occurred.",
-  "instance": "urn:uuid:00000000-0000-0000-0000-000000000002"
-}
-```
-
-## Included examples
-
-- **Day planning:** planned activities and time blocks, API endpoints, Blazor components, and tests.
-- **Identity:** registration, login, logout, account information, role endpoints, cookie authentication, and protected example pages. Registration is currently public; new accounts receive the User role. Review access rules for the finished application.
-
-Development seeding creates `admin@example.com` and `user@example.com` with password `A1b2C3!`. The seeded roles are Administrator and User; `user@example.com` receives the User role. These accounts and the password are for local development only. Replace or disable this seed data before using real accounts.
-
-## Structure
+The solution is organized into multiple projects with distinct responsibilities:
 
 | Project | Responsibility |
-| --- | --- |
-| `Planning.Domain` | Entities, value objects, and domain rules |
-| `Planning.Shared` | Client/server contracts and validators |
-| `Planning.Persistence` | EF Core context, mappings, migrations, triggers, and development seeding |
-| `Planning.Services` | Application use cases |
-| `Planning.Server` | FastEndpoints API, authentication, logging, and client hosting |
-| `Planning.Client` | Blazor WebAssembly UI |
-| `Planning.*.Tests` | Domain, service, and Blazor component tests |
+|---|---|
+| `Planning.Client` | Blazor WebAssembly UI and API client |
+| `Planning.Server` | ASP.NET Core host, API endpoints, and authentication |
+| `Planning.Shared` | Shared API contracts |
+| `Planning.Services` | Application logic for daily planning |
+| `Planning.Domain` | Domain models and business rules |
+| `Planning.Persistence` | EF Core, PostgreSQL configuration, and migrations |
 
-FastEndpoints results are sent through a central response processor. Serilog handles structured logging. The tests include API integration tests for the error contract, client response tests, and Blazor component tests. Database behavior is not covered by these API tests.
+The server hosts both the Blazor client and the API under the same origin. Shared contracts support communication between the client and server, while application logic is separated from HTTP endpoints.
 
-## Architecture and design
+For more details on the architecture and design decisions, see the [architecture documentation](docs/architecture.md).
 
-The solution combines a layered structure with feature-oriented code. Domain rules live in `Domain`; the `DayPlanning` and `Identity` folders group related use cases within the other projects. `Server` is the composition root: it registers the application services and connects the API, persistence, and hosted client.
 
-### Domain
+## API Documentation
 
-`Domain` contains entities and value objects without a dependency on the UI or database provider. Planned activities and time blocks model the daily schedule. `Entity` and `ValueObject` provide reusable base behavior. This keeps business rules close to the data they govern.
+The API's success and error response formats are described in the [API response contract](docs/api-contract.md).
 
-### Shared contracts
+## Roadmap
 
-`Shared` defines the requests, responses, DTOs, and FluentValidation validators used across the client and server. The client communicates through these contracts instead of depending on domain entities or EF Core types. Changing an API contract can therefore affect both sides and should be treated deliberately.
-
-### Services
-
-`Services` implements application use cases. Day-planning services query or update the EF Core context and return `Ardalis.Result` values. These services are registered in `ServiceCollectionExtensions` and can be tested without an HTTP request.
-
-### Persistence
-
-`Persistence` contains `ApplicationDbContext`, entity configurations, EF Core migrations, development seeding, and an EF trigger for entity timestamps. The context uses PostgreSQL through Npgsql and includes ASP.NET Core Identity tables. It applies entity configurations from its assembly. Domain entities remain separate from the database mappings. Historical migrations retain the original schema history. The removal migration deletes the obsolete Product, Project, and Technician tables, all accounts with the Technician role and their planning data, and the role itself.
-
-### Server and HTTP responses
-
-`Server` exposes FastEndpoints routes and hosts the Blazor WebAssembly files. Endpoints delegate use-case work to services and use shared contracts for input and output. Authentication uses ASP.NET Core Identity with cookies; authorization is enforced on protected endpoints. Swagger is available through the server configuration.
-
-In `Program.cs`, FastEndpoints is configured with `DontAutoSendResponse()`. The `GlobalResponseSender` post-processor sends the response centrally, mapping `Ardalis.Result` statuses to HTTP responses. For example, successful results, invalid requests, and missing resources become the appropriate success, client-error, or not-found response. The request and response processors also provide logging around endpoint execution. Keep this setup when adding endpoints, because endpoints rely on the central sender.
-
-### Client
-
-`Client` is a Blazor WebAssembly application served by `Server`. It has an HTTP client for API calls, a cookie-aware authentication state provider, and pages that demonstrate public, authenticated, and Administrator-only UI. Day-planning components use `IDayPlanningClient` and client-owned result types. The client base URL is configured in `wwwroot/appsettings.json` for local development.
-
-### Tests and extension points
-
-The test projects contain domain tests, service tests, and Blazor component tests with xUnit, Shouldly, NSubstitute, and bUnit. Add database and API integration tests when a derived project needs that coverage.
-
-To add a feature, put its business rules in `Domain`, its API contracts in `Shared`, its use-case logic in `Services`, its EF mapping in `Persistence`, and its HTTP endpoint in `Server`. Add client components only when the feature needs a UI. Register new services and add a migration for schema changes.
+Daily Planner is under active development. See the
+[roadmap](docs/roadmap.md) for planned features and future improvements.
 
