@@ -120,3 +120,11 @@ The server hosts both the Blazor client and the API under the same origin. Share
 
 For more details on the architecture and design decisions, see the [architecture documentation](docs/architecture.md).
 
+
+## API Documentation
+
+The API uses documented response contracts to ensure consistent communication between the client and server.
+
+- [Success Response Contracts](docs/api-success-responses.md)
+- [Error Response Contract](docs/api-errors.md)
+
