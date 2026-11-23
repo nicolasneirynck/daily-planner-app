@@ -95,7 +95,7 @@ The API uses a consistent error response format based on `application/problem+js
 
 The Blazor client interprets these responses and displays relevant error messages, including field-specific validation errors where available.
 
-For more details, see the [API Error Contract](api-errors.md).
+For more details, see the [API response contract](api-contract.md).
 
 
 ## Testing Architecture

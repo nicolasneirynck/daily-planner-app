@@ -125,10 +125,7 @@ For more details on the architecture and design decisions, see the [architecture
 
 ## API Documentation
 
-The API uses documented response contracts to ensure consistent communication between the client and server.
-
-- [Success Response Contracts](docs/api-success-responses.md)
-- [Error Response Contract](docs/api-errors.md)
+The API's success and error response formats are described in the [API response contract](docs/api-contract.md).
 
 ## Roadmap
 
