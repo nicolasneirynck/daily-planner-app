@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Planning.Persistence;
 using Planning.Server.Tests.DayPlanning;
 using Planning.Shared.Identity.Accounts;
 using Planning.Shared.Identity.Roles;
@@ -38,6 +41,15 @@ public class IdentityCreationShould(IdentityApp app)
         body.RootElement.GetProperty("email").GetString().ShouldBe(email);
         response.Headers.Location?.ToString()
             .ShouldBe($"/api/identity/accounts/{id}");
+
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var blocks = await dbContext.TimeBlocks.AsNoTracking()
+            .Where(block => block.UserId == id)
+            .OrderBy(block => block.SortOrder)
+            .ToListAsync();
+        blocks.Select(block => block.SortOrder).ToArray()
+            .ShouldBe([1, 2, 3, 4, 5, 6]);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Planning.Persistence;
+using Planning.Services.TimeBlocks;
 using Planning.Shared.Identity;
 using Planning.Shared.Identity.Accounts;
 
@@ -12,7 +13,14 @@ namespace Planning.Server.Endpoints.Identity.Accounts;
 /// <param name="userManager"></param>
 /// <param name="userStore"></param>
 /// <param name="roleManager"></param>
-public class Register(UserManager<IdentityUser> userManager, IUserStore<IdentityUser> userStore, RoleManager<IdentityRole> roleManager) : Endpoint<AccountRequest.Register, Result<AccountResponse.Created>>
+/// <param name="dbContext"></param>
+/// <param name="timeBlockInitializer"></param>
+public class Register(
+    UserManager<IdentityUser> userManager,
+    IUserStore<IdentityUser> userStore,
+    RoleManager<IdentityRole> roleManager,
+    ApplicationDbContext dbContext,
+    DefaultTimeBlockInitializer timeBlockInitializer) : Endpoint<AccountRequest.Register, Result<AccountResponse.Created>>
 {
     public override void Configure()
     {
@@ -42,8 +50,10 @@ public class Register(UserManager<IdentityUser> userManager, IUserStore<Identity
 
         var emailStore = (IUserEmailStore<IdentityUser>)userStore;
         var user = new IdentityUser();
-        await userStore.SetUserNameAsync(user, req.Email, CancellationToken.None);
-        await emailStore.SetEmailAsync(user, req.Email, CancellationToken.None);
+        await userStore.SetUserNameAsync(user, req.Email, ctx);
+        await emailStore.SetEmailAsync(user, req.Email, ctx);
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(ctx);
         var result = await userManager.CreateAsync(user, req.Password!);
         
         if (!result.Succeeded)
@@ -53,14 +63,11 @@ public class Register(UserManager<IdentityUser> userManager, IUserStore<Identity
 
         var addToRoleResult = await userManager.AddToRoleAsync(user, AppRoles.User);
         if (!addToRoleResult.Succeeded)
-        {
-            var deleteResult = await userManager.DeleteAsync(user);
-            if (!deleteResult.Succeeded)
-                return Result.CriticalError("Could not assign the User role or remove the incomplete account.");
             return Result.Error(addToRoleResult.Errors.First().Description);
-        }
 
-        
+        await timeBlockInitializer.EnsureForUserAsync(user.Id, ctx);
+        await transaction.CommitAsync(ctx);
+
         // You can send a confirmation email by using a SMTP server or anything in the like. 
         // await SendConfirmationEmailAsync(user, userManager, context, email); or do something that matters
 
