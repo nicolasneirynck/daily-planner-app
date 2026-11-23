@@ -162,8 +162,9 @@
     {
         <button type="submit"
                 class="activity-form-submit"
-                data-testid="update-activity-button">
-            Wijzigingen opslaan
+                data-testid="update-activity-button"
+                disabled="@(!HasUnsavedChanges || _isSaving)">
+            @(_isSaving ? "Opslaan..." : "Wijzigingen opslaan")
         </button>
 
         <button type="button"

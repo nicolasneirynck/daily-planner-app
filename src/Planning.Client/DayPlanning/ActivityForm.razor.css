@@ -226,8 +226,13 @@
     cursor: pointer;
 }
 
+.activity-form-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (hover: hover) {
-    .activity-form-submit:hover {
+    .activity-form-submit:not(:disabled):hover {
         background: var(--accent-coral-hover);
     }
 }

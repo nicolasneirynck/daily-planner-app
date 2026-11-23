@@ -149,10 +149,17 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Expect(editedActivity.GetByTestId("activity-important-flag"))
             .ToBeVisibleAsync();
 
-        // Act: reopen the day in the browser
+        // Act: reopen the planning and navigate to the activity's new day
         await Page.ReloadAsync();
+        await Page.RunAndWaitForResponseAsync(
+            () => Page.GetByTestId("next-day-button").ClickAsync(),
+            response => response.Url.EndsWith(
+                            $"/api/day-planning/{tomorrow:yyyy-MM-dd}")
+                        && response.Status == 200);
 
         // Assert: the saved activity and its details remain
+        await Expect(Page.GetByTestId("selected-date"))
+            .ToHaveTextAsync(ExpectedDateLabel(tomorrow));
         await Expect(editedActivity).ToBeVisibleAsync();
         await Expect(editedActivity.GetByTestId("activity-important-flag"))
             .ToBeVisibleAsync();

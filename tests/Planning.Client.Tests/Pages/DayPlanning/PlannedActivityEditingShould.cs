@@ -452,4 +452,62 @@ public class PlannedActivityEditingShould : BunitContext
         ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
             .Value.ShouldBe("Morning walk");
     }
+
+    [Fact]
+    public async Task ShowSavingStateAndAllowRetryAfterFailure()
+    {
+        // Arrange
+        var morning = Block(1, "Ochtend", 6, 9);
+        morning.Activities =
+        [
+            new PlannedActivityDto { Id = 101, Name = "Morning walk" }
+        ];
+
+        var pendingUpdate = new TaskCompletionSource<ClientResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = DateOnly.FromDateTime(DateTime.Today),
+                    TimeBlocks = [morning]
+                })));
+        service.UpdateActivityAsync(
+                101,
+                Arg.Any<UpdatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(pendingUpdate.Task);
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='activity-open-button']").Click();
+        cut.Find("[data-testid='activity-name']").Change("Evening walk");
+        var submitTask = cut.Find("[role='dialog'] form").SubmitAsync();
+
+        // Assert: saving is in progress
+        await cut.WaitForAssertionAsync(() =>
+        {
+            var saveButton = cut.Find("[data-testid='update-activity-button']");
+            saveButton.TextContent.ShouldBe("Opslaan...");
+            saveButton.GetAttribute("disabled").ShouldNotBeNull();
+        });
+
+        // Act: the request fails
+        pendingUpdate.SetResult(new ClientResult(
+            HttpStatusCode.InternalServerError, "Save failed."));
+        await submitTask;
+
+        // Assert: the form stays available for another attempt
+        await cut.WaitForAssertionAsync(() =>
+        {
+            var saveButton = cut.Find("[data-testid='update-activity-button']");
+            saveButton.TextContent.ShouldContain("Wijzigingen opslaan");
+            saveButton.GetAttribute("disabled").ShouldBeNull();
+            cut.Find("[data-testid='activity-save-error']")
+                .TextContent.ShouldContain("Opslaan is niet gelukt.");
+        });
+    }
 }

@@ -179,17 +179,7 @@ public partial class DayPlanning
                 return;
             }
 
-            var errors = result.FieldErrors.ToArray();
-            _activityFieldErrors = errors
-                .Where(error => error.Name is "name" or "description")
-                .ToArray();
-
-            var hasOtherErrors =
-                errors.Any(error => error.Name is not ("name" or "description" or "$"));
-
-            _activitySaveError = _activityFieldErrors.Count > 0 && !hasOtherErrors
-                ? null
-                : "Opslaan is niet gelukt. Probeer het opnieuw.";
+            ApplyActivitySaveErrors(result);
         }
         catch (Exception ex) when (ex is HttpRequestException
                                        or JsonException
@@ -198,6 +188,52 @@ public partial class DayPlanning
             Log.Warning(ex, "Could not save activity for {Date}", request.Date);
             _activitySaveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
         }
+    }
+
+    private async Task UpdateActivityAsync(UpdatePlannedActivityRequest request)
+    {
+        var activityId = _selectedActivity?.Id
+            ?? throw new InvalidOperationException("No activity is selected.");
+
+        _activitySaveError = null;
+        _activityFieldErrors = [];
+
+        try
+        {
+            var result = await DayPlanningService.UpdateActivityAsync(
+                activityId, request);
+
+            if (result.IsSuccess)
+            {
+                CloseActivityForm();
+                await LoadDayAsync(request.Date);
+                return;
+            }
+
+            ApplyActivitySaveErrors(result);
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                       or JsonException
+                                       or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not update activity {ActivityId}", activityId);
+            _activitySaveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
+        }
+    }
+
+    private void ApplyActivitySaveErrors(ClientResult result)
+    {
+        var errors = result.FieldErrors.ToArray();
+        _activityFieldErrors = errors
+            .Where(error => error.Name is "name" or "description")
+            .ToArray();
+
+        var hasOtherErrors =
+            errors.Any(error => error.Name is not ("name" or "description" or "$"));
+
+        _activitySaveError = _activityFieldErrors.Count > 0 && !hasOtherErrors
+            ? null
+            : "Opslaan is niet gelukt. Probeer het opnieuw.";
     }
 
     private async Task DeleteActivityAsync(int activityId)

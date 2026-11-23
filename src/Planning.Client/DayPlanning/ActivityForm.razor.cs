@@ -64,6 +64,22 @@ public partial class ActivityForm : IAsyncDisposable
     private ElementReference _confirmationDialog;
     private bool _openConfirmationAfterRender;
     private bool _focusDeleteButtonAfterRender;
+    private bool _isSaving;
+
+    private bool HasUnsavedChanges =>
+        ExistingActivity is not null &&
+        (_model.Name.Trim() != ExistingActivity.Name.Trim() ||
+         NormalizeDescription(_model.Description) !=
+             NormalizeDescription(ExistingActivity.Description) ||
+         _model.Date != InitialDate ||
+         _model.TimeBlockId != InitialTimeBlockId ||
+         _model.IsImportant != ExistingActivity.IsImportant);
+
+    private static string? NormalizeDescription(string? value)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
 
     protected override void OnInitialized()
     {
@@ -143,14 +159,26 @@ public partial class ActivityForm : IAsyncDisposable
 
         if (ExistingActivity is not null)
         {
-            await OnUpdate.InvokeAsync(new UpdatePlannedActivityRequest
+            if (_isSaving || !HasUnsavedChanges)
+                return;
+
+            _isSaving = true;
+            try // Een try met alleen finally is gebruikelijk wanneer je altijd iets moet opruimen, maar de fout niet op deze plek wilt afhandelen.
             {
-                Date = _model.Date,
-                TimeBlockId = timeBlockId,
-                Name = name,
-                Description = string.IsNullOrEmpty(description) ? null : description,
-                IsImportant = _model.IsImportant
-            });
+                await OnUpdate.InvokeAsync(new UpdatePlannedActivityRequest
+                {
+                    Date = _model.Date,
+                    TimeBlockId = timeBlockId,
+                    Name = name,
+                    Description = NormalizeDescription(description),
+                    IsImportant = _model.IsImportant
+                });
+            }
+            finally
+            {
+                _isSaving = false;
+            }
+
             return;
         }
 
