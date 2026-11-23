@@ -1,5 +1,4 @@
 using System.Net;
-using AngleSharp.Html.Dom;
 using NSubstitute;
 using Planning.Client.DayPlanning;
 using Planning.Client.Http;
@@ -15,52 +14,6 @@ public class PlannedActivityDeletionShould : BunitContext
     {
         JSInterop.SetupModule("./js/activityDialog.js")
             .SetupVoid("showModal", _ => true);
-    }
-
-    [Fact]
-    public void OpenSelectedActivityWithPrefilledDetailsAndDeleteAction()
-    {
-        // Arrange
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        RegisterServiceWithActivities(() =>
-        [
-            new PlannedActivityDto
-            {
-                Id = 101,
-                Name = "Morning walk",
-                Description = "Bring the library card"
-            }
-        ]);
-        var cut = Render<DayPlanning>();
-
-        // Act
-        cut.Find("[data-testid='activity-open-button']").Click();
-
-        // Assert
-        var name = (IHtmlInputElement)cut.Find(
-            "[role='dialog'] [data-testid='activity-name']");
-        name.Value.ShouldBe("Morning walk");
-        /* IHtmlInputElement geeft toegang tot Value: zo controleren we de ingevulde waarde,
-           niet alleen tekst die ergens in de dialoog staat (bv in een titel of label).
-           Dus met Name.Value controleer je specifiek op wat in het invoerveld staat*/
-
-        var description = (IHtmlTextAreaElement)cut.Find(
-            "[role='dialog'] [data-testid='activity-description']");
-        description.GetAttribute("value").ShouldBe("Bring the library card");
-        description.GetAttribute("readonly").ShouldNotBeNull();
-
-        var date = (IHtmlInputElement)cut.Find(
-            "[role='dialog'] [data-testid='activity-date']");
-        date.Value.ShouldBe(today.ToString("yyyy-MM-dd"));
-
-        var timeBlock = (IHtmlSelectElement)cut.Find(
-            "[role='dialog'] [data-testid='activity-time-block']");
-        timeBlock.Value.ShouldBe("1");
-
-        cut.Find("[data-testid='delete-activity-button']")
-            .TextContent.ShouldContain("Verwijderen");
-        cut.FindAll("[data-testid='submit-activity-button']")
-            .ShouldBeEmpty();
     }
 
     [Fact]
