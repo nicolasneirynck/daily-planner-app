@@ -208,8 +208,9 @@ public class PlannedActivityEditingShould : BunitContext
         cut.Find("[data-testid='activity-open-button']").Click();
 
         // Assert
-        ((IHtmlTextAreaElement)cut.Find("[data-testid='activity-description']"))
-            .Value.ShouldBe(expectedDescription ?? string.Empty);
+        (cut.Find("[data-testid='activity-description']")
+            .GetAttribute("value") ?? string.Empty)
+            .ShouldBe(expectedDescription ?? string.Empty);
     }
 
     [Theory]

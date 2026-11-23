@@ -11,7 +11,7 @@
         <button type="button"
                 @ref="_closeButton"
                 aria-label="Sluiten"
-                @onclick="OnClose">
+                @onclick="RequestCloseAsync">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M18 6 6 18M6 6l12 12" />
             </svg>
@@ -186,42 +186,32 @@
     </EditForm>
 </dialog>
 
-@if (_isConfirmingDeletion)
+@if (_isAwaitingCloseConfirmation)
 {
-    <dialog class="delete-confirmation"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-title"
-            aria-describedby="delete-question"
-            @ref="_confirmationDialog"
-            @onclose="CancelDeleteConfirmation">
+    <ConfirmationDialog Title="Niet-opgeslagen wijzigingen?"
+                        Message="Je wijzigingen gaan verloren als je dit formulier sluit."
+                        CancelText="Verder bewerken"
+                        ConfirmText="Sluiten zonder opslaan"
+                        CancelTestId="continue-editing-button"
+                        ConfirmTestId="discard-changes-button"
+                        OnCancel="ContinueEditing"
+                        OnConfirm="DiscardChangesAsync" />
+}
 
-        <h2 id="delete-title">Verwijderen uit planning?</h2>
-
-        <p id="delete-question">
-            @($"“{ExistingActivity!.Name}” wordt verwijderd uit je dagplanning.")
-        </p>
-
+@if (_isAwaitingDeleteConfirmation)
+{
+    <ConfirmationDialog Title="Verwijderen uit planning?"
+                        Message="@DeleteConfirmationMessage"
+                        CancelText="Annuleren"
+                        ConfirmText="Verwijderen"
+                        CancelTestId="cancel-delete-button"
+                        ConfirmTestId="confirm-delete-button"
+                        ConfirmDisabled="@IsDeleting"
+                        OnCancel="CancelDeleteConfirmation"
+                        OnConfirm="() => OnConfirmDelete.InvokeAsync(ExistingActivity!.Id)">
         @if (DeleteError is not null)
         {
             <p role="alert" data-testid="activity-delete-error">@DeleteError</p>
         }
-
-        <div class="delete-confirmation-actions">
-            <button type="button"
-                    class="delete-confirmation-cancel"
-                    data-testid="cancel-delete-button"
-                    @onclick="CancelDeleteConfirmation">
-                Annuleren
-            </button>
-
-            <button type="button"
-                    class="delete-confirmation-confirm"
-                    data-testid="confirm-delete-button"
-                    disabled="@IsDeleting"
-                    @onclick="() => OnConfirmDelete.InvokeAsync(ExistingActivity!.Id)">
-                Verwijderen
-            </button>
-        </div>
-    </dialog>
+    </ConfirmationDialog>
 }

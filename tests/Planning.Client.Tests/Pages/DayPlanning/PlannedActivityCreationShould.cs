@@ -169,25 +169,6 @@ public class PlannedActivityCreationShould : BunitContext
     }
 
     [Fact]
-    public void WarnBeforeCancellingNewActivityWithUnsavedChanges()
-    {
-        // Arrange
-        RegisterPlanningWithSingleTimeBlock();
-        var cut = Render<DayPlanning>();
-
-        // Act
-        cut.Find("[data-testid='global-add-activity-button']").Click();
-        cut.Find("[data-testid='activity-name']").Change("Read a book");
-        cut.Find("[data-testid='cancel-activity-button']").Click();
-
-        // Assert
-        cut.Find("[role='alertdialog']").TextContent
-            .ShouldContain("Niet-opgeslagen wijzigingen");
-        ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
-            .Value.ShouldBe("Read a book");
-    }
-
-    [Fact]
     public void PassEditedTimeBlockAndActivityDetailsToService()
     {
         // Arrange

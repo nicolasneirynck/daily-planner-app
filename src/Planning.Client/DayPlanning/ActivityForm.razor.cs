@@ -51,6 +51,7 @@ public partial class ActivityForm : IAsyncDisposable
     private ElementReference _closeButton;
     private ElementReference _nameInput;
     private IJSObjectReference? _dialogModule;
+    private DotNetObjectReference<ActivityForm>? _dialogCallback; // bewaart een verwijzing naar deze ActivityForm-instantie voor JavaScript. Na DotNetObjectReference.Create(this) kan JavaScript via die verwijzing een [JSInvokable]-methode op het formulier aanroepen. Het ? betekent dat het veld nog null is vóór de eerste render. Het veld wordt bewaard zodat de verwijzing later kan worden opgeruimd.
     private readonly ActivityFormModel _model = new();
     private EditContext _editContext = default!; // EditContext: houdt onder meer het formuliermodel, gewijzigde velden en validatiefouten bij.
                                                  // = default!: zegt tegen de C#-compiler: “Dit veld krijgt later een waarde.” De ! onderdrukt de waarschuwing dat het nu nog null is.
@@ -59,12 +60,12 @@ public partial class ActivityForm : IAsyncDisposable
     private FieldIdentifier _timeBlockField;
     private ValidationMessageStore _serverMessages = default!; // een opslag voor validatiemeldingen van de server. Die is gekoppeld aan _editContext, zodat het formulier ze samen met Blazors gewone veldmeldingen kan tonen.
     private IReadOnlyList<ClientFieldError>? _appliedServerErrors; // onthoudt welke lijst serverfouten al is verwerkt, zodat dezelfde lijst bij een volgende render niet opnieuw wordt toegevoegd.
-    private bool _isConfirmingDeletion;
+    private bool _isAwaitingDeleteConfirmation;
     private ElementReference _deleteButton;
-    private ElementReference _confirmationDialog;
-    private bool _openConfirmationAfterRender;
     private bool _focusDeleteButtonAfterRender;
+    private bool _focusCloseButtonAfterRender;
     private bool _isSaving;
+    private bool _isAwaitingCloseConfirmation;
 
     private bool HasUnsavedChanges =>
         ExistingActivity is not null &&
@@ -74,6 +75,14 @@ public partial class ActivityForm : IAsyncDisposable
          _model.Date != InitialDate ||
          _model.TimeBlockId != InitialTimeBlockId ||
          _model.IsImportant != ExistingActivity.IsImportant);
+
+    private bool HasChangedFormValues =>
+        _model.Name != (ExistingActivity?.Name ?? string.Empty) ||
+        (_model.Description ?? string.Empty) !=
+            (ExistingActivity?.Description ?? string.Empty) ||
+        _model.Date != InitialDate ||
+        _model.TimeBlockId != InitialTimeBlockId ||
+        _model.IsImportant != (ExistingActivity?.IsImportant ?? false);
 
     private static string? NormalizeDescription(string? value)
     {
@@ -117,7 +126,9 @@ public partial class ActivityForm : IAsyncDisposable
                 "import", "./js/activityDialog.js");
 
             // Roept onze JavaScript-functie aan, die de <dialog> (_activityDialog) via de browser als modal opent.
-            await _dialogModule.InvokeVoidAsync("showModal", _activityDialog);
+            _dialogCallback = DotNetObjectReference.Create(this); // Na DotNetObjectReference.Create(this) kan JavaScript via die verwijzing een [JSInvokable]-methode op het formulier aanroepen
+            await _dialogModule.InvokeVoidAsync(
+                "showModal", _activityDialog, _dialogCallback);
 
             if (ExistingActivity is null)
                 await _nameInput.FocusAsync();
@@ -125,30 +136,63 @@ public partial class ActivityForm : IAsyncDisposable
                 await _closeButton.FocusAsync();
         }
 
-        if (_openConfirmationAfterRender)
-        {
-            _openConfirmationAfterRender = false;
-            await _dialogModule!.InvokeVoidAsync("showModal", _confirmationDialog);
-        }
-
         if (_focusDeleteButtonAfterRender)
         {
             _focusDeleteButtonAfterRender = false;
             await _deleteButton.FocusAsync();
         }
+
+        if (_focusCloseButtonAfterRender)
+        {
+            _focusCloseButtonAfterRender = false;
+            await _closeButton.FocusAsync();
+        }
     }
 
-    private void ShowDeleteConfirmation()
-    {
-        _isConfirmingDeletion = true;
-        _openConfirmationAfterRender = true;
-    }
+    private void ShowDeleteConfirmation() =>
+        _isAwaitingDeleteConfirmation = true;
 
     private void CancelDeleteConfirmation()
     {
-        _isConfirmingDeletion = false;
+        _isAwaitingDeleteConfirmation = false;
         _focusDeleteButtonAfterRender = true;
     }
+
+    private async Task RequestCloseAsync()
+    {
+        if (_isAwaitingCloseConfirmation)
+            return;
+
+        if (!HasChangedFormValues)
+        {
+            await OnClose.InvokeAsync();
+            return;
+        }
+
+        _isAwaitingCloseConfirmation = true;
+    }
+
+    [JSInvokable] // maakt methode aanroepbaar vanuit JavaScript
+    public Task RequestCloseFromBrowserAsync() => // RequestCloseFromBrowserAsync wordt vanuit JavaScript aangeroepen, buiten een Blazor UI-event. Na het zetten van _isAwaitingCloseConfirmation is een expliciete renderaanvraag nodig om de waarschuwing zichtbaar te maken.
+        InvokeAsync(async () =>  // InvokeAsync(async () => { ... }) voert de code uit binnen Blazors componententext
+        {
+            var wasAwaitingConfirmation = _isAwaitingCloseConfirmation; // wasAwaitingConfirmation onthoudt of de waarschuwing al klaarstond
+            await RequestCloseAsync(); // RequestCloseAsync() beslist: direct sluiten als er geen wijzigingen zijn, of _isAwaitingCloseConfirmation op true zetten.
+
+            if (!wasAwaitingConfirmation && _isAwaitingCloseConfirmation)
+                StateHasChanged();
+        });
+
+    private void ContinueEditing()
+    {
+        _isAwaitingCloseConfirmation = false;
+        _focusCloseButtonAfterRender = true;
+    }
+
+    private Task DiscardChangesAsync() => OnClose.InvokeAsync();
+
+    private string DeleteConfirmationMessage =>
+        $"“{ExistingActivity!.Name}” wordt verwijderd uit je dagplanning.";
 
     private async Task SubmitAsync()
     {
@@ -226,6 +270,7 @@ public partial class ActivityForm : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _editContext.OnValidationRequested -= ClearServerMessagesOnSubmit;
+        _dialogCallback?.Dispose();
         if (_dialogModule is not null)
             await _dialogModule.DisposeAsync(); // geeft de verwijzing naar die module weer vrij.
     }
