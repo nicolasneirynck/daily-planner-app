@@ -249,8 +249,10 @@
 }
 
 .activity-delete-trigger {
-    display: inline-flex; /* inline -> laat de knop zo breed worden als zijn inhoud*/
+    display: flex;
+    justify-content: center;
     align-items: center;
+    width: 100%;
     gap: 0.5rem;
     min-height: 3rem;
     margin-top: 1rem;
@@ -260,7 +262,7 @@
     background: transparent;
     color: var(--error-color);
     font: inherit;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
 }
 
