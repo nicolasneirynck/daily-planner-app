@@ -6,6 +6,10 @@ Inspired by planning and organizational challenges often associated with ADHD, t
 
 The project is currently under active development.
 
+<p align="center">
+  <img src="docs/images/dailyplanner.jpg" alt="Daily Planner overview" width="400">
+</p>
+
 ## Features
 
 The application currently supports:
@@ -58,8 +62,6 @@ dotnet dev-certs https --trust
 
 - The startup script loads the environment variables from `.env` and launches the application using the HTTPS development profile.
 - In `Development`, EF Core migrations are applied automatically, and sample data and demo accounts are created.
-- New accounts currently require an application restart to initialize their six default time blocks.
-- Public registration is currently enabled outside `Development`. Review this behavior before deploying to production.
 
 
 ## Development & Testing
@@ -127,4 +129,9 @@ The API uses documented response contracts to ensure consistent communication be
 
 - [Success Response Contracts](docs/api-success-responses.md)
 - [Error Response Contract](docs/api-errors.md)
+
+## Roadmap
+
+Daily Planner is under active development. See the
+[roadmap](docs/roadmap.md) for planned features and future improvements.
 
