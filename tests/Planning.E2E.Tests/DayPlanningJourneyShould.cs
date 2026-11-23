@@ -99,11 +99,81 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
             .Filter(new() { HasText = activityName });
         await activity.GetByTestId("activity-open-button").ClickAsync();
 
-        // Assert: the saved description is available to read
+        // Assert: the saved description is available
         await Expect(Page.GetByTestId("activity-description"))
             .ToHaveValueAsync(activityDescription);
+    }
+
+    [Fact]
+    public async Task KeepEditedActivityAfterReload()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var tomorrow = today.AddDays(1);
+        var originalName = $"Morning walk {Guid.NewGuid():N}";
+        var editedName = $"Evening walk {Guid.NewGuid():N}";
+        const string editedDescription = "Bring a jacket";
+
+        await DayPlanningTestData.SeedMorningActivityAsync(
+            environment, originalName, today);
+        await LogInToDayPlanningAsync();
+
+        var morning = Page.GetByRole(AriaRole.Region, new() { Name = "Ochtend" });
+        var activity = morning.GetByTestId("planned-activity-row")
+            .Filter(new() { HasText = originalName });
+
+        // Act
+        await activity.GetByTestId("activity-open-button").ClickAsync();
+        await Page.GetByTestId("activity-name").FillAsync(editedName);
+        await Page.GetByTestId("activity-description")
+            .FillAsync(editedDescription);
+        await Page.GetByTestId("activity-date")
+            .FillAsync(tomorrow.ToString("yyyy-MM-dd"));
+        await Page.GetByTestId("activity-time-block")
+            .SelectOptionAsync(new SelectOptionValue { Label = "Middag" });
+        await Page.GetByTestId("activity-important").CheckAsync();
+
+        await Page.RunAndWaitForResponseAsync(
+            () => Page.GetByTestId("update-activity-button").ClickAsync(),
+            response => response.Request.Method == "PUT"
+                        && response.Url.Contains("/api/day-planning/activities/")
+                        && response.Status == 204);
+
+        // Assert: the update appears on its new day and in its new time block
+        await Expect(Page.GetByTestId("selected-date"))
+            .ToHaveTextAsync(ExpectedDateLabel(tomorrow));
+        var midday = Page.GetByRole(AriaRole.Region, new() { Name = "Middag" });
+        var editedActivity = midday.GetByTestId("planned-activity-row")
+            .Filter(new() { HasText = editedName });
+        await Expect(editedActivity).ToBeVisibleAsync();
+        await Expect(editedActivity.GetByTestId("activity-important-flag"))
+            .ToBeVisibleAsync();
+
+        // Act: reopen the planning and navigate to the activity's new day
+        await Page.ReloadAsync();
+        await Page.RunAndWaitForResponseAsync(
+            () => Page.GetByTestId("next-day-button").ClickAsync(),
+            response => response.Url.EndsWith(
+                            $"/api/day-planning/{tomorrow:yyyy-MM-dd}")
+                        && response.Status == 200);
+
+        // Assert: the saved activity and its details remain
+        await Expect(Page.GetByTestId("selected-date"))
+            .ToHaveTextAsync(ExpectedDateLabel(tomorrow));
+        await Expect(editedActivity).ToBeVisibleAsync();
+        await Expect(editedActivity.GetByTestId("activity-important-flag"))
+            .ToBeVisibleAsync();
+        await editedActivity.GetByTestId("activity-open-button").ClickAsync();
+        await Expect(Page.GetByTestId("activity-name"))
+            .ToHaveValueAsync(editedName);
         await Expect(Page.GetByTestId("activity-description"))
-            .ToHaveAttributeAsync("readonly", "");
+            .ToHaveValueAsync(editedDescription);
+        await Expect(Page.GetByTestId("activity-date"))
+            .ToHaveValueAsync(tomorrow.ToString("yyyy-MM-dd"));
+        await Expect(Page.GetByTestId("activity-time-block").Locator("option:checked"))
+            .ToHaveTextAsync("Middag");
+        await Expect(Page.GetByTestId("activity-important"))
+            .ToBeCheckedAsync();
     }
 
     [Fact]

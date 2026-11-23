@@ -163,8 +163,7 @@
     stroke-linejoin: round; /* maakt samenkomst van van de v rond -> bij zo klein wel heel subtiel*/
 }
 
-.activity-form .activity-important-toggle,
-.activity-form .activity-important-display {
+.activity-form .activity-important-toggle {
     position: relative;
     display: flex;
     align-items: center;
@@ -192,8 +191,7 @@
     opacity: 0;
 }
 
-.activity-important-toggle svg,
-.activity-important-display svg {
+.activity-important-toggle svg {
     flex: none;
     width: 1.5rem;
     height: 1.5rem;
@@ -214,11 +212,6 @@
     fill: var(--accent-coral);
 }
 
-.activity-important-display svg {
-    color: var(--accent-coral);
-    fill: var(--accent-coral);
-}
-
 .activity-form-submit {
     width: 100%;
     min-height: 3.25rem;
@@ -233,8 +226,13 @@
     cursor: pointer;
 }
 
+.activity-form-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (hover: hover) {
-    .activity-form-submit:hover {
+    .activity-form-submit:not(:disabled):hover {
         background: var(--accent-coral-hover);
     }
 }
@@ -251,8 +249,10 @@
 }
 
 .activity-delete-trigger {
-    display: inline-flex; /* inline -> laat de knop zo breed worden als zijn inhoud*/
+    display: flex;
+    justify-content: center;
     align-items: center;
+    width: 100%;
     gap: 0.5rem;
     min-height: 3rem;
     margin-top: 1rem;
@@ -262,7 +262,7 @@
     background: transparent;
     color: var(--error-color);
     font: inherit;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
 }
 

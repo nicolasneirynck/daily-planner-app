@@ -25,6 +25,17 @@ public class DayPlanningApiClient(HttpClient httpClient) : IDayPlanningClient
         return await ApiResponseReader.ReadAsync(response, ctx);
     }
 
+    async Task<ClientResult> IDayPlanningClient.UpdateActivityAsync(
+        int activityId,
+        UpdatePlannedActivityRequest request,
+        CancellationToken ctx)
+    {
+        using var response = await httpClient.PutAsJsonAsync(
+            $"/api/day-planning/activities/{activityId}", request, ctx);
+
+        return await ApiResponseReader.ReadAsync(response, ctx);
+    }
+
     async Task<ClientResult> IDayPlanningClient.SetActivityCompletionAsync(
         int activityId, bool isCompleted, CancellationToken ctx)
     {

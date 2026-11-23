@@ -6,7 +6,7 @@
         @onclose="OnClose">
     <header>
         <h2 id="activity-form-title">
-            @(ExistingActivity is null ? "Activiteit toevoegen" : "Activiteit bekijken")
+            @(ExistingActivity is null ? "Activiteit toevoegen" : "Activiteit aanpassen")
         </h2>
         <button type="button"
                 @ref="_closeButton"
@@ -35,7 +35,6 @@
            type="text"
            data-testid="activity-name"
            @ref="_nameInput"
-           readonly="@(ExistingActivity is not null)"
            aria-invalid="@(nameErrors.Length > 0 ? "true" : "false")"
            aria-describedby="@(nameErrors.Length > 0 ? "activity-name-error" : null)"
            placeholder="Bv. Ochtendwandeling"
@@ -58,7 +57,6 @@
     <textarea id="activity-description"
               data-testid="activity-description"
               maxlength="500"
-              readonly="@(ExistingActivity is not null)"
               aria-invalid="@(descriptionErrors.Length > 0 ? "true" : "false")"
               aria-describedby="@(descriptionErrors.Length > 0
                   ? "activity-description-count activity-description-error"
@@ -67,7 +65,7 @@
               @oninput="HandleDescriptionInput"></textarea>
 
     <div class="activity-description-meta">
-        @if (ExistingActivity is null && _model.Description?.Length == 500)
+        @if (_model.Description?.Length == 500)
         {
             <p role="status"
                class="activity-description-limit"
@@ -96,7 +94,6 @@
     <label for="activity-date">Datum *</label>
     <input id="activity-date"
            type="date"
-           disabled="@(ExistingActivity is not null)"
            data-testid="activity-date"
            @bind="_model.Date"
            @bind:format="yyyy-MM-dd"/>
@@ -106,7 +103,6 @@
     <div class="activity-form-select">
         <select id="activity-time-block"
                 data-testid="activity-time-block"
-                disabled="@(ExistingActivity is not null)"
                 aria-invalid="@(timeBlockErrors.Length > 0 ? "true" : "false")"
                 aria-describedby="@(timeBlockErrors.Length > 0 ? "activity-time-block-error" : null)"
                 @bind="_model.TimeBlockId"
@@ -135,31 +131,18 @@
         </div>
     }
 
-    @if (ExistingActivity is null)
-    {
-        <label class="activity-important-toggle" for="activity-important">
-            <input id="activity-important"
-                   type="checkbox"
-                   data-testid="activity-important"
-                   @bind="_model.IsImportant" />
+    <label class="activity-important-toggle" for="activity-important">
+        <input id="activity-important"
+               type="checkbox"
+               data-testid="activity-important"
+               @bind="_model.IsImportant" />
 
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />
-            </svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />
+        </svg>
 
-            <span>Belangrijk</span>
-        </label>
-    }
-    else if (ExistingActivity.IsImportant)
-    {
-        <div class="activity-important-display"
-             data-testid="activity-important-readonly">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />
-            </svg>
-            <span>Belangrijk</span>
-        </div>
-    }
+        <span>Belangrijk</span>
+    </label>
 
     @if (SaveError is not null)
     {
@@ -177,6 +160,13 @@
 
     @if (ExistingActivity is not null)
     {
+        <button type="submit"
+                class="activity-form-submit"
+                data-testid="update-activity-button"
+                disabled="@(!HasUnsavedChanges || _isSaving)">
+            @(_isSaving ? "Opslaan..." : "Wijzigingen opslaan")
+        </button>
+
         <button type="button"
                 class="activity-delete-trigger"
                 data-testid="delete-activity-button"

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using Planning.Client.DayPlanning;
 using Planning.Client.Http;
@@ -44,6 +45,51 @@ public class DayPlanningApiClientShould
         result.StatusCode.ShouldBe(HttpStatusCode.OK);
         result.Value.ShouldNotBeNull();
         result.Value.Date.ShouldBe(new DateOnly(2026, 11, 14));
+    }
+
+    [Fact]
+    public async Task UpdateActivityThroughClientInterface()
+    {
+        // Arrange
+        HttpRequestMessage? sentRequest = null;
+        using var client = new HttpClient(new StubHandler(request =>
+        {
+            sentRequest = request;
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        }))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+        IDayPlanningClient service = new DayPlanningApiClient(client);
+        var update = new UpdatePlannedActivityRequest
+        {
+            Date = new DateOnly(2026, 11, 24),
+            TimeBlockId = 2,
+            Name = "Evening walk",
+            Description = "Bring a jacket",
+            IsImportant = true
+        };
+
+        // Act
+        var result = await service.UpdateActivityAsync(42, update);
+
+        // Assert
+        sentRequest.ShouldNotBeNull();
+        sentRequest.Method.ShouldBe(HttpMethod.Put);
+        sentRequest.RequestUri!.AbsolutePath
+            .ShouldBe("/api/day-planning/activities/42");
+
+        var body = await sentRequest.Content!
+            .ReadFromJsonAsync<UpdatePlannedActivityRequest>();
+        body.ShouldNotBeNull();
+        body.Date.ShouldBe(update.Date);
+        body.TimeBlockId.ShouldBe(update.TimeBlockId);
+        body.Name.ShouldBe(update.Name);
+        body.Description.ShouldBe(update.Description);
+        body.IsImportant.ShouldBe(update.IsImportant);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     [Fact]
