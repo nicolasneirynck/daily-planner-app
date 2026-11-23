@@ -1,31 +1,54 @@
 # Architecture
 
-## Architecture overview
+## Architecture Overview
 
-Daily Planner is a .NET 10 application with a Blazor WebAssembly frontend, an ASP.NET Core server, and a PostgreSQL database. The server serves the client files and exposes a same-origin HTTP API implemented with FastEndpoints. Planning requests pass through API endpoints to application services; those services use Entity Framework Core (EF Core) to read and write the database. ASP.NET Core Identity handles accounts and roles in the same database. See [server startup](../src/Planning.Server/Program.cs) and the [client startup](../src/Planning.Client/Program.cs).
+Daily Planner is a .NET 10 web application consisting of a Blazor WebAssembly frontend, an ASP.NET Core backend, and a PostgreSQL database.
 
-The solution separates the browser UI, HTTP endpoints, application operations, domain entities, persistence configuration, and shared request/response contracts into projects. This is a description of the current code boundaries, not a claim that every dependency points inward: the service project directly references the persistence project and uses its `ApplicationDbContext`.
+The application follows a client-server architecture. The server hosts the frontend and exposes a same-origin HTTP API built with FastEndpoints. API requests are handled by application services, which use Entity Framework Core to interact with PostgreSQL.
 
-## Solution structure and responsibilities
+The solution is organized into separate projects for the user interface, API, application logic, domain models, data persistence, and shared contracts. This separation keeps responsibilities explicit, although the implementation does not strictly follow a dependency-inversion or Clean Architecture model.
 
-| Project | Current responsibility |
-| --- | --- |
-| [`Planning.Client`](../src/Planning.Client/) | Blazor pages and components, browser authentication state, and HTTP clients for the API. |
-| [`Planning.Server`](../src/Planning.Server/) | ASP.NET Core host, FastEndpoints endpoints, Identity operations, authorization, response handling, and static client hosting. |
-| [`Planning.Shared`](../src/Planning.Shared/) | Request and response types shared by the browser and server, plus identity role names and some validators. |
-| [`Planning.Services`](../src/Planning.Services/) | Daily planning operations, current-user checks, and initialization of default time blocks. |
-| [`Planning.Domain`](../src/Planning.Domain/) | Planning entities and invariants, including planned activity name and description limits. |
-| [`Planning.Persistence`](../src/Planning.Persistence/) | EF Core context, entity and Identity mappings, migrations, save triggers, and development data seeding. |
+## Solution Structure
 
-The [project references](../src/Planning.Server/Planning.Server.csproj) make `Planning.Server` the composition root: it references the other production projects and registers their implementations. `Planning.Client` references `Planning.Shared`; `Planning.Persistence` references `Planning.Domain`; and `Planning.Services` references `Planning.Domain`, `Planning.Persistence`, and `Planning.Shared`. The domain and shared projects have no project references to the application or infrastructure projects.
+The solution is divided into six projects, each with a distinct responsibility.
 
-## Request and data flow
+| Project | Responsibility |
+|---|---|
+| [`Planning.Client`](../src/Planning.Client/) | Blazor WebAssembly pages and components, browser authentication state, and API clients. |
+| [`Planning.Server`](../src/Planning.Server/) | ASP.NET Core application hosting, FastEndpoints API endpoints, authentication, authorization, and HTTP response handling. |
+| [`Planning.Shared`](../src/Planning.Shared/) | Shared API request and response contracts, identity role definitions, and selected validators. |
+| [`Planning.Services`](../src/Planning.Services/) | Application operations for daily planning, user-specific data access, and default time block initialization. |
+| [`Planning.Domain`](../src/Planning.Domain/) | Domain entities and business rules, including constraints on planned activities. |
+| [`Planning.Persistence`](../src/Planning.Persistence/) | EF Core database context, entity mappings, migrations, persistence triggers, and development data seeding. |
 
-The [day planning page](../src/Planning.Client/Pages/DayPlanning.razor.cs) calls `IDayPlanningClient`. Its [HTTP implementation](../src/Planning.Client/DayPlanning/DayPlanningApiClient.cs) sends JSON requests to `/api/day-planning` routes and reads responses through [`ApiResponseReader`](../src/Planning.Client/Http/ApiResponseReader.cs). The client and API exchange the DTOs and request types in [`Planning.Shared/DayPlanning`](../src/Planning.Shared/DayPlanning/).
+This structure separates the user interface, HTTP handling, application operations, and data persistence into dedicated projects. Shared contracts support communication between the client and server, while domain entities represent the core planning data and rules.
 
-For a planning request, a [FastEndpoints endpoint](../src/Planning.Server/Endpoints/DayPlanning/) extracts route or body data and calls `IDayPlanningService`. [`DayPlanningService`](../src/Planning.Services/DayPlanning/DayPlanningService.cs) obtains the current user through `ISessionContextProvider`, queries or updates `ApplicationDbContext`, and returns an `Ardalis.Result`. The [global response processor](../src/Planning.Server/Processors/GlobalResponseSender.cs) translates that result into an HTTP success response or the API error format. A day read loads the user's time blocks and activities for the selected date, then assembles activities under their blocks for the response. Create, update, completion, and delete operations persist changes through EF Core.
+## Request and Data Flow
 
-Identity endpoints follow a shorter path: they call ASP.NET Core Identity managers directly. Registration also calls [`DefaultTimeBlockInitializer`](../src/Planning.Services/TimeBlocks/DefaultTimeBlockInitializer.cs) in a database transaction so a new user receives six time blocks. See the [account endpoints](../src/Planning.Server/Endpoints/Identity/Accounts/).
+Daily planning operations follow a consistent flow from the Blazor WebAssembly frontend through the API and application services to the database.
+
+```mermaid
+flowchart TD
+    Client["Blazor WebAssembly<br/>UI and API client"]
+    API["FastEndpoints<br/>HTTP endpoints"]
+    Service["DayPlanningService<br/>Application operations"]
+    EF["Entity Framework Core<br/>ApplicationDbContext"]
+    DB[("PostgreSQL")]
+
+    Client --> API
+    API --> Service
+    Service --> EF
+    EF --> DB
+```
+
+When a user interacts with the day planning page, the Blazor frontend sends an HTTP request to the `/api/day-planning` endpoints using shared request and response contracts.
+
+FastEndpoints handles the incoming request and delegates planning operations to `DayPlanningService`. The service identifies the current user, performs the required operations, and accesses PostgreSQL through Entity Framework Core.
+
+For example, retrieving a day plan involves loading the user's time blocks and activities for the selected date, then organizing the activities under their corresponding time blocks.
+
+The API converts the service result into an HTTP response. The frontend processes the response and updates the displayed planning information.
+
 
 ## Authentication and authorization
 
