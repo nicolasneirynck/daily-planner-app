@@ -50,26 +50,69 @@ For example, retrieving a day plan involves loading the user's time blocks and a
 The API converts the service result into an HTTP response. The frontend processes the response and updates the displayed planning information.
 
 
-## Authentication and authorization
+## Authentication and Authorization
 
-The server configures ASP.NET Core Identity with EF Core stores and authentication/authorization middleware in [`Program.cs`](../src/Planning.Server/Program.cs). Login uses `SignInManager` with the Identity application cookie; logout signs out. In the browser, the named `SecureApi` HTTP client uses [`CookieHandler`](../src/Planning.Client/Identity/CookieHandler.cs) to include browser credentials. [`CookieAuthenticationStateProvider`](../src/Planning.Client/Identity/CookieAuthenticationStateProvider.cs) calls the account-info endpoint and builds the Blazor principal from returned claims and roles.
+Daily Planner uses ASP.NET Core Identity with cookie-based authentication. User accounts and roles are stored in PostgreSQL through Entity Framework Core.
 
-Registration and login allow anonymous requests. Other FastEndpoints endpoints use the framework's default authorization behavior unless configured otherwise; role management endpoints explicitly require the `Administrator` role. The client has authorized example routes, while the day planning page itself has no `[Authorize]` attribute. Regardless of client routing, the planning service requires a current user ID and scopes its time block and planned activity queries to that user. See the [planning endpoints](../src/Planning.Server/Endpoints/DayPlanning/), [role endpoints](../src/Planning.Server/Endpoints/Identity/Roles/), and [planning service](../src/Planning.Services/DayPlanning/DayPlanningService.cs).
+After signing in, the browser uses the authentication cookie for subsequent API requests. The Blazor WebAssembly client retrieves the current user's authentication information from the server to maintain its authentication state.
 
-## Data persistence
+API endpoints enforce authentication and, where applicable, role-based authorization. Planning operations also verify the current user's identity and restrict access to their own time blocks and activities.
 
-[`ApplicationDbContext`](../src/Planning.Persistence/ApplicationDbContext.cs) derives from `IdentityDbContext<IdentityUser>` and exposes `Activity`, `TimeBlock`, and `PlannedActivity` sets alongside Identity tables. EF Core mappings in [`Configurations`](../src/Planning.Persistence/Configurations/) define relationships, constraints, and indexes. `PlannedActivity` stores a date, time block, name, description, completion flag, and importance flag; it also has an optional link to `Activity`. The planning workflow currently creates and edits planned activities directly.
+Registration initializes six default time blocks for the new user within a database transaction.
 
-User ownership is represented by `UserId` on planning entities. The planned activity mapping uses a composite foreign key from `(TimeBlockId, UserId)` to a time block's `(Id, UserId)`, and indexes `(UserId, Date)`. Default time blocks are stored per user, rather than calculated only in the UI. See the [entity mappings](../src/Planning.Persistence/Configurations/PlannedActivities/PlannedActivityConfiguration.cs) and [initializer](../src/Planning.Services/TimeBlocks/DefaultTimeBlockInitializer.cs).
+## Data Persistence
 
-The common entity base has timestamps and an `IsDeleted` flag. A [before-save trigger](../src/Planning.Persistence/Triggers/EntityBeforeSaveTrigger.cs) updates timestamps and converts tracked EF deletion into a soft delete. The current planning service's delete operation instead uses `ExecuteDeleteAsync`, which deletes the database row directly and bypasses that trigger. Planning reads filter out rows marked as deleted. In `Development`, server startup applies [EF Core migrations](../src/Planning.Persistence/Migrations/) and seeds demo accounts and planning data; the startup code does not run that migration and seeding block in other environments.
+Daily Planner uses PostgreSQL for data storage, with Entity Framework Core (EF Core) handling database access and entity mapping.
 
-## Validation and error handling
+The `ApplicationDbContext` manages both planning data and ASP.NET Core Identity tables.
 
-The activity form uses a local model with data annotations for immediate browser validation. FastEndpoints uses FluentValidation for planning create/update requests and the validators defined in shared identity request types. [`PlannedActivityRules`](../src/Planning.Domain/PlannedActivities/PlannedActivityRules.cs) supplies the planning text limits used by the API validators and domain entity. The service also checks those limits and verifies that a requested time block belongs to the current user before saving. See the [form model](../src/Planning.Client/DayPlanning/ActivityFormModel.cs), [endpoint validators](../src/Planning.Server/Endpoints/DayPlanning/), and [service](../src/Planning.Services/DayPlanning/DayPlanningService.cs).
+The planning data model consists of three main entities:
 
-The API maps application results, validation failures, authorization failures, missing API routes, and unhandled API exceptions to `application/problem+json` responses. Validation errors can include field names and reasons. The browser response reader turns those errors into client results, which the form can display. The error contract is described separately in [API errors](api-errors.md); the implementation is in [`ApiProblemResponse`](../src/Planning.Server/Errors/ApiProblemResponse.cs), [`GlobalResponseSender`](../src/Planning.Server/Processors/GlobalResponseSender.cs), and the [client response reader](../src/Planning.Client/Http/ApiResponseReader.cs). Server request and response processors use Serilog for API logging.
+| Entity | Description |
+|---|---|
+| `Activity` | Represents a reusable activity that can be linked to planned activities. |
+| `TimeBlock` | Represents a user-specific time block used to organize the day. |
+| `PlannedActivity` | Represents an activity scheduled for a specific date and time block, including its completion and importance status. |
 
-## Testing architecture
+Planning entities are associated with individual users through a `UserId`. Database relationships and constraints help maintain data integrity, including ensuring that a planned activity references a time block belonging to the same user.
 
-The solution has separate [domain](../tests/Planning.Domain.Tests/), [service](../tests/Planning.Services.Tests/), [server](../tests/Planning.Server.Tests/), [client](../tests/Planning.Client.Tests/), and [end-to-end](../tests/Planning.E2E.Tests/) test projects. Domain tests exercise entity rules. Service tests exercise planning operations against temporary PostgreSQL instances via Testcontainers. Server tests use `WebApplicationFactory` to verify endpoint, identity, and error behavior; planning endpoint tests can replace the planning service with a test implementation. Client tests use bUnit for components and test the API response reader and authentication state provider. Playwright end-to-end tests run the hosted application with a temporary database and exercise browser planning journeys. These are the test layers present in the repository, rather than a guarantee of coverage for every behavior.
+EF Core migrations manage database schema changes. In the `Development` environment, migrations are applied automatically and sample data is created during application startup.
+
+
+## Validation and Error Handling
+
+Daily Planner implements validation at multiple levels to ensure data integrity and provide clear feedback to users.
+
+### Validation
+
+- **Client-side:** Blazor forms use Data Annotations to provide immediate feedback on invalid input.
+- **API:** FastEndpoints uses FluentValidation to validate incoming requests before they reach the application services.
+- **Application and domain:** Business rules enforce constraints such as activity name and description limits. Application services also verify that referenced time blocks belong to the current user.
+
+### Error Handling
+
+The API uses a consistent error response format based on `application/problem+json`. Validation failures, authorization errors, missing resources, and unexpected API exceptions are handled through a centralized response mechanism.
+
+The Blazor client interprets these responses and displays relevant error messages, including field-specific validation errors where available.
+
+For more details, see the [API Error Contract](api-errors.md).
+
+
+## Testing Architecture
+
+Daily Planner uses automated tests at multiple levels to verify domain rules, application behavior, API interactions, and user workflows.
+
+The test suite is organized into five projects:
+
+| Test Project | Scope |
+|---|---|
+| [`Planning.Domain.Tests`](../tests/Planning.Domain.Tests/) | Tests domain entities and business rules. |
+| [`Planning.Services.Tests`](../tests/Planning.Services.Tests/) | Tests application services using temporary PostgreSQL databases provided by Testcontainers. |
+| [`Planning.Server.Tests`](../tests/Planning.Server.Tests/) | Tests API endpoints, authentication, and error handling using `WebApplicationFactory`. |
+| [`Planning.Client.Tests`](../tests/Planning.Client.Tests/) | Tests Blazor components using bUnit, as well as client-side API response handling and authentication state. |
+| [`Planning.E2E.Tests`](../tests/Planning.E2E.Tests/) | Uses Playwright to test complete user workflows in a browser against a running application and temporary database. |
+
+This approach combines focused tests of individual components with integration and end-to-end tests that verify how different parts of the application work together.
+
+For instructions on running the tests locally, see the [Development & Testing](../README.md#development--testing) section in the README.
+
