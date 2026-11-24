@@ -26,10 +26,15 @@ public class PlannedActivityCreationShould : BunitContext
         var cut = Render<DayPlanning>();
 
         // Act
+        var mobileUrl = cut.Find(
+            "[data-testid='time-block-1'] [data-testid='mobile-add-activity-link']")
+            .GetAttribute("href");
         cut.Find("[data-testid='time-block-1'] [data-testid='add-activity-button']")
             .Click();
 
         // Assert
+        mobileUrl.ShouldBe(
+            $"/dayplanning/activities/new?date={today:yyyy-MM-dd}&timeBlockId=1");
         var dialog = cut.Find("[role='dialog']"); // role="dialog" hoort bij een venster dat boven de pagina opent
         dialog.TextContent.ShouldContain("Activiteit toevoegen");
         var date = (IHtmlInputElement)cut.Find(

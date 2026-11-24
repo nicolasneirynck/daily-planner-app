@@ -52,6 +52,7 @@ else
         {
             <TimeBlockCard @key="block.Id" 
                            Block="block" 
+                           SelectedDate="_selectedDate"
                            OnAddActivity="trigger => OpenActivityForm(block.Id, trigger)"
                            OnOpenActivity="selection => OpenExistingActivity(selection.Activity, selection.Trigger, block.Id)"
                            OnToggleCompletion="ToggleActivityCompletionAsync"

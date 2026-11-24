@@ -77,8 +77,19 @@
             </ul>
         }
         
+        <a class="time-block-add-activity mobile-activity-action"
+           data-testid="mobile-add-activity-link"
+           href="@NewActivityUrl"
+           aria-label="Activiteit toevoegen aan @Block.Name">
+            <span class="time-block-add-icon">+</span>
+            @if (Block.Activities.Count > 0)
+            {
+                <span>Activiteit</span>
+            }
+        </a>
+
         <button type="button"
-                class="time-block-add-activity"
+                class="time-block-add-activity desktop-activity-action"
                 data-testid="add-activity-button"
                 @ref="_addActivityButton"
                 aria-label="Activiteit toevoegen aan @Block.Name"
@@ -98,6 +109,12 @@
 
     [Parameter, EditorRequired]
     public TimeBlockDto Block { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DateOnly SelectedDate { get; set; }
+
+    private string NewActivityUrl =>
+        $"/dayplanning/activities/new?date={SelectedDate:yyyy-MM-dd}&timeBlockId={Block.Id}";
     
     [Parameter, EditorRequired]
     public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }

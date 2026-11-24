@@ -188,7 +188,12 @@
     color: #192231;
     font: inherit;
     font-weight: 600;
+    text-decoration: none;
     cursor: pointer;
+}
+
+.time-block-add-activity.desktop-activity-action {
+    display: none;
 }
 
 .time-block-content-empty .time-block-add-activity {
@@ -218,5 +223,15 @@
 
     .time-block-add-activity:hover {
         background: var(--control-hover-background);
+    }
+}
+
+@media (min-width: 769px) {
+    .time-block-add-activity.mobile-activity-action {
+        display: none;
+    }
+
+    .time-block-add-activity.desktop-activity-action {
+        display: flex;
     }
 }
