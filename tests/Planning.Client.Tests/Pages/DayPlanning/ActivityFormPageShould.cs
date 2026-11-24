@@ -69,4 +69,67 @@ public class ActivityFormPageShould : BunitContext
                 .ShouldEndWith("/dayplanning?date=2026-11-25");
         });
     }
+
+    [Fact]
+    public void KeepPageEditsUntilUserDiscardsThem()
+    {
+        // Arrange
+        var originalDate = new DateOnly(2026, 11, 24);
+        var morning = Block(1, "Ochtend", 6, 9);
+        morning.Activities =
+        [
+            new PlannedActivityDto
+            {
+                Id = 101,
+                Name = "Morning walk"
+            }
+        ];
+
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetDayAsync(originalDate, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = originalDate,
+                    TimeBlocks = [morning]
+                })));
+        Services.AddSingleton(service);
+
+        var cut = Render<ActivityFormPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101)
+            .Add(page => page.DateQuery, "2026-11-24"));
+
+        cut.WaitForAssertion(() =>
+            ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+                .Value.ShouldBe("Morning walk"));
+
+        // Act
+        cut.Find("[data-testid='activity-name']").Change("Evening walk");
+        cut.Find("button[aria-label='Terug']").Click();
+
+        // Assert
+        cut.Find("[role='alertdialog']").TextContent
+            .ShouldContain("Niet-opgeslagen wijzigingen");
+
+        // Act
+        cut.Find("[data-testid='continue-editing-button']").Click();
+
+        // Assert
+        cut.FindAll("[role='alertdialog']").ShouldBeEmpty();
+        ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+            .Value.ShouldBe("Evening walk");
+
+        // Act
+        cut.Find("button[aria-label='Terug']").Click();
+        cut.Find("[data-testid='discard-changes-button']").Click();
+
+        // Assert
+        Services.GetRequiredService<NavigationManager>().Uri
+            .ShouldEndWith("/dayplanning?date=2026-11-24");
+        _ = service.DidNotReceive().UpdateActivityAsync(
+            Arg.Any<int>(),
+            Arg.Any<UpdatePlannedActivityRequest>(),
+            Arg.Any<CancellationToken>());
+    }
 }
