@@ -51,9 +51,12 @@ public class PlannedActivityCreationShould : BunitContext
 
         // Act
         cut.Find("[data-testid='next-day-button']").Click();
+        var mobileUrl = cut.Find("[data-testid='mobile-global-add-activity-link']")
+            .GetAttribute("href");
         cut.Find("[data-testid='global-add-activity-button']").Click();
 
         // Assert
+        mobileUrl.ShouldBe($"/dayplanning/activities/new?date={tomorrow:yyyy-MM-dd}");
         var dialog = cut.Find("[role='dialog']");
         dialog.TextContent.ShouldContain("Activiteit toevoegen");
         var date = (IHtmlInputElement)cut.Find(

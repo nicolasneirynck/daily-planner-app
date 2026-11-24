@@ -30,6 +30,9 @@ public partial class DayPlanning
     [SupplyParameterFromQuery(Name = "date")] // leest /dayplanning?date=2026-11-24 uit => DateQuery wordt dan de string "2026-11-24".
     public string? DateQuery { get; set; }
 
+    private string NewActivityUrl =>
+        $"/dayplanning/activities/new?date={_selectedDate:yyyy-MM-dd}";
+
     protected override Task OnParametersSetAsync()
     {
         var date = DateOnly.TryParseExact(

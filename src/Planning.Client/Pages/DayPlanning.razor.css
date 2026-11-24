@@ -42,7 +42,12 @@
     color: white;
     font:inherit;
     font-size: 2rem;
+    text-decoration: none;
     cursor: pointer;
+}
+
+.global-add-activity.desktop-activity-action {
+    display: none;
 }
 
 @media (hover: hover) {
@@ -63,6 +68,14 @@
 }
 
 @media (min-width: 769px) {
+    .global-add-activity.mobile-activity-action {
+        display: none;
+    }
+
+    .global-add-activity.desktop-activity-action {
+        display: flex;
+    }
+
     .day-planning-header h1 {
         font-size: 2.25rem;
     }

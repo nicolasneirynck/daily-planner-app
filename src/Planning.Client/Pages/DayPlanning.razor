@@ -15,8 +15,15 @@
         
         @if (!_isLoading && !_hasLoadError)
         {
+            <a class="global-add-activity mobile-activity-action"
+               data-testid="mobile-global-add-activity-link"
+               href="@NewActivityUrl"
+               aria-label="Activiteit toevoegen">
+                <span class="global-add-icon" aria-hidden="true">+</span>
+                <span class="global-add-label">Activiteit toevoegen</span>
+            </a>
             <button type="button"
-                    class="global-add-activity"
+                    class="global-add-activity desktop-activity-action"
                     data-testid="global-add-activity-button"
                     @ref="_globalAddButton"
                     aria-label="Activiteit toevoegen"
