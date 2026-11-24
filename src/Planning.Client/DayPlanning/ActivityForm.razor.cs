@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
 using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
@@ -15,6 +16,9 @@ public partial class ActivityForm : IAsyncDisposable
 
     [Inject]
     private IDayPlanningClient DayPlanningClient { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public DateOnly InitialDate { get; set; }
@@ -62,6 +66,8 @@ public partial class ActivityForm : IAsyncDisposable
     private bool _focusCloseButtonAfterRender;
     private bool _isSaving;
     private bool _isAwaitingCloseConfirmation;
+    private bool _allowNavigation;
+    private string? _pendingLocation;
 
     private bool HasUnsavedChanges =>
         ExistingActivity is not null &&
@@ -172,10 +178,37 @@ public partial class ActivityForm : IAsyncDisposable
     private void ContinueEditing()
     {
         _isAwaitingCloseConfirmation = false;
+        _pendingLocation = null;
         _focusCloseButtonAfterRender = true;
     }
 
-    private Task DiscardChangesAsync() => OnClose.InvokeAsync();
+    private async Task DiscardChangesAsync()
+    {
+        _allowNavigation = true;
+        try
+        {
+            if (_pendingLocation is not null)
+                Navigation.NavigateTo(_pendingLocation);
+            else
+                await OnClose.InvokeAsync();
+        }
+        catch
+        {
+            _allowNavigation = false;
+            throw;
+        }
+    }
+
+    private async Task BeforePageNavigationAsync(LocationChangingContext context)
+    {
+        if (_allowNavigation || !HasChangedFormValues)
+            return;
+
+        context.PreventNavigation();
+        _pendingLocation = context.TargetLocation; // context.TargetLocation is de URL waar de gebruiker naartoe probeert te gaan
+        await RequestCloseAsync();
+        await InvokeAsync(StateHasChanged);
+    }
 
     private string DeleteConfirmationMessage =>
         $"“{ExistingActivity!.Name}” wordt verwijderd uit je dagplanning.";
@@ -223,6 +256,7 @@ public partial class ActivityForm : IAsyncDisposable
 
             if (result.IsSuccess)
             {
+                _allowNavigation = true;
                 await OnSaved.InvokeAsync(_model.Date); // het formulier meldt aan bovenliggend compontent dat het een succes is + geeft datum mee die nu in het formulier staat zodat bovenliggend component kan terugnavigeren naar de dagplanning van die datum en dag opnieuw kan laden (indien nodig)
                 return;
             }
@@ -233,6 +267,7 @@ public partial class ActivityForm : IAsyncDisposable
                                    or JsonException
                                    or InvalidOperationException)
         {
+            _allowNavigation = false;
             Log.Warning(ex, "Could not save activity for {Date}", _model.Date);
             _saveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
         }
@@ -280,12 +315,14 @@ public partial class ActivityForm : IAsyncDisposable
                 return;
             }
 
+            _allowNavigation = true;
             await OnDeleted.InvokeAsync(InitialDate);
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException
                                    or InvalidOperationException)
         {
+            _allowNavigation = false;
             Log.Warning(ex, "Could not delete activity {ActivityId}", activityId);
             _deleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
         }
