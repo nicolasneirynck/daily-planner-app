@@ -70,7 +70,7 @@ public partial class ActivityForm : IAsyncDisposable
     private bool _allowNavigation;
     private string? _pendingLocation;
 
-    private bool HasUnsavedChanges =>
+    private bool HasChangesToSave =>
         ExistingActivity is not null &&
         (_model.Name.Trim() != ExistingActivity.Name.Trim() ||
          NormalizeDescription(_model.Description) !=
@@ -218,7 +218,7 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task SubmitAsync()
     {
-        if (_isSaving || (ExistingActivity is not null && !HasUnsavedChanges))
+        if (_isSaving || (ExistingActivity is not null && !HasChangesToSave))
             return;
 
         var timeBlockId = _model.TimeBlockId
