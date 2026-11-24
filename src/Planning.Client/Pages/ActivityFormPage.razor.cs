@@ -12,6 +12,9 @@ public partial class ActivityFormPage
     [Inject] private IDayPlanningClient DayPlanningClient { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
+    [Parameter]
+    public int? ActivityId { get; set; }
+
     [SupplyParameterFromQuery(Name = "date")]
     public string? DateQuery { get; set; }
 
@@ -20,10 +23,13 @@ public partial class ActivityFormPage
 
     private DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
     private IReadOnlyList<TimeBlockDto> _timeBlocks = [];
+    private PlannedActivityDto? _activity;
+    private int? _initialTimeBlockId;
     private bool _isLoading = true;
     private string? _loadError;
     private int _loadVersion;
-    private string FormKey => $"{_date:yyyy-MM-dd}:{TimeBlockId}";
+    private string FormKey =>
+        $"{_date:yyyy-MM-dd}:{ActivityId}:{_initialTimeBlockId}";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -31,6 +37,8 @@ public partial class ActivityFormPage
         _isLoading = true;
         _loadError = null;
         _timeBlocks = [];
+        _activity = null;
+        _initialTimeBlockId = null;
 
         if (!DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out _date))
@@ -43,6 +51,7 @@ public partial class ActivityFormPage
 
         var requestedDate = _date;
         var requestedTimeBlockId = TimeBlockId;
+        var requestedActivityId = ActivityId;
         
         try
         {
@@ -70,9 +79,32 @@ public partial class ActivityFormPage
                 .OrderBy(block => block.SortOrder)
                 .ToArray();
 
-            if (requestedTimeBlockId is not null &&
-                _timeBlocks.All(block => block.Id != requestedTimeBlockId))
-                _loadError = "Het tijdsblok bestaat niet meer.";
+            if (requestedActivityId is null)
+            {
+                if (requestedTimeBlockId is not null &&
+                    _timeBlocks.All(block => block.Id != requestedTimeBlockId))
+                {
+                    _loadError = "Het tijdsblok bestaat niet meer.";
+                    return;
+                }
+
+                _initialTimeBlockId = requestedTimeBlockId;
+                return;
+            }
+
+            foreach (var block in _timeBlocks)
+            {
+                var activity = block.Activities.FirstOrDefault(
+                    item => item.Id == requestedActivityId);
+                if (activity is null)
+                    continue;
+
+                _activity = activity;
+                _initialTimeBlockId = block.Id;
+                return;
+            }
+
+            _loadError = "Deze activiteit staat niet meer in de dagplanning.";
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException

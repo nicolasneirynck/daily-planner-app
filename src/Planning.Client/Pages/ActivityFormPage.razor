@@ -1,8 +1,9 @@
 @page "/dayplanning/activities/new"
+@page "/dayplanning/activities/{ActivityId:int}/edit"
 @layout ActivityFormLayout
 @using Planning.Client.DayPlanning
 
-<PageTitle>Activiteit toevoegen</PageTitle>
+<PageTitle>@(ActivityId is null ? "Activiteit toevoegen" : "Activiteit aanpassen")</PageTitle>
 
 @if (_isLoading)
 {
@@ -20,7 +21,8 @@ else
     <ActivityForm @key="FormKey"
                   Presentation="ActivityFormPresentation.Page"
                   InitialDate="_date"
-                  InitialTimeBlockId="TimeBlockId"
+                  InitialTimeBlockId="_initialTimeBlockId"
+                  ExistingActivity="_activity"
                   TimeBlocks="_timeBlocks"
                   OnSaved="ReturnToDay"
                   OnDeleted="ReturnToDay"
