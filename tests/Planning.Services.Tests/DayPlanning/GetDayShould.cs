@@ -87,6 +87,48 @@ public class GetDayShould(PostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task ReturnActivityDetailsInTheRequestedTimeBlock()
+    {
+        var userId = Guid.NewGuid().ToString();
+        var date = new DateOnly(2026, 11, 24);
+
+        await using var dbContext = fixture.CreateContext();
+        var blocks = await AddUserWithTimeBlocksAsync(dbContext, userId);
+        var activity = new PlannedActivity
+        {
+            UserId = userId,
+            Name = "Prepare presentation",
+            Description = "Bring the slides",
+            Date = date,
+            TimeBlockId = blocks[0].Id,
+            IsImportant = true,
+            IsCompleted = false
+        };
+        dbContext.PlannedActivities.Add(activity);
+        await dbContext.SaveChangesAsync();
+
+        var service = CreateAuthenticatedService(dbContext, userId);
+
+        var result = await service.GetDayAsync(date);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Date.ShouldBe(date);
+
+        var block = result.Value.TimeBlocks.Single(
+            item => item.Id == blocks[0].Id);
+        block.Name.ShouldBe(blocks[0].Name);
+        block.StartTime.ShouldBe(blocks[0].StartTime);
+        block.EndTime.ShouldBe(blocks[0].EndTime);
+
+        var returnedActivity = block.Activities.Single();
+        returnedActivity.Id.ShouldBe(activity.Id);
+        returnedActivity.Name.ShouldBe("Prepare presentation");
+        returnedActivity.Description.ShouldBe("Bring the slides");
+        returnedActivity.IsImportant.ShouldBeTrue();
+        returnedActivity.IsCompleted.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task ExcludeActivitiesFromOtherDates()
     {
         // Arrange
