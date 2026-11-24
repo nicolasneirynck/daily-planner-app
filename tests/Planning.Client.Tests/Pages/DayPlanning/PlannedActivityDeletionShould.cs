@@ -28,7 +28,7 @@ public class PlannedActivityDeletionShould : BunitContext
 
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
-        cut.Find("[data-testid='delete-activity-button']").Click();
+        cut.Find("[data-testid='activity-detail-delete-button']").Click();
 
         // Assert: confirmation is required
         var confirmation = cut.Find("[role='alertdialog']");
@@ -44,8 +44,8 @@ public class PlannedActivityDeletionShould : BunitContext
 
         // Assert: the activity and its details remain
         cut.FindAll("[role='alertdialog']").ShouldBeEmpty();
-        cut.Find("[data-testid='activity-name']")
-            .GetAttribute("value").ShouldBe("Morning walk");
+        cut.Find("[data-testid='activity-detail-name']")
+            .TextContent.Trim().ShouldBe("Morning walk");
         cut.Find("[data-testid='planned-activity-name']")
             .TextContent.ShouldBe("Morning walk");
         _ = service.DidNotReceive().DeletePlannedActivityAsync(
@@ -80,7 +80,7 @@ public class PlannedActivityDeletionShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']")
             .Click();
-        cut.Find("[data-testid='delete-activity-button']")
+        cut.Find("[data-testid='activity-detail-delete-button']")
             .Click();
         cut.Find("[data-testid='confirm-delete-button']")
             .Click();
@@ -113,7 +113,7 @@ public class PlannedActivityDeletionShould : BunitContext
 
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
-        cut.Find("[data-testid='delete-activity-button']").Click();
+        cut.Find("[data-testid='activity-detail-delete-button']").Click();
         cut.Find("[data-testid='confirm-delete-button']").Click();
 
         // Assert

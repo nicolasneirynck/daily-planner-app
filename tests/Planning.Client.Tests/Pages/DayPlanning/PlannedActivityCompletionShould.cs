@@ -10,6 +10,12 @@ namespace Planning.Client.Pages;
 
 public class PlannedActivityCompletionShould : BunitContext
 {
+    public PlannedActivityCompletionShould()
+    {
+        JSInterop.SetupModule("./js/activityDialog.js")
+            .SetupVoid("showModal", _ => true);
+    }
+
     [Fact]
     public void MarkIncompleteActivityAsCompletedImmediately()
     {
@@ -85,6 +91,61 @@ public class PlannedActivityCompletionShould : BunitContext
             cut.Find("[data-testid='activity-completion-toggle']")
                 .GetAttribute("aria-pressed").ShouldBe("false");
             cut.Find("[role='alert']").TextContent
+                .ShouldContain("Status wijzigen is niet gelukt.");
+        });
+    }
+
+    [Fact]
+    public void CompleteActivityFromDetailsAndUpdateDayPlanning()
+    {
+        // Arrange
+        var service = RegisterServiceWithActivity(isCompleted: false);
+        service.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
+
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='activity-open-button']").Click();
+        cut.Find("[data-testid='activity-detail-completion-toggle']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = service.Received(1).SetActivityCompletionAsync(
+                101, true, Arg.Any<CancellationToken>());
+            cut.Find("[data-testid='activity-detail-completion-toggle']")
+                .GetAttribute("aria-pressed").ShouldBe("true");
+            cut.Find("[data-testid='activity-completion-toggle']")
+                .GetAttribute("aria-pressed").ShouldBe("true");
+        });
+    }
+
+    [Fact]
+    public void KeepActivityIncompleteInDetailsWhenCompletionFails()
+    {
+        // Arrange
+        var service = RegisterServiceWithActivity(isCompleted: false);
+        service.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult(
+                HttpStatusCode.UnprocessableEntity, "Save failed.")));
+
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.Find("[data-testid='activity-open-button']").Click();
+        cut.Find("[data-testid='activity-detail-completion-toggle']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = service.Received(1).SetActivityCompletionAsync(
+                101, true, Arg.Any<CancellationToken>());
+            cut.Find("[data-testid='activity-detail-completion-toggle']")
+                .GetAttribute("aria-pressed").ShouldBe("false");
+            cut.Find("[data-testid='activity-completion-toggle']")
+                .GetAttribute("aria-pressed").ShouldBe("false");
+            cut.Find("[role='dialog'] [role='alert']").TextContent
                 .ShouldContain("Status wijzigen is niet gelukt.");
         });
     }
