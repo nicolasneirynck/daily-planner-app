@@ -1,6 +1,8 @@
 using System.Net;
 using System.Globalization;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Planning.Client.DayPlanning;
 using Planning.Client.Http;
@@ -89,6 +91,9 @@ public class DayPlanningNavigationShould : BunitContext
 
             cut.Find("[data-testid='planned-activity-name']").TextContent.Trim()
                 .ShouldBe($"Task on {expectedDate:yyyy-MM-dd}");
+
+            Services.GetRequiredService<NavigationManager>().Uri
+                .ShouldEndWith($"/dayplanning?date={expectedDate:yyyy-MM-dd}");
         });
     }
 

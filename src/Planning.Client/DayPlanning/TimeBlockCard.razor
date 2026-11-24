@@ -39,8 +39,16 @@
                             }
                         </button>
 
+                        <a class="activity-open-button mobile-activity-action"
+                           data-testid="mobile-activity-open-link"
+                           href="@EditActivityUrl(activity.Id)"
+                           aria-label="@(activity.IsImportant
+                                           ? $"Open belangrijke activiteit {activity.Name}"
+                                           : $"Open activiteit {activity.Name}")">
+                        </a>
+
                         <button type="button"
-                                class="activity-open-button"
+                                class="activity-open-button desktop-activity-action"
                                 data-testid="activity-open-button"
                                 @ref="_openButtons[activity.Id]"
                                 aria-label="@(activity.IsImportant
@@ -77,8 +85,19 @@
             </ul>
         }
         
+        <a class="time-block-add-activity mobile-activity-action"
+           data-testid="mobile-add-activity-link"
+           href="@NewActivityUrl"
+           aria-label="Activiteit toevoegen aan @Block.Name">
+            <span class="time-block-add-icon">+</span>
+            @if (Block.Activities.Count > 0)
+            {
+                <span>Activiteit</span>
+            }
+        </a>
+
         <button type="button"
-                class="time-block-add-activity"
+                class="time-block-add-activity desktop-activity-action"
                 data-testid="add-activity-button"
                 @ref="_addActivityButton"
                 aria-label="Activiteit toevoegen aan @Block.Name"
@@ -98,6 +117,15 @@
 
     [Parameter, EditorRequired]
     public TimeBlockDto Block { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DateOnly SelectedDate { get; set; }
+
+    private string NewActivityUrl =>
+        $"/dayplanning/activities/new?date={SelectedDate:yyyy-MM-dd}&timeBlockId={Block.Id}";
+
+    private string EditActivityUrl(int activityId) =>
+        $"/dayplanning/activities/{activityId}/edit?date={SelectedDate:yyyy-MM-dd}";
     
     [Parameter, EditorRequired]
     public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }

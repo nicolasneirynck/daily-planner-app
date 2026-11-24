@@ -11,12 +11,19 @@
     
     <div class="day-navigation-slot">
         <DateNavigation SelectedDate="_selectedDate"
-                        DateSelected="LoadDayAsync" />
+                        DateSelected="SelectDateAsync" />
         
         @if (!_isLoading && !_hasLoadError)
         {
+            <a class="global-add-activity mobile-activity-action"
+               data-testid="mobile-global-add-activity-link"
+               href="@NewActivityUrl"
+               aria-label="Activiteit toevoegen">
+                <span class="global-add-icon" aria-hidden="true">+</span>
+                <span class="global-add-label">Activiteit toevoegen</span>
+            </a>
             <button type="button"
-                    class="global-add-activity"
+                    class="global-add-activity desktop-activity-action"
                     data-testid="global-add-activity-button"
                     @ref="_globalAddButton"
                     aria-label="Activiteit toevoegen"
@@ -45,6 +52,7 @@ else
         {
             <TimeBlockCard @key="block.Id" 
                            Block="block" 
+                           SelectedDate="_selectedDate"
                            OnAddActivity="trigger => OpenActivityForm(block.Id, trigger)"
                            OnOpenActivity="selection => OpenExistingActivity(selection.Activity, selection.Trigger, block.Id)"
                            OnToggleCompletion="ToggleActivityCompletionAsync"
@@ -59,12 +67,7 @@ else
                   InitialTimeBlockId="_initialTimeBlockId"
                   ExistingActivity="_selectedActivity"
                   TimeBlocks="_timeBlocks"
-                  OnSubmit="AddActivityAsync"
-                  OnUpdate="UpdateActivityAsync"
-                  OnClose="CancelActivityForm"
-                  OnConfirmDelete="DeleteActivityAsync"
-                  SaveError="@_activitySaveError"
-                  ServerErrors="_activityFieldErrors"
-                  DeleteError="@_activityDeleteError"
-                  IsDeleting="_isDeletingActivity" />
+                  OnSaved="ActivitySavedAsync"
+                  OnDeleted="ActivityDeletedAsync"
+                  OnClose="CancelActivityForm" />
 }

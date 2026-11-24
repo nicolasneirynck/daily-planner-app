@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Planning.Client.DayPlanning;
-using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
 using Serilog;
 
@@ -20,17 +19,32 @@ public partial class DayPlanning
     private bool _isActivityFormOpen;
     private PlannedActivityDto? _selectedActivity;
     private int? _initialTimeBlockId;
-    private string? _activitySaveError;
-    private IReadOnlyList<ClientFieldError> _activityFieldErrors = [];
-    private bool _isDeletingActivity;
-    private string? _activityDeleteError;
     private bool _restoreFocusAfterCancel;
     private ElementReference _globalAddButton;
     private ElementReference _activityFormTrigger;
     
     [Inject] public required IDayPlanningClient DayPlanningService { get; set; }
 
-    protected override Task OnInitializedAsync() => LoadDayAsync(_selectedDate);
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "date")] // leest /dayplanning?date=2026-11-24 uit => DateQuery wordt dan de string "2026-11-24".
+    public string? DateQuery { get; set; }
+
+    private string NewActivityUrl =>
+        $"/dayplanning/activities/new?date={_selectedDate:yyyy-MM-dd}";
+
+    protected override Task OnParametersSetAsync()
+    {
+        var date = DateOnly.TryParseExact(
+            DateQuery, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var parsed)
+            ? parsed
+            : DateOnly.FromDateTime(DateTime.Today); // als DateQuery ongeldig is of leeg -> vandaag zetten
+
+        return _loadVersion == 0 || date != _selectedDate // _loadVersion == 0 wil zeggen: er is nog nooit geladen
+            ? LoadDayAsync(date)
+            : Task.CompletedTask; // er hoeft niets opnieuw geladen worden
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -96,6 +110,16 @@ public partial class DayPlanning
         }
     }
 
+    private async Task SelectDateAsync(DateOnly date)
+    {
+        var requestedLoadVersion = _loadVersion + 1;
+        await LoadDayAsync(date);
+        if (requestedLoadVersion != _loadVersion)
+            return;
+
+        Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}");
+    }
+
     private async Task ToggleActivityCompletionAsync(PlannedActivityDto activity)
     {
         if (!_completionUpdatesInProgress.Add(activity.Id)) // geeft true terug als ID nieuw is
@@ -149,9 +173,6 @@ public partial class DayPlanning
         _isActivityFormOpen = false;
         _selectedActivity = null;
         _initialTimeBlockId = null;
-        _activitySaveError = null;
-        _activityFieldErrors = [];
-        _activityDeleteError = null;
     }
 
     private void CancelActivityForm()
@@ -163,110 +184,16 @@ public partial class DayPlanning
         _restoreFocusAfterCancel = true;
     }
 
-    private async Task AddActivityAsync(CreatePlannedActivityRequest request)
+    private async Task ActivitySavedAsync(DateOnly date)
     {
-        _activitySaveError = null;
-        _activityFieldErrors = [];
-
-        try
-        {
-            var result = await DayPlanningService.CreateActivityAsync(request);
-
-            if (result.IsSuccess)
-            {
-                CloseActivityForm();
-                await LoadDayAsync(request.Date);
-                return;
-            }
-
-            ApplyActivitySaveErrors(result);
-        }
-        catch (Exception ex) when (ex is HttpRequestException
-                                       or JsonException
-                                       or InvalidOperationException)
-        {
-            Log.Warning(ex, "Could not save activity for {Date}", request.Date);
-            _activitySaveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
-        }
+        CloseActivityForm();
+        await LoadDayAsync(date);
+        Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}", replace: true);
     }
 
-    private async Task UpdateActivityAsync(UpdatePlannedActivityRequest request)
+    private async Task ActivityDeletedAsync(DateOnly date)
     {
-        var activityId = _selectedActivity?.Id
-            ?? throw new InvalidOperationException("No activity is selected.");
-
-        _activitySaveError = null;
-        _activityFieldErrors = [];
-
-        try
-        {
-            var result = await DayPlanningService.UpdateActivityAsync(
-                activityId, request);
-
-            if (result.IsSuccess)
-            {
-                CloseActivityForm();
-                await LoadDayAsync(request.Date);
-                return;
-            }
-
-            ApplyActivitySaveErrors(result);
-        }
-        catch (Exception ex) when (ex is HttpRequestException
-                                       or JsonException
-                                       or InvalidOperationException)
-        {
-            Log.Warning(ex, "Could not update activity {ActivityId}", activityId);
-            _activitySaveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
-        }
-    }
-
-    private void ApplyActivitySaveErrors(ClientResult result)
-    {
-        var errors = result.FieldErrors.ToArray();
-        _activityFieldErrors = errors
-            .Where(error => error.Name is "name" or "description")
-            .ToArray();
-
-        var hasOtherErrors =
-            errors.Any(error => error.Name is not ("name" or "description" or "$"));
-
-        _activitySaveError = _activityFieldErrors.Count > 0 && !hasOtherErrors
-            ? null
-            : "Opslaan is niet gelukt. Probeer het opnieuw.";
-    }
-
-    private async Task DeleteActivityAsync(int activityId)
-    {
-        if (_isDeletingActivity)
-            return;
-
-        _isDeletingActivity = true;
-        _activityDeleteError = null;
-
-        try
-        {
-            var result = await DayPlanningService.DeletePlannedActivityAsync(activityId);
-
-            if (!result.IsSuccess)
-            {
-                _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
-                return;
-            }
-
-            CloseActivityForm();
-            await LoadDayAsync(_selectedDate);
-        }
-        catch (Exception ex) when (ex is HttpRequestException
-                                       or JsonException
-                                       or InvalidOperationException)
-        {
-            Log.Warning(ex, "Could not delete activity {ActivityId}", activityId);
-            _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
-        }
-        finally
-        {
-            _isDeletingActivity = false;
-        }
+        CloseActivityForm();
+        await LoadDayAsync(date);
     }
 }
