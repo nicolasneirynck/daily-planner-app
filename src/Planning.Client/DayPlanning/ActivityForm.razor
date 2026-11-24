@@ -49,9 +49,11 @@
         Een EditContext houdt de toestand van het formulier bij: welk model erbij hoort, welke velden gewijzigd zijn en welke validatiefouten er zijn.
         Met EditContext="_editContext" geven we EditForm die toestand expliciet mee, zodat de code-behind de veldfouten kan opvragen en bijwerken.
     *@
-    <EditForm EditContext="_editContext"
+    <EditForm class="activity-form-edit"
+              EditContext="_editContext"
               OnValidSubmit="SubmitAsync">
     <DataAnnotationsValidator />
+    <div class="activity-form-fields">
 
     @{ var nameErrors = _editContext.GetValidationMessages(_nameField).ToArray(); }
     <label for="activity-name">Naam *</label>
@@ -178,6 +180,7 @@
     {
         <p role="alert" data-testid="activity-save-error">@_saveError</p>
     }
+    </div>
 
     <footer class="activity-form-actions">
         @if (Presentation == ActivityFormPresentation.Modal && ExistingActivity is not null)

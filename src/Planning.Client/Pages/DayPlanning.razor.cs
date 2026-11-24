@@ -112,7 +112,11 @@ public partial class DayPlanning
 
     private async Task SelectDateAsync(DateOnly date)
     {
+        var requestedLoadVersion = _loadVersion + 1;
         await LoadDayAsync(date);
+        if (requestedLoadVersion != _loadVersion)
+            return;
+
         Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}");
     }
 

@@ -266,12 +266,34 @@
     }
 
     .activity-form-modal {
+        display: flex;
+        flex-direction: column;
         width: min(680px, calc(100vw - 3rem)); /* Op een breed scherm wordt de modal dus 680 px. Op een smaller scherm krimpt hij mee, met ongeveer 1,5 rem ruimte links en rechts */
         height: max-content;
         max-height: calc(100dvh - 3rem);
         margin: auto;
+        overflow: hidden;
         padding: 1.75rem;
         border-radius: 1.5rem;
+    }
+
+    .activity-form-modal .activity-form-content,
+    .activity-form-modal ::deep .activity-form-edit {
+        display: flex;
+        flex: 1 1 auto; /* flex-grow: 1: mag beschikbare ruimte innemen; flex-shrink: 1; mag krimpen als er te weinig ruimte is; flex-basis:auto; begint bij de grootte van eigen inhoud */
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .activity-form-modal header,
+    .activity-form-modal .activity-form-actions {
+        flex: none;
+    }
+
+    .activity-form-modal .activity-form-fields {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
     }
 
     .activity-form-modal .activity-form-actions {

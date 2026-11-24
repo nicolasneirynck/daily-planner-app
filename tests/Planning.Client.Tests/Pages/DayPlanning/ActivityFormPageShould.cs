@@ -13,6 +13,12 @@ namespace Planning.Client.Pages;
 
 public class ActivityFormPageShould : BunitContext
 {
+    public ActivityFormPageShould()
+    {
+        JSInterop.SetupModule("./js/activityDialog.js")
+            .SetupVoid("showModal", _ => true);
+    }
+
     [Fact]
     public void SaveEditedActivityFromPageAndReturnToUpdatedDay()
     {
@@ -30,12 +36,12 @@ public class ActivityFormPageShould : BunitContext
         ];
 
         var service = Substitute.For<IDayPlanningClient>();
-        service.GetDayAsync(originalDate, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(call => Task.FromResult(new ClientResult<DayPlanningResponse>(
                 HttpStatusCode.OK,
                 new DayPlanningResponse
                 {
-                    Date = originalDate,
+                    Date = call.ArgAt<DateOnly>(0),
                     TimeBlocks = [morning]
                 })));
         service.UpdateActivityAsync(
@@ -45,9 +51,10 @@ public class ActivityFormPageShould : BunitContext
             .Returns(Task.FromResult(new ClientResult(HttpStatusCode.NoContent)));
         Services.AddSingleton(service);
 
+        Services.GetRequiredService<NavigationManager>()
+            .NavigateTo("/dayplanning/activities/101/edit?date=2026-11-24");
         var cut = Render<ActivityFormPage>(parameters => parameters
-            .Add(page => page.ActivityId, 101)
-            .Add(page => page.DateQuery, "2026-11-24"));
+            .Add(page => page.ActivityId, 101));
 
         cut.WaitForAssertion(() =>
             ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
@@ -96,9 +103,10 @@ public class ActivityFormPageShould : BunitContext
                 })));
         Services.AddSingleton(service);
 
+        Services.GetRequiredService<NavigationManager>()
+            .NavigateTo("/dayplanning/activities/101/edit?date=2026-11-24");
         var cut = Render<ActivityFormPage>(parameters => parameters
-            .Add(page => page.ActivityId, 101)
-            .Add(page => page.DateQuery, "2026-11-24"));
+            .Add(page => page.ActivityId, 101));
 
         cut.WaitForAssertion(() =>
             ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
