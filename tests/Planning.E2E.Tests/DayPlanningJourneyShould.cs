@@ -89,9 +89,15 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
             .Filter(new() { HasText = activityName });
         await activity.GetByTestId("activity-open-button").ClickAsync();
 
-        // Assert: the saved description is available
-        await Expect(Page.GetByTestId("activity-description"))
-            .ToHaveValueAsync(activityDescription);
+        // Assert: the saved description is available in the read-only detail
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(activityName);
+        await Expect(Page.GetByTestId("activity-detail-description"))
+            .ToHaveTextAsync(activityDescription);
+        await Expect(Page.Locator(
+                "[role='dialog'] input, [role='dialog'] textarea, [role='dialog'] select"))
+            .ToHaveCountAsync(0);
     }
 
     [Fact]
@@ -125,8 +131,14 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
             .Filter(new() { HasText = activityName });
         await Expect(activity).ToBeVisibleAsync();
 
-        // Act: edit through the mobile page and use browser Back
+        // Act: open the mobile detail, then edit and use browser Back
         await activity.GetByTestId("mobile-activity-open-link").ClickAsync();
+        await Expect(Page.GetByTestId("activity-detail-page")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(activityName);
+
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Bewerken" })
+            .ClickAsync();
         await Expect(Page.GetByTestId("activity-form-page")).ToBeVisibleAsync();
         await Page.GetByTestId("activity-name").FillAsync(editedName);
         await Page.EvaluateAsync("history.back()");
@@ -167,6 +179,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
 
         // Act
         await activity.GetByTestId("activity-open-button").ClickAsync();
+        await Page.GetByTestId("activity-detail-edit-button").ClickAsync();
         await Page.GetByTestId("activity-name").FillAsync(editedName);
         await Page.GetByTestId("activity-description")
             .FillAsync(editedDescription);
@@ -204,16 +217,17 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Expect(editedActivity.GetByTestId("activity-important-flag"))
             .ToBeVisibleAsync();
         await editedActivity.GetByTestId("activity-open-button").ClickAsync();
-        await Expect(Page.GetByTestId("activity-name"))
-            .ToHaveValueAsync(editedName);
-        await Expect(Page.GetByTestId("activity-description"))
-            .ToHaveValueAsync(editedDescription);
-        await Expect(Page.GetByTestId("activity-date"))
-            .ToHaveValueAsync(tomorrow.ToString("yyyy-MM-dd"));
-        await Expect(Page.GetByTestId("activity-time-block").Locator("option:checked"))
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(editedName);
+        await Expect(Page.GetByTestId("activity-detail-description"))
+            .ToHaveTextAsync(editedDescription);
+        await Expect(Page.GetByTestId("activity-detail-date"))
+            .ToContainTextAsync(
+                tomorrow.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("nl-BE")));
+        await Expect(Page.GetByTestId("activity-detail-time-block"))
             .ToHaveTextAsync("Middag");
-        await Expect(Page.GetByTestId("activity-important"))
-            .ToBeCheckedAsync();
+        await Expect(Page.GetByTestId("activity-detail-importance"))
+            .ToHaveTextAsync("Belangrijk");
     }
 
     [Fact]
@@ -235,17 +249,19 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         var other = morning.GetByTestId("planned-activity-row")
             .Filter(new() { HasText = otherName });
 
-        // Act: open the activity and cancel deletion
+        // Act: open the detail and cancel deletion
         await selected.GetByTestId("activity-open-button").ClickAsync();
-        await Page.GetByTestId("delete-activity-button").ClickAsync();
+        await Page.GetByTestId("activity-detail-delete-button").ClickAsync();
 
         // Assert: confirmation is shown before deletion
         await Expect(Page.GetByRole(AriaRole.Alertdialog)).ToBeVisibleAsync();
         await Page.GetByTestId("cancel-delete-button").ClickAsync();
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(selectedName);
         await Expect(selected).ToBeVisibleAsync();
 
         // Act: confirm deletion
-        await Page.GetByTestId("delete-activity-button").ClickAsync();
+        await Page.GetByTestId("activity-detail-delete-button").ClickAsync();
         /* Begin vóór de klik naar de DELETE-response te luisteren, zodat ook een snel
          serverantwoord wordt opgevangen. De test wacht op dat antwoord voordat hij verdergaat. */
         await Page.RunAndWaitForResponseAsync(
