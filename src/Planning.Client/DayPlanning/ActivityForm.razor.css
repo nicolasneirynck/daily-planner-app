@@ -267,11 +267,30 @@
 
     .activity-form-modal {
         width: min(680px, calc(100vw - 3rem)); /* Op een breed scherm wordt de modal dus 680 px. Op een smaller scherm krimpt hij mee, met ongeveer 1,5 rem ruimte links en rechts */
-        height: auto;
+        height: max-content;
         max-height: calc(100dvh - 3rem);
         margin: auto;
         padding: 1.75rem;
         border-radius: 1.5rem;
+    }
+
+    .activity-form-modal .activity-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #e5e0dc;
+    }
+
+    .activity-form-modal .activity-form-actions button {
+        width: auto;
+        margin-top: 0;
+    }
+
+    .activity-form-modal .activity-delete-trigger {
+        margin-right: auto;
     }
 }
 
