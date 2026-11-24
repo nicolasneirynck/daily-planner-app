@@ -275,6 +275,19 @@
     }
 }
 
+.activity-form-cancel {
+    width: 100%;
+    min-height: 3rem;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #d8ccc1;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: #192231;
+    font: inherit;
+    cursor: pointer;
+}
+
 .activity-delete-trigger {
     display: flex;
     justify-content: center;

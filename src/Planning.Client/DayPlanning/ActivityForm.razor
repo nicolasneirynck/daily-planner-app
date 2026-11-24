@@ -176,41 +176,55 @@
         <p role="alert" data-testid="activity-save-error">@_saveError</p>
     }
 
-    @if (ExistingActivity is null)
-    {
-        <button type="submit"
-                class="activity-form-submit"
-                data-testid="submit-activity-button"
-                disabled="@_isSaving">
-            @(_isSaving ? "Opslaan..." : "Activiteit toevoegen")
-        </button>
-    }
+    <footer class="activity-form-actions">
+        @if (ExistingActivity is null)
+        {
+            <button type="submit"
+                    class="activity-form-submit"
+                    data-testid="submit-activity-button"
+                    disabled="@_isSaving">
+                @(_isSaving ? "Opslaan..." : "Activiteit toevoegen")
+            </button>
+        }
 
-    @if (ExistingActivity is not null)
-    {
-        <button type="submit"
-                class="activity-form-submit"
-                data-testid="update-activity-button"
-                disabled="@(!HasUnsavedChanges || _isSaving)">
-            @(_isSaving ? "Opslaan..." : "Wijzigingen opslaan")
-        </button>
+        @if (ExistingActivity is not null)
+        {
+            <button type="submit"
+                    class="activity-form-submit"
+                    data-testid="update-activity-button"
+                    disabled="@(!HasUnsavedChanges || _isSaving)">
+                @(_isSaving ? "Opslaan..." : "Wijzigingen opslaan")
+            </button>
+        }
 
-        <button type="button"
-                class="activity-delete-trigger"
-                data-testid="delete-activity-button"
-                @ref="_deleteButton"
-                @onclick="ShowDeleteConfirmation" >
-            <svg aria-hidden="true" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round">
-                <path d="M3 6h18" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-            </svg>
-            <span>Verwijderen uit planning</span>
-        </button>
-    }
+        @if (Presentation == ActivityFormPresentation.Modal)
+        {
+            <button type="button"
+                    class="activity-form-cancel"
+                    @onclick="RequestCloseAsync">
+                Annuleren
+            </button>
+        }
+
+        @if (ExistingActivity is not null)
+        {
+            <button type="button"
+                    class="activity-delete-trigger"
+                    data-testid="delete-activity-button"
+                    @ref="_deleteButton"
+                    @onclick="ShowDeleteConfirmation" >
+                <svg aria-hidden="true" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                </svg>
+                <span>Verwijderen uit planning</span>
+            </button>
+        }
+    </footer>
     </EditForm>
     </div>;
 }
