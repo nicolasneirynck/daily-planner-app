@@ -1,0 +1,28 @@
+@page "/dayplanning/activities/new"
+@layout ActivityFormLayout
+@using Planning.Client.DayPlanning
+
+<PageTitle>Activiteit toevoegen</PageTitle>
+
+@if (_isLoading)
+{
+    <p class="activity-form-page-state">Dagplanning laden...</p>
+}
+else if (_loadError is not null)
+{
+    <div class="activity-form-page-state">
+        <p role="alert">@_loadError</p>
+        <a href="@DayUrl(_date)">Terug naar dagplanning</a>
+    </div>
+}
+else
+{
+    <ActivityForm @key="FormKey"
+                  Presentation="ActivityFormPresentation.Page"
+                  InitialDate="_date"
+                  InitialTimeBlockId="TimeBlockId"
+                  TimeBlocks="_timeBlocks"
+                  OnSaved="ReturnToDay"
+                  OnDeleted="ReturnToDay"
+                  OnClose="ReturnToOriginalDay" />
+}
