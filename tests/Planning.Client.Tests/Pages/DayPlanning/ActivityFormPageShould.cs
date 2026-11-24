@@ -20,6 +20,57 @@ public class ActivityFormPageShould : BunitContext
     }
 
     [Fact]
+    public void CreateActivityFromPageWithSelectedTimeBlockAndReturnToDay()
+    {
+        // Arrange
+        var selectedDate = new DateOnly(2026, 11, 24);
+        var morning = Block(1, "Ochtend", 6, 9);
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(call => Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = call.ArgAt<DateOnly>(0),
+                    TimeBlocks = [morning]
+                })));
+        service.CreateActivityAsync(
+                Arg.Any<CreatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
+        Services.AddSingleton(service);
+
+        Services.GetRequiredService<NavigationManager>()
+            .NavigateTo("/dayplanning/activities/new?date=2026-11-24&timeBlockId=1");
+        var cut = Render<ActivityFormPage>();
+
+        cut.WaitForAssertion(() =>
+        {
+            ((IHtmlInputElement)cut.Find("[data-testid='activity-date']"))
+                .Value.ShouldBe("2026-11-24");
+            ((IHtmlSelectElement)cut.Find("[data-testid='activity-time-block']"))
+                .Value.ShouldBe("1");
+        });
+
+        // Act
+        cut.Find("[data-testid='activity-name']").Change("Read a book");
+        cut.Find("form").Submit();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = service.Received(1).CreateActivityAsync(
+                Arg.Is<CreatePlannedActivityRequest>(request =>
+                    request.Date == selectedDate &&
+                    request.TimeBlockId == 1 &&
+                    request.Name == "Read a book"),
+                Arg.Any<CancellationToken>());
+            Services.GetRequiredService<NavigationManager>().Uri
+                .ShouldEndWith("/dayplanning?date=2026-11-24");
+        });
+    }
+
+    [Fact]
     public void SaveEditedActivityFromPageAndReturnToUpdatedDay()
     {
         // Arrange
