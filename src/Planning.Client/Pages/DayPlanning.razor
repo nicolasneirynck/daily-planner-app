@@ -11,7 +11,7 @@
     
     <div class="day-navigation-slot">
         <DateNavigation SelectedDate="_selectedDate"
-                        DateSelected="LoadDayAsync" />
+                        DateSelected="SelectDateAsync" />
         
         @if (!_isLoading && !_hasLoadError)
         {
@@ -59,12 +59,9 @@ else
                   InitialTimeBlockId="_initialTimeBlockId"
                   ExistingActivity="_selectedActivity"
                   TimeBlocks="_timeBlocks"
-                  OnSubmit="AddActivityAsync"
-                  OnUpdate="UpdateActivityAsync"
+                  OnSaved="ActivitySavedAsync"
                   OnClose="CancelActivityForm"
                   OnConfirmDelete="DeleteActivityAsync"
-                  SaveError="@_activitySaveError"
-                  ServerErrors="_activityFieldErrors"
                   DeleteError="@_activityDeleteError"
                   IsDeleting="_isDeletingActivity" />
 }

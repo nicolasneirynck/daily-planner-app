@@ -1,9 +1,14 @@
-<dialog @ref="_activityDialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="activity-form-title"
-        class="activity-form"
-        @onclose="OnClose">
+@*  De code lijn onder commentaar is Razor-syntaxis om een stuk HTML in een variabele te bewaren:
+
+    RenderFragment is een type voor herbruikbare Razor-opmaak
+    @<div> ... </div> maakt die opmaak aan
+    formContent is de variabele. Verderop toont @formContent de inhoud op die plek.
+    
+    Zo kun je dezelfde formuliervelden in een paginacontainer of een modal plaatsen 
+    zonder de veldopmaak twee keer te schrijven
+*@
+@{
+    RenderFragment formContent = @<div class="activity-form-content"> 
     <header>
         <h2 id="activity-form-title">
             @(ExistingActivity is null ? "Activiteit toevoegen" : "Activiteit aanpassen")
@@ -144,17 +149,18 @@
         <span>Belangrijk</span>
     </label>
 
-    @if (SaveError is not null)
+    @if (_saveError is not null)
     {
-        <p role="alert" data-testid="activity-save-error">@SaveError</p>
+        <p role="alert" data-testid="activity-save-error">@_saveError</p>
     }
 
     @if (ExistingActivity is null)
     {
         <button type="submit"
                 class="activity-form-submit"
-                data-testid="submit-activity-button">
-            Activiteit toevoegen
+                data-testid="submit-activity-button"
+                disabled="@_isSaving">
+            @(_isSaving ? "Opslaan..." : "Activiteit toevoegen")
         </button>
     }
 
@@ -184,7 +190,28 @@
         </button>
     }
     </EditForm>
-</dialog>
+    </div>;
+}
+
+@if (Presentation == ActivityFormPresentation.Page)
+{
+    <section class="activity-form activity-form-page"
+             data-testid="activity-form-page"
+             aria-labelledby="activity-form-title">
+        @formContent
+    </section>
+}
+else
+{
+    <dialog @ref="_activityDialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="activity-form-title"
+            class="activity-form activity-form-modal"
+            @onclose="OnClose">
+        @formContent
+    </dialog>
+}
 
 @if (_isAwaitingCloseConfirmation)
 {

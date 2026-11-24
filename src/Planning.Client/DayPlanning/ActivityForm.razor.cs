@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Planning.Client.Http;
 using Planning.Shared.DayPlanning;
+using Serilog;
 
 namespace Planning.Client.DayPlanning;
 
@@ -11,11 +13,18 @@ public partial class ActivityForm : IAsyncDisposable
     [Inject]
     private IJSRuntime Js { get; set; } = default!;
 
+    [Inject]
+    private IDayPlanningClient DayPlanningClient { get; set; } = default!;
+
     [Parameter, EditorRequired]
     public DateOnly InitialDate { get; set; }
 
     [Parameter]
     public int? InitialTimeBlockId { get; set; }
+
+    [Parameter]
+    public ActivityFormPresentation Presentation { get; set; } =
+        ActivityFormPresentation.Modal;
 
     [Parameter]
     public PlannedActivityDto? ExistingActivity { get; set; }
@@ -27,19 +36,10 @@ public partial class ActivityForm : IAsyncDisposable
     public EventCallback OnClose { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<CreatePlannedActivityRequest> OnSubmit { get; set; }
-
-    [Parameter, EditorRequired]
-    public EventCallback<UpdatePlannedActivityRequest> OnUpdate { get; set; }
+    public EventCallback<DateOnly> OnSaved { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback<int> OnConfirmDelete { get; set; }
-
-    [Parameter]
-    public string? SaveError { get; set; }
-
-    [Parameter]
-    public IReadOnlyList<ClientFieldError> ServerErrors { get; set; } = [];
 
     [Parameter]
     public string? DeleteError { get; set; }
@@ -59,7 +59,7 @@ public partial class ActivityForm : IAsyncDisposable
     private FieldIdentifier _descriptionField;
     private FieldIdentifier _timeBlockField;
     private ValidationMessageStore _serverMessages = default!; // een opslag voor validatiemeldingen van de server. Die is gekoppeld aan _editContext, zodat het formulier ze samen met Blazors gewone veldmeldingen kan tonen.
-    private IReadOnlyList<ClientFieldError>? _appliedServerErrors; // onthoudt welke lijst serverfouten al is verwerkt, zodat dezelfde lijst bij een volgende render niet opnieuw wordt toegevoegd.
+    private string? _saveError;
     private bool _isAwaitingDeleteConfirmation;
     private ElementReference _deleteButton;
     private bool _focusDeleteButtonAfterRender;
@@ -105,30 +105,20 @@ public partial class ActivityForm : IAsyncDisposable
         _editContext.OnValidationRequested += ClearServerMessagesOnSubmit; // registreert ClearServerMessagesOnSubmit als handler voor een validatieverzoek. Bij het indienen vraagt EditForm om validatie; de handler wist dan eerdere serverfouten uit die opslag.
     }
 
-    protected override void OnParametersSet()
-    {
-        if (ReferenceEquals(_appliedServerErrors, ServerErrors)) // controleert of _appliedServerErrors en ServerErrors naar dezelfde lijstinstantie verwijzen. Als dat zo is, zijn die serverfouten al verwerkt en stopt return de methode.
-            return;
-
-        _appliedServerErrors = ServerErrors;
-        _serverMessages.Clear();
-        foreach (var error in ServerErrors.Where(error => error.Name == "name"))
-            _serverMessages.Add(_nameField, error.Message); // De foreach loopt door de serverfouten waarvan Name gelijk is aan "name". Voor elk van die fouten voegt Add de fouttekst toe aan het naamveld (_nameField) in Blazors validatieopslag.
-        foreach (var error in ServerErrors.Where(error => error.Name == "description"))
-            _serverMessages.Add(_descriptionField, error.Message);
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _dialogModule = await Js.InvokeAsync<IJSObjectReference>(
-                "import", "./js/activityDialog.js");
+            if (Presentation == ActivityFormPresentation.Modal)
+            {
+                _dialogModule = await Js.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/activityDialog.js");
 
-            // Roept onze JavaScript-functie aan, die de <dialog> (_activityDialog) via de browser als modal opent.
-            _dialogCallback = DotNetObjectReference.Create(this); // Na DotNetObjectReference.Create(this) kan JavaScript via die verwijzing een [JSInvokable]-methode op het formulier aanroepen
-            await _dialogModule.InvokeVoidAsync(
-                "showModal", _activityDialog, _dialogCallback);
+                // Roept onze JavaScript-functie aan, die de <dialog> (_activityDialog) via de browser als modal opent.
+                _dialogCallback = DotNetObjectReference.Create(this); // Na DotNetObjectReference.Create(this) kan JavaScript via die verwijzing een [JSInvokable]-methode op het formulier aanroepen
+                await _dialogModule.InvokeVoidAsync(
+                    "showModal", _activityDialog, _dialogCallback);
+            }
 
             if (ExistingActivity is null)
                 await _nameInput.FocusAsync();
@@ -196,44 +186,84 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task SubmitAsync()
     {
+        if (_isSaving || (ExistingActivity is not null && !HasUnsavedChanges))
+            return;
+
         var timeBlockId = _model.TimeBlockId
             ?? throw new InvalidOperationException("A time block is required.");
         var name = _model.Name.Trim();
         var description = _model.Description?.Trim();
+        _isSaving = true;
+        _saveError = null;
 
-        if (ExistingActivity is not null)
+        try
         {
-            if (_isSaving || !HasUnsavedChanges)
+            ClientResult result;
+            
+            if (ExistingActivity is not null)
+            {
+                result = await DayPlanningClient.UpdateActivityAsync(
+                    ExistingActivity.Id, new UpdatePlannedActivityRequest
+                    {
+                        Date = _model.Date,
+                        TimeBlockId = timeBlockId,
+                        Name = name,
+                        Description = NormalizeDescription(description),
+                        IsImportant = _model.IsImportant
+                    });
+            }
+            else
+            {
+                result = await DayPlanningClient.CreateActivityAsync(
+                    new CreatePlannedActivityRequest
+                    {
+                        Date = _model.Date,
+                        TimeBlockId = timeBlockId,
+                        Name = name,
+                        Description = description,
+                        IsImportant = _model.IsImportant
+                    });
+            }
+
+            if (result.IsSuccess)
+            {
+                await OnSaved.InvokeAsync(_model.Date); // het formulier meldt aan bovenliggend compontent dat het een succes is + geeft datum mee die nu in het formulier staat zodat bovenliggend component kan terugnavigeren naar de dagplanning van die datum en dag opnieuw kan laden (indien nodig)
                 return;
-
-            _isSaving = true;
-            try // Een try met alleen finally is gebruikelijk wanneer je altijd iets moet opruimen, maar de fout niet op deze plek wilt afhandelen.
-            {
-                await OnUpdate.InvokeAsync(new UpdatePlannedActivityRequest
-                {
-                    Date = _model.Date,
-                    TimeBlockId = timeBlockId,
-                    Name = name,
-                    Description = NormalizeDescription(description),
-                    IsImportant = _model.IsImportant
-                });
-            }
-            finally
-            {
-                _isSaving = false;
             }
 
-            return;
+            ApplySaveErrors(result);
         }
-
-        await OnSubmit.InvokeAsync(new CreatePlannedActivityRequest
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
         {
-            Date = _model.Date,
-            TimeBlockId = timeBlockId,
-            Name = name,
-            Description = description,
-            IsImportant = _model.IsImportant
-        });
+            Log.Warning(ex, "Could not save activity for {Date}", _model.Date);
+            _saveError = "Opslaan is niet gelukt. Probeer het opnieuw.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ApplySaveErrors(ClientResult result)
+    {
+        var fieldErrors = result.FieldErrors
+            .Where(error => error.Name is "name" or "description")
+            .ToArray();
+
+        _serverMessages.Clear();
+        foreach (var error in fieldErrors.Where(error => error.Name == "name"))
+            _serverMessages.Add(_nameField, error.Message);
+        foreach (var error in fieldErrors.Where(error => error.Name == "description"))
+            _serverMessages.Add(_descriptionField, error.Message);
+        _editContext.NotifyValidationStateChanged();
+
+        var hasOtherErrors = result.FieldErrors.Any(error =>
+            error.Name is not ("name" or "description" or "$"));
+        _saveError = fieldErrors.Length > 0 && !hasOtherErrors
+            ? null
+            : "Opslaan is niet gelukt. Probeer het opnieuw.";
     }
 
     /*  Deze methode wordt aangeroepen wanneer het formulier om validatie vraagt, bijvoorbeeld bij indienen.
