@@ -39,8 +39,16 @@
                             }
                         </button>
 
+                        <a class="activity-open-button mobile-activity-action"
+                           data-testid="mobile-activity-open-link"
+                           href="@EditActivityUrl(activity.Id)"
+                           aria-label="@(activity.IsImportant
+                                           ? $"Open belangrijke activiteit {activity.Name}"
+                                           : $"Open activiteit {activity.Name}")">
+                        </a>
+
                         <button type="button"
-                                class="activity-open-button"
+                                class="activity-open-button desktop-activity-action"
                                 data-testid="activity-open-button"
                                 @ref="_openButtons[activity.Id]"
                                 aria-label="@(activity.IsImportant
@@ -115,6 +123,9 @@
 
     private string NewActivityUrl =>
         $"/dayplanning/activities/new?date={SelectedDate:yyyy-MM-dd}&timeBlockId={Block.Id}";
+
+    private string EditActivityUrl(int activityId) =>
+        $"/dayplanning/activities/{activityId}/edit?date={SelectedDate:yyyy-MM-dd}";
     
     [Parameter, EditorRequired]
     public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }
