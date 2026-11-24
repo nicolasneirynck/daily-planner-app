@@ -233,12 +233,12 @@ else
                         ConfirmText="Verwijderen"
                         CancelTestId="cancel-delete-button"
                         ConfirmTestId="confirm-delete-button"
-                        ConfirmDisabled="@IsDeleting"
+                        ConfirmDisabled="@_isDeleting"
                         OnCancel="CancelDeleteConfirmation"
-                        OnConfirm="() => OnConfirmDelete.InvokeAsync(ExistingActivity!.Id)">
-        @if (DeleteError is not null)
+                        OnConfirm="DeleteAsync">
+        @if (_deleteError is not null)
         {
-            <p role="alert" data-testid="activity-delete-error">@DeleteError</p>
+            <p role="alert" data-testid="activity-delete-error">@_deleteError</p>
         }
     </ConfirmationDialog>
 }

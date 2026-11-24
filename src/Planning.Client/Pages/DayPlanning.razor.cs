@@ -19,8 +19,6 @@ public partial class DayPlanning
     private bool _isActivityFormOpen;
     private PlannedActivityDto? _selectedActivity;
     private int? _initialTimeBlockId;
-    private bool _isDeletingActivity;
-    private string? _activityDeleteError;
     private bool _restoreFocusAfterCancel;
     private ElementReference _globalAddButton;
     private ElementReference _activityFormTrigger;
@@ -168,7 +166,6 @@ public partial class DayPlanning
         _isActivityFormOpen = false;
         _selectedActivity = null;
         _initialTimeBlockId = null;
-        _activityDeleteError = null;
     }
 
     private void CancelActivityForm()
@@ -187,37 +184,9 @@ public partial class DayPlanning
         Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}", replace: true);
     }
 
-    private async Task DeleteActivityAsync(int activityId)
+    private async Task ActivityDeletedAsync(DateOnly date)
     {
-        if (_isDeletingActivity)
-            return;
-
-        _isDeletingActivity = true;
-        _activityDeleteError = null;
-
-        try
-        {
-            var result = await DayPlanningService.DeletePlannedActivityAsync(activityId);
-
-            if (!result.IsSuccess)
-            {
-                _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
-                return;
-            }
-
-            CloseActivityForm();
-            await LoadDayAsync(_selectedDate);
-        }
-        catch (Exception ex) when (ex is HttpRequestException
-                                       or JsonException
-                                       or InvalidOperationException)
-        {
-            Log.Warning(ex, "Could not delete activity {ActivityId}", activityId);
-            _activityDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
-        }
-        finally
-        {
-            _isDeletingActivity = false;
-        }
+        CloseActivityForm();
+        await LoadDayAsync(date);
     }
 }

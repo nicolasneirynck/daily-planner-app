@@ -39,13 +39,7 @@ public partial class ActivityForm : IAsyncDisposable
     public EventCallback<DateOnly> OnSaved { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<int> OnConfirmDelete { get; set; }
-
-    [Parameter]
-    public string? DeleteError { get; set; }
-
-    [Parameter]
-    public bool IsDeleting { get; set; }
+    public EventCallback<DateOnly> OnDeleted { get; set; }
 
     private ElementReference _activityDialog;
     private ElementReference _closeButton;
@@ -60,6 +54,8 @@ public partial class ActivityForm : IAsyncDisposable
     private FieldIdentifier _timeBlockField;
     private ValidationMessageStore _serverMessages = default!; // een opslag voor validatiemeldingen van de server. Die is gekoppeld aan _editContext, zodat het formulier ze samen met Blazors gewone veldmeldingen kan tonen.
     private string? _saveError;
+    private string? _deleteError;
+    private bool _isDeleting;
     private bool _isAwaitingDeleteConfirmation;
     private ElementReference _deleteButton;
     private bool _focusDeleteButtonAfterRender;
@@ -264,6 +260,39 @@ public partial class ActivityForm : IAsyncDisposable
         _saveError = fieldErrors.Length > 0 && !hasOtherErrors
             ? null
             : "Opslaan is niet gelukt. Probeer het opnieuw.";
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_isDeleting || ExistingActivity is null)
+            return;
+
+        var activityId = ExistingActivity.Id;
+        _isDeleting = true;
+        _deleteError = null;
+
+        try
+        {
+            var result = await DayPlanningClient.DeletePlannedActivityAsync(activityId);
+            if (!result.IsSuccess)
+            {
+                _deleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+                return;
+            }
+
+            await OnDeleted.InvokeAsync(InitialDate);
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not delete activity {ActivityId}", activityId);
+            _deleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
     }
 
     /*  Deze methode wordt aangeroepen wanneer het formulier om validatie vraagt, bijvoorbeeld bij indienen.

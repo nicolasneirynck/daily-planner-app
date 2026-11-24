@@ -60,8 +60,6 @@ else
                   ExistingActivity="_selectedActivity"
                   TimeBlocks="_timeBlocks"
                   OnSaved="ActivitySavedAsync"
-                  OnClose="CancelActivityForm"
-                  OnConfirmDelete="DeleteActivityAsync"
-                  DeleteError="@_activityDeleteError"
-                  IsDeleting="_isDeletingActivity" />
+                  OnDeleted="ActivityDeletedAsync"
+                  OnClose="CancelActivityForm" />
 }
