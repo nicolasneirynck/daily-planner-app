@@ -209,18 +209,17 @@
     </div>;
 }
 
+@*  NavigationLock is een Blazor-component die navigatie kan onderscheppen zolang het formulier op de pagina staat.
+    Het doel hier is voorkomen dat je per ongeluk niet-opgeslagen wijzigingen verliest.
+    Er zijn 2 soorten navigatie:
+     - Binnen de app, bijvoorbeeld de terugknop van de browser naar de dagplanning: BeforePageNavigationAsync wordt aangeroepen. Die methode moet zelf beslissen of de navigatie doorgaat of met context.PreventNavigation() wordt tegengehouden.
+     - Buiten de app of bij verversen/sluiten van het tabblad: ConfirmExternalNavigation laat de browser een standaardwaarschuwing tonen als HasChangedFormValues waar is en _allowNavigation onwaar is.
+*@
+<NavigationLock OnBeforeInternalNavigation="BeforeNavigationAsync"
+                ConfirmExternalNavigation="@(HasChangedFormValues && !_allowNavigation)" />
+
 @if (Presentation == ActivityFormPresentation.Page)
 {
-    /* NavigationLock is een Blazor-component die navigatie kan onderscheppen zolang het formulier op de pagina staat.
-     * Het doel hier is voorkomen dat je per ongeluk niet-opgeslagen wijzigingen verliest.
-     *
-     * Er zijn 2 soorten navigatie:
-     * - Binnen de app, bijvoorbeeld de terugknop van de browser naar de dagplanning: BeforePageNavigationAsync wordt aangeroepen. Die methode moet zelf beslissen of de navigatie doorgaat of met context.PreventNavigation() wordt tegengehouden.
-     * - Buiten de app of bij verversen/sluiten van het tabblad: ConfirmExternalNavigation laat de browser een standaardwaarschuwing tonen als HasChangedFormValues waar is en _allowNavigation onwaar is.
-     */
-    <NavigationLock OnBeforeInternalNavigation="BeforePageNavigationAsync"
-                    ConfirmExternalNavigation="@(HasChangedFormValues && !_allowNavigation)" />
-    
     <section class="activity-form activity-form-page"
              data-testid="activity-form-page"
              aria-labelledby="activity-form-title">

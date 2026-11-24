@@ -199,7 +199,7 @@ public partial class ActivityForm : IAsyncDisposable
         }
     }
 
-    private async Task BeforePageNavigationAsync(LocationChangingContext context)
+    private async Task BeforeNavigationAsync(LocationChangingContext context)
     {
         if (_allowNavigation || !HasChangedFormValues)
             return;
