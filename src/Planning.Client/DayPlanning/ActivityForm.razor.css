@@ -4,7 +4,6 @@
 }
 
 .activity-form-page {
-    min-height: 100dvh;
     padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
 }
 
@@ -193,9 +192,6 @@
     background: #f8f5f0;
     color: #192231;
     font-weight: 700;
-}
-
-.activity-form .activity-important-toggle {
     cursor: pointer;
 }
 
@@ -285,8 +281,7 @@
         min-height: 0;
     }
 
-    .activity-form-modal header,
-    .activity-form-modal .activity-form-actions {
+    .activity-form-modal header {
         flex: none;
     }
 
@@ -298,6 +293,7 @@
 
     .activity-form-modal .activity-form-actions {
         display: flex;
+        flex: none;
         align-items: center;
         justify-content: flex-end;
         gap: 0.75rem;

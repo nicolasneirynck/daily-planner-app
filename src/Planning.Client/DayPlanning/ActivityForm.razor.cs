@@ -231,7 +231,7 @@ public partial class ActivityForm : IAsyncDisposable
         try
         {
             ClientResult result;
-            
+
             if (ExistingActivity is not null)
             {
                 result = await DayPlanningClient.UpdateActivityAsync(

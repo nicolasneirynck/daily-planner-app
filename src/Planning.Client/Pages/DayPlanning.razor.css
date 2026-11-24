@@ -60,11 +60,9 @@
     display: none;
 }
 
-@media (max-width: 768px) {
-    .global-add-icon {
-        line-height: 1;
-        transform: translateY(-0.125rem);
-    }
+.global-add-icon {
+    line-height: 1;
+    transform: translateY(-0.125rem);
 }
 
 @media (min-width: 769px) {
@@ -88,7 +86,6 @@
 
     .global-add-activity {
         position: static; /* haalt hem uit de fixed positie, hij staat weer gewoon op zijn gewone plek op de pagina*/
-        display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
@@ -104,7 +101,7 @@
     .global-add-icon {
         font-size: 1.5rem;
         font-weight: 400;
-        line-height: 1;
+        transform: none;
     }
 
     .global-add-label {

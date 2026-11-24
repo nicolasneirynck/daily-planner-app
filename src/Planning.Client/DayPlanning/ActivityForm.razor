@@ -3,12 +3,12 @@
     RenderFragment is een type voor herbruikbare Razor-opmaak
     @<div> ... </div> maakt die opmaak aan
     formContent is de variabele. Verderop toont @formContent de inhoud op die plek.
-    
-    Zo kun je dezelfde formuliervelden in een paginacontainer of een modal plaatsen 
+
+    Zo kun je dezelfde formuliervelden in een paginacontainer of een modal plaatsen
     zonder de veldopmaak twee keer te schrijven
 *@
 @{
-    RenderFragment formContent = @<div class="activity-form-content"> 
+    RenderFragment formContent = @<div class="activity-form-content">
     <header>
         @if (Presentation == ActivityFormPresentation.Page)
         {
@@ -17,7 +17,7 @@
                 @ref="_pageTitle">
                 @(ExistingActivity is null ? "Activiteit toevoegen" : "Activiteit aanpassen")
             </h1>
-            /* tabindex="-1" maakt de titel focusbaar via code, maar voegt hem niet toe aan de normale Tab-volgorde. De focus gaat dan naar “Activiteit toevoegen”, zodat toetsenbordgebruikers en schermlezers merken dat ze op een nieuwe pagina zijn. Drukken ze daarna op Tab, dan gaan ze verder naar de gewone bedienbare elementen. Zonder tabindex="-1" kan een <h1> normaal gesproken geen focus krijgen. */
+            @* tabindex="-1" maakt de titel focusbaar via code, maar voegt hem niet toe aan de normale Tab-volgorde. De focus gaat dan naar “Activiteit toevoegen”, zodat toetsenbordgebruikers en schermlezers merken dat ze op een nieuwe pagina zijn. Drukken ze daarna op Tab, dan gaan ze verder naar de gewone bedienbare elementen. Zonder tabindex="-1" kan een <h1> normaal gesproken geen focus krijgen. *@
         }
         else
         {
@@ -32,11 +32,11 @@
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 @if (Presentation == ActivityFormPresentation.Page)
                 {
-                    <path d="M19 12H5m7-7-7 7 7 7" /> // "vorig" pijltje
+                    <path d="M19 12H5m7-7-7 7 7 7" /> @* "vorig" pijltje *@
                 }
                 else
                 {
-                    <path d="M18 6 6 18M6 6l12 12" /> // "sluit" kruisje
+                    <path d="M18 6 6 18M6 6l12 12" /> @* "sluit" kruisje *@
                 }
             </svg>
         </button>

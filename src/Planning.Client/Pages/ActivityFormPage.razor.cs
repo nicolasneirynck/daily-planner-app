@@ -52,11 +52,11 @@ public partial class ActivityFormPage
         var requestedDate = _date;
         var requestedTimeBlockId = TimeBlockId;
         var requestedActivityId = ActivityId;
-        
+
         try
         {
             var result = await DayPlanningClient.GetDayAsync(requestedDate);
-            
+
             if (loadVersion != _loadVersion) // wanneer een nieuwe laadaanvraag start voordat een eerdere klaar is
                 return;
             /*
@@ -64,8 +64,8 @@ public partial class ActivityFormPage
                1. De aanvraag voor 24 november start met loadVersion = 1.
                2. Je navigeert snel naar 25 november. Die aanvraag start met versie 2.
                3. Het antwoord voor 24 november komt pas daarna terug. Voor dat antwoord geldt 1 != _loadVersion (nu 2), dus return voorkomt dat de oude dag opnieuw in beeld komt.
-             
-                OnParametersSetAsync loopt bij de eerste weergave en kan opnieuw lopen wanneer parameters veranderen, 
+
+                OnParametersSetAsync loopt bij de eerste weergave en kan opnieuw lopen wanneer parameters veranderen,
                 bijvoorbeeld wanneer de date-queryparameter in de URL verandert.
              */
 
