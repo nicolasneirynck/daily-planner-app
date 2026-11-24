@@ -46,6 +46,7 @@ public partial class ActivityForm : IAsyncDisposable
     public EventCallback<DateOnly> OnDeleted { get; set; }
 
     private ElementReference _activityDialog;
+    private ElementReference _pageTitle;
     private ElementReference _closeButton;
     private ElementReference _nameInput;
     private IJSObjectReference? _dialogModule;
@@ -122,7 +123,9 @@ public partial class ActivityForm : IAsyncDisposable
                     "showModal", _activityDialog, _dialogCallback);
             }
 
-            if (ExistingActivity is null)
+            if (Presentation == ActivityFormPresentation.Page)
+                await _pageTitle.FocusAsync();
+            else if (ExistingActivity is null)
                 await _nameInput.FocusAsync();
             else
                 await _closeButton.FocusAsync();
