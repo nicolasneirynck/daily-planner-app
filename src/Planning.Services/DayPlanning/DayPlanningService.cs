@@ -15,11 +15,12 @@ public class DayPlanningService(
         DateOnly date, CancellationToken ctx = default)
     {
         var userId = sessionContextProvider.User?.GetUserId();
+
         if (string.IsNullOrWhiteSpace(userId))
             return Result<DayPlanningResponse>.Unauthorized();
 
         var timeBlocks = await dbContext.TimeBlocks
-            .AsNoTracking()
+            .AsNoTracking() // zegt tegen Entity Framework: houd de opgehaalde entiteiten niet bij voor latere wijzigingen. Past bij deze GET die alleen gegevens leest.
             .Where(block => block.UserId == userId && !block.IsDeleted)
             .OrderBy(block => block.SortOrder)
             .Select(block => new TimeBlockDto
@@ -73,6 +74,44 @@ public class DayPlanningService(
             Date = date,
             TimeBlocks = timeBlocks
         });
+    }
+
+    public async Task<Result<PlannedActivityDetailsDto>> GetActivityAsync(
+        int activityId, CancellationToken ctx = default)
+    {
+        var userId = sessionContextProvider.User?.GetUserId();
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result<PlannedActivityDetailsDto>.Unauthorized();
+
+        var activity = await dbContext.PlannedActivities
+            .AsNoTracking()
+            .Where(activity => // in SQL eerst join en dan where, maar hier is het leesbaarder om omgekeerd te schrijven. Achter de schermen gebeurt eerst de join.
+                activity.Id == activityId &&
+                activity.UserId == userId &&
+                !activity.IsDeleted)
+            .Join( // JOIN "TimeBlocks" AS timeBlock ON activity."TimeBlockId" = timeBlock."Id" AND activity."UserId" = timeBlock."UserId"
+                dbContext.TimeBlocks.AsNoTracking(),
+                activity => new { activity.TimeBlockId, activity.UserId },
+                timeBlock => new { TimeBlockId = timeBlock.Id, timeBlock.UserId },
+                (activity, timeBlock) => new PlannedActivityDetailsDto
+                {
+                    Id = activity.Id,
+                    Name = activity.Name,
+                    Description = activity.Description,
+                    Date = activity.Date,
+                    TimeBlockId = timeBlock.Id,
+                    TimeBlockName = timeBlock.Name,
+                    StartTime = timeBlock.StartTime,
+                    EndTime = timeBlock.EndTime,
+                    IsImportant = activity.IsImportant,
+                    IsCompleted = activity.IsCompleted
+                })
+            .SingleOrDefaultAsync(ctx); // null, PlannedActivityDetailsDto of fout (bij meer dan 1 resultaat)
+
+        return activity is null
+            ? Result.NotFound("Planned activity was not found.")
+            : Result.Success(activity);
     }
 
     public async Task<Result<PlannedActivityDto>> CreateActivityAsync(
