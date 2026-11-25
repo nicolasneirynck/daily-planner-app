@@ -13,7 +13,7 @@ public partial class PlannedActivityDetails
     public DateOnly Date { get; set; }
 
     [Parameter, EditorRequired]
-    public TimeBlockDto TimeBlock { get; set; } = default!;
+    public string TimeBlockName { get; set; } = string.Empty;
 
     [Parameter]
     public bool CompletionError { get; set; }

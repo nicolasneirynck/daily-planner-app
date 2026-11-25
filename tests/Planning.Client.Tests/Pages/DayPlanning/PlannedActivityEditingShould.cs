@@ -28,13 +28,26 @@ public class PlannedActivityEditingShould : BunitContext
             new PlannedActivityDto
             {
                 Id = 101,
-                Name = "Morning walk",
-                Description = "Walk for twenty minutes",
-                IsImportant = true
+                Name = "Morning walk"
             }
         ];
 
         var service = Substitute.For<IDayPlanningClient>();
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK,
+                new PlannedActivityDetailsDto
+                {
+                    Id = 101,
+                    Name = "Morning walk",
+                    Description = "Walk for twenty minutes",
+                    IsImportant = true,
+                    Date = today,
+                    TimeBlockId = 1,
+                    TimeBlockName = "Ochtend",
+                    StartTime = new TimeOnly(6, 0),
+                    EndTime = new TimeOnly(9, 0)
+                })));
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
                 HttpStatusCode.OK,
@@ -56,8 +69,14 @@ public class PlannedActivityEditingShould : BunitContext
             $"/dayplanning/activities/101?date={today:yyyy-MM-dd}");
         cut.Find("[role='dialog']").TextContent
             .ShouldContain("Activiteit bekijken");
+        cut.Find("[data-testid='activity-detail-description']").TextContent
+            .ShouldContain("Walk for twenty minutes");
+        cut.Find("[data-testid='activity-detail-importance']").TextContent
+            .ShouldContain("Belangrijk");
         cut.FindAll("[role='dialog'] input, [role='dialog'] textarea, [role='dialog'] select")
             .ShouldBeEmpty();
+        _ = service.Received(1).GetActivityAsync(
+            101, Arg.Any<CancellationToken>());
 
         // Act: open the existing edit form
         cut.Find("[data-testid='activity-detail-edit-button']").Click();

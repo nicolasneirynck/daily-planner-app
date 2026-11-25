@@ -15,12 +15,12 @@ else if (_loadError is not null)
         <a href="@DayUrl(_date)">Terug naar dagplanning</a>
     </div>
 }
-else if (_activity is not null && _timeBlock is not null)
+else if (_activity is not null && _timeBlockName is not null)
 {
     <div data-testid="activity-detail-page">
         <PlannedActivityDetails Activity="_activity"
                                 Date="_date"
-                                TimeBlock="_timeBlock"
+                                TimeBlockName="_timeBlockName"
                                 IsPage="true"
                                 CompletionError="_completionError"
                                 CompletionUpdating="_isUpdatingCompletion"

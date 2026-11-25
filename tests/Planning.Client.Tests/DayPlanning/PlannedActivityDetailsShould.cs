@@ -1,6 +1,5 @@
 using Planning.Shared.DayPlanning;
 using Shouldly;
-using static Planning.Client.Pages.DayPlanningTestData;
 
 namespace Planning.Client.DayPlanning;
 
@@ -11,7 +10,6 @@ public class PlannedActivityDetailsShould : BunitContext
     {
         // Arrange
         var date = new DateOnly(2026, 11, 24);
-        var morning = Block(1, "Ochtend", 6, 9);
         var activity = new PlannedActivityDto
         {
             Id = 101,
@@ -24,7 +22,7 @@ public class PlannedActivityDetailsShould : BunitContext
         var cut = Render<PlannedActivityDetails>(parameters => parameters
             .Add(component => component.Activity, activity)
             .Add(component => component.Date, date)
-            .Add(component => component.TimeBlock, morning));
+            .Add(component => component.TimeBlockName, "Ochtend"));
 
         // Assert
         cut.Find("[data-testid='activity-detail-name']")
@@ -64,7 +62,7 @@ public class PlannedActivityDetailsShould : BunitContext
         var cut = Render<PlannedActivityDetails>(parameters => parameters
             .Add(component => component.Activity, activity)
             .Add(component => component.Date, new DateOnly(2026, 11, 24))
-            .Add(component => component.TimeBlock, Block(1, "Ochtend", 6, 9)));
+            .Add(component => component.TimeBlockName, "Ochtend"));
 
         // Assert
         cut.FindAll("[data-testid='activity-detail-description']")
@@ -87,7 +85,7 @@ public class PlannedActivityDetailsShould : BunitContext
         var cut = Render<PlannedActivityDetails>(parameters => parameters
             .Add(component => component.Activity, activity)
             .Add(component => component.Date, new DateOnly(2026, 11, 24))
-            .Add(component => component.TimeBlock, Block(1, "Ochtend", 6, 9))
+            .Add(component => component.TimeBlockName, "Ochtend")
             .Add(component => component.OnEdit, () => editRequested = true));
 
         // Act
@@ -118,7 +116,7 @@ public class PlannedActivityDetailsShould : BunitContext
         var cut = Render<PlannedActivityDetails>(parameters => parameters
             .Add(component => component.Activity, activity)
             .Add(component => component.Date, new DateOnly(2026, 11, 24))
-            .Add(component => component.TimeBlock, Block(1, "Ochtend", 6, 9))
+            .Add(component => component.TimeBlockName, "Ochtend")
             .Add(component => component.OnToggleCompletion,
                 (PlannedActivityDto selected) => requestedActivity = selected));
 
@@ -149,7 +147,7 @@ public class PlannedActivityDetailsShould : BunitContext
         var cut = Render<PlannedActivityDetails>(parameters => parameters
             .Add(component => component.Activity, activity)
             .Add(component => component.Date, new DateOnly(2026, 11, 24))
-            .Add(component => component.TimeBlock, Block(1, "Ochtend", 6, 9))
+            .Add(component => component.TimeBlockName, "Ochtend")
             .Add(component => component.CompletionError, true));
 
         // Assert
@@ -176,7 +174,7 @@ public class PlannedActivityDetailsShould : BunitContext
         var cut = Render<PlannedActivityDetails>(parameters => parameters
             .Add(component => component.Activity, activity)
             .Add(component => component.Date, new DateOnly(2026, 11, 24))
-            .Add(component => component.TimeBlock, Block(1, "Ochtend", 6, 9))
+            .Add(component => component.TimeBlockName, "Ochtend")
             .Add(component => component.OnDelete,
                 () => deleteRequested = true));
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Planning.Client.DayPlanning;
@@ -20,7 +21,7 @@ public partial class ActivityDetailsPage
 
     private DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
     private PlannedActivityDto? _activity;
-    private TimeBlockDto? _timeBlock;
+    private string? _timeBlockName;
     private bool _isLoading = true;
     private string? _loadError;
     private int _loadVersion;
@@ -39,49 +40,43 @@ public partial class ActivityDetailsPage
         _isLoading = true;
         _loadError = null;
         _activity = null;
-        _timeBlock = null;
+        _timeBlockName = null;
         _completionError = false;
         _showDeleteConfirmation = false;
         _deleteError = null;
 
-        if (!DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out _date))
-        {
-            _date = DateOnly.FromDateTime(DateTime.Today);
-            _loadError = "De datum in de link is ongeldig.";
-            _isLoading = false;
-            return;
-        }
-
-        var requestedDate = _date;
+        _date = DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var linkDate)
+            ? linkDate
+            : DateOnly.FromDateTime(DateTime.Today);
         var requestedActivityId = ActivityId;
 
         try
         {
-            var result = await DayPlanningClient.GetDayAsync(requestedDate);
+            var result = await DayPlanningClient.GetActivityAsync(requestedActivityId);
             
-            if (loadVersion != _loadVersion) // de controle moet na de vorige await staan. Omdat de toestand kan veranderen terwijl GetDayAsync loopt. Bijvoorbeeld: aanvraag A start met loadVersion = 1. Tijdens het wachten start aanvraag B, die _loadVersion op 2 zet. Wanneer A terugkomt, ziet de controle 1 != 2 en negeert ze het verouderde antwoord.
+            if (loadVersion != _loadVersion) // de controle moet na de vorige await staan. Omdat de toestand kan veranderen terwijl GetActivityAsync loopt. Bijvoorbeeld: aanvraag A start met loadVersion = 1. Tijdens het wachten start aanvraag B, die _loadVersion op 2 zet. Wanneer A terugkomt, ziet de controle 1 != 2 en negeert ze het verouderde antwoord.
                 return;
 
             if (!result.IsSuccess || result.Value is null)
             {
-                _loadError = "De dagplanning kon niet geladen worden.";
+                _loadError = result.StatusCode == HttpStatusCode.NotFound
+                    ? "Deze activiteit staat niet meer in de dagplanning."
+                    : "De activiteit kon niet geladen worden.";
                 return;
             }
 
-            foreach (var block in result.Value.TimeBlocks)
+            var details = result.Value;
+            _date = details.Date;
+            _timeBlockName = details.TimeBlockName;
+            _activity = new PlannedActivityDto
             {
-                var activity = block.Activities.FirstOrDefault(
-                    item => item.Id == requestedActivityId);
-                if (activity is null)
-                    continue;
-
-                _activity = activity;
-                _timeBlock = block;
-                return;
-            }
-
-            _loadError = "Deze activiteit staat niet meer in de dagplanning.";
+                Id = details.Id,
+                Name = details.Name,
+                Description = details.Description,
+                IsImportant = details.IsImportant,
+                IsCompleted = details.IsCompleted
+            };
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException
@@ -89,8 +84,8 @@ public partial class ActivityDetailsPage
         {
             if (loadVersion == _loadVersion)
             {
-                Log.Warning(ex, "Could not load activity details for {Date}", requestedDate);
-                _loadError = "De dagplanning kon niet geladen worden.";
+                Log.Warning(ex, "Could not load activity details for {ActivityId}", requestedActivityId);
+                _loadError = "De activiteit kon niet geladen worden.";
             }
         }
         finally

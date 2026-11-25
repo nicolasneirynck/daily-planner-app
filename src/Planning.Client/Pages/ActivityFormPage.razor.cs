@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Planning.Client.DayPlanning;
@@ -40,8 +41,10 @@ public partial class ActivityFormPage
         _activity = null;
         _initialTimeBlockId = null;
 
-        if (!DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out _date))
+        var requestedActivityId = ActivityId;
+        var hasLinkDate = DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out var linkDate);
+        if (requestedActivityId is null && !hasLinkDate)
         {
             _date = DateOnly.FromDateTime(DateTime.Today);
             _loadError = "De datum in de link is ongeldig.";
@@ -49,12 +52,40 @@ public partial class ActivityFormPage
             return;
         }
 
-        var requestedDate = _date;
+        _date = hasLinkDate ? linkDate : DateOnly.FromDateTime(DateTime.Today);
         var requestedTimeBlockId = TimeBlockId;
-        var requestedActivityId = ActivityId;
 
         try
         {
+            if (requestedActivityId is not null)
+            {
+                var activityResult = await DayPlanningClient.GetActivityAsync(
+                    requestedActivityId.Value);
+                if (loadVersion != _loadVersion)
+                    return;
+
+                if (!activityResult.IsSuccess || activityResult.Value is null)
+                {
+                    _loadError = activityResult.StatusCode == HttpStatusCode.NotFound
+                        ? "Deze activiteit staat niet meer in de dagplanning."
+                        : "De dagplanning kon niet geladen worden.";
+                    return;
+                }
+
+                var details = activityResult.Value;
+                _date = details.Date;
+                _initialTimeBlockId = details.TimeBlockId;
+                _activity = new PlannedActivityDto
+                {
+                    Id = details.Id,
+                    Name = details.Name,
+                    Description = details.Description,
+                    IsCompleted = details.IsCompleted,
+                    IsImportant = details.IsImportant
+                };
+            }
+
+            var requestedDate = _date;
             var result = await DayPlanningClient.GetDayAsync(requestedDate);
 
             if (loadVersion != _loadVersion) // wanneer een nieuwe laadaanvraag start voordat een eerdere klaar is
@@ -92,19 +123,11 @@ public partial class ActivityFormPage
                 return;
             }
 
-            foreach (var block in _timeBlocks)
+            if (_timeBlocks.All(block => block.Id != _initialTimeBlockId))
             {
-                var activity = block.Activities.FirstOrDefault(
-                    item => item.Id == requestedActivityId);
-                if (activity is null)
-                    continue;
-
-                _activity = activity;
-                _initialTimeBlockId = block.Id;
+                _loadError = "Het tijdsblok bestaat niet meer.";
                 return;
             }
-
-            _loadError = "Deze activiteit staat niet meer in de dagplanning.";
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException
@@ -112,7 +135,7 @@ public partial class ActivityFormPage
         {
             if (loadVersion == _loadVersion)
             {
-                Log.Warning(ex, "Could not load activity form for {Date}", requestedDate);
+                Log.Warning(ex, "Could not load activity form for {Date}", _date);
                 _loadError = "De dagplanning kon niet geladen worden.";
             }
         }
