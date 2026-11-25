@@ -1,0 +1,51 @@
+@page "/dayplanning/activities/{ActivityId:int}"
+@layout ActivityFormLayout
+@using Planning.Client.DayPlanning
+
+<PageTitle>Activiteit bekijken</PageTitle>
+
+@if (_isLoading)
+{
+    <p class="activity-form-page-state">Dagplanning laden...</p>
+}
+else if (_loadError is not null)
+{
+    <div class="activity-form-page-state">
+        <p role="alert">@_loadError</p>
+        <a href="@DayUrl(_date)">Terug naar dagplanning</a>
+    </div>
+}
+else if (_activity is not null && _timeBlock is not null)
+{
+    <div data-testid="activity-detail-page">
+        <PlannedActivityDetails Activity="_activity"
+                                Date="_date"
+                                TimeBlock="_timeBlock"
+                                IsPage="true"
+                                CompletionError="_completionError"
+                                CompletionUpdating="_isUpdatingCompletion"
+                                OnClose="ReturnToDay"
+                                OnEdit="OpenEdit"
+                                OnToggleCompletion="ToggleCompletionAsync"
+                                OnDelete="ShowDeleteConfirmation" />
+    </div>
+}
+
+@if (_showDeleteConfirmation && _activity is not null)
+{
+    <ConfirmationDialog Title="Verwijderen uit planning?"
+                        Message="@DeleteConfirmationMessage"
+                        CancelText="Annuleren"
+                        ConfirmText="Verwijderen"
+                        CancelTestId="cancel-delete-button"
+                        ConfirmTestId="confirm-delete-button"
+                        ConfirmDisabled="_isDeleting"
+                        OnCancel="CancelDeleteConfirmation"
+                        OnConfirm="DeleteAsync">
+        
+        @if (_deleteError is not null)
+        {
+            <p role="alert" data-testid="activity-delete-error">@_deleteError</p>
+        }
+    </ConfirmationDialog>
+}

@@ -1,0 +1,30 @@
+/*.planned-activity-details {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    background: #fefdfb;
+}
+
+.activity-details-header,
+.activity-details-actions {
+    flex: none;
+}
+
+.activity-details-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.activity-details-actions {
+    padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+    background: #fefdfb;
+}
+
+@media (min-width: 769px) {
+    .planned-activity-details {
+        height: auto;
+        max-height: calc(100dvh - 3rem);
+    }
+}*/

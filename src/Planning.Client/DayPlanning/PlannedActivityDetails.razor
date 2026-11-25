@@ -1,0 +1,77 @@
+<section class="planned-activity-details"
+         aria-label="Activiteit bekijken">
+    <header class="activity-details-header">
+        <button type="button"
+                class="activity-details-close"
+                aria-label="@(IsPage ? "Terug" : "Sluiten")"
+                @onclick="OnClose">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+                @if (IsPage)
+                {
+                    <path d="M19 12H5m7-7-7 7 7 7" />
+                }
+                else
+                {
+                    <path d="M18 6 6 18M6 6l12 12" />
+                }
+            </svg>
+        </button>
+        <h1>Activiteit bekijken</h1>
+        <button type="button"
+                data-testid="activity-detail-edit-button"
+                aria-label="Bewerken"
+                @onclick="OnEdit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+        </button>
+    </header>
+
+    <div class="activity-details-content">
+        <h2 data-testid="activity-detail-name">@Activity.Name</h2>
+
+        @if (Activity.IsImportant)
+        {
+            <p data-testid="activity-detail-importance">Belangrijk</p>
+        }
+
+        <p data-testid="activity-detail-date">@DateLabel</p>
+        <p data-testid="activity-detail-time-block">@TimeBlock.Name</p>
+
+        @if (!string.IsNullOrWhiteSpace(Activity.Description))
+        {
+            <section class="activity-details-description">
+                <h3>Beschrijving</h3>
+                <p data-testid="activity-detail-description">
+                    @Activity.Description
+                </p>
+            </section>
+        }
+    </div>
+
+    <footer class="activity-details-actions">
+        @if (CompletionError)
+        {
+            <p role="alert">Status wijzigen is niet gelukt. Probeer het opnieuw.</p>
+        }
+
+        <button type="button"
+                data-testid="activity-detail-completion-toggle"
+                aria-pressed="@(Activity.IsCompleted ? "true" : "false")"
+                disabled="@CompletionUpdating"
+                @onclick="() => OnToggleCompletion.InvokeAsync(Activity)">
+            @(Activity.IsCompleted ? "Activiteit voltooid" : "Activiteit voltooien")
+        </button>
+
+        <button type="button"
+                data-testid="activity-detail-delete-button"
+                @onclick="OnDelete">
+            Verwijderen uit planning
+        </button>
+    </footer>
+</section>
