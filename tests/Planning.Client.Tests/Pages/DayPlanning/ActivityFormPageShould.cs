@@ -185,7 +185,7 @@ public class ActivityFormPageShould : BunitContext
 
         // Assert
         Services.GetRequiredService<NavigationManager>().Uri
-            .ShouldEndWith("/dayplanning?date=2026-11-24");
+            .ShouldEndWith("/dayplanning/activities/101?date=2026-11-24");
         _ = service.DidNotReceive().UpdateActivityAsync(
             Arg.Any<int>(),
             Arg.Any<UpdatePlannedActivityRequest>(),

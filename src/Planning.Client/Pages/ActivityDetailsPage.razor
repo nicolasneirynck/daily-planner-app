@@ -15,7 +15,22 @@ else if (_loadError is not null)
 else if (_details is not null)
 {
     <section aria-label="Activiteit bekijken">
-        <h1>Activiteit bekijken</h1>
+        <header class="activity-details-header">
+            <button type="button"
+                    aria-label="Terug naar dagplanning"
+                    @onclick="ReturnToDay">
+                Terug
+            </button>
+            <h1>Activiteit bekijken</h1>
+            <button type="button"
+                    aria-label="Bewerken"
+                    @onclick="OpenEdit">
+                <img src="/icons/lucide/pencil.svg"
+                     alt=""
+                     width="24"
+                     height="24" />
+            </button>
+        </header>
         <PlannedActivityDetails Activity="_details" />
     </section>
 }

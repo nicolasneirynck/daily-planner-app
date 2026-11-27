@@ -15,24 +15,8 @@ public class ActivityDetailsPageShould : BunitContext
     public void LoadActivityByIdAndShowItsStoredDetails()
     {
         // Arrange
-        var client = Substitute.For<IDayPlanningClient>();
-        
-        client.GetActivityAsync(101, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
-                HttpStatusCode.OK,
-                new PlannedActivityDetailsDto
-                {
-                    Id = 101,
-                    Name = "Morning walk",
-                    Date = new DateOnly(2026, 11, 24),
-                    TimeBlockId = 1,
-                    TimeBlockName = "Ochtend",
-                    StartTime = new TimeOnly(6, 0),
-                    EndTime = new TimeOnly(9, 0)
-                })));
-        
-        Services.AddSingleton(client);
-     
+        var client = RegisterActivityClient();
+
         // Act
         var cut = Render<ActivityDetailsPage>(parameters => parameters
             .Add(page => page.ActivityId, 101));
@@ -51,5 +35,67 @@ public class ActivityDetailsPageShould : BunitContext
             _ = client.DidNotReceive().GetDayAsync(
                 Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
         });
+    }
+
+    [Fact]
+    public void ReturnToStoredDayFromDetailsPage()
+    {
+        // Arrange
+        RegisterActivityClient();
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo("/dayplanning/activities/101?date=2026-11-23");
+
+        var cut = Render<ActivityDetailsPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101));
+
+        // Act
+        cut.WaitForAssertion(() =>
+            cut.Find("button[aria-label='Terug naar dagplanning']")
+                .ShouldNotBeNull());
+        cut.Find("button[aria-label='Terug naar dagplanning']").Click();
+
+        // Assert
+        navigation.Uri.ShouldEndWith("/dayplanning?date=2026-11-24");
+    }
+
+    [Fact]
+    public void OpenEditPageUsingStoredActivityDate()
+    {
+        // Arrange
+        RegisterActivityClient();
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo("/dayplanning/activities/101?date=2026-11-23");
+        var cut = Render<ActivityDetailsPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101));
+
+        // Act
+        cut.WaitForAssertion(() =>
+            cut.Find("button[aria-label='Bewerken']").ShouldNotBeNull());
+        cut.Find("button[aria-label='Bewerken']").Click();
+
+        // Assert
+        navigation.Uri.ShouldEndWith(
+            "/dayplanning/activities/101/edit?date=2026-11-24");
+    }
+
+    private IDayPlanningClient RegisterActivityClient()
+    {
+        var client = Substitute.For<IDayPlanningClient>();
+        client.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK,
+                new PlannedActivityDetailsDto
+                {
+                    Id = 101,
+                    Name = "Morning walk",
+                    Date = new DateOnly(2026, 11, 24),
+                    TimeBlockId = 1,
+                    TimeBlockName = "Ochtend",
+                    StartTime = new TimeOnly(6, 0),
+                    EndTime = new TimeOnly(9, 0)
+                })));
+        Services.AddSingleton(client);
+        return client;
     }
 }

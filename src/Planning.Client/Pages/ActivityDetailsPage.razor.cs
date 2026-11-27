@@ -10,6 +10,7 @@ namespace Planning.Client.Pages;
 public partial class ActivityDetailsPage
 {
     [Inject] private IDayPlanningClient DayPlanningClient { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [Parameter]
     public int ActivityId { get; set; }
@@ -18,6 +19,15 @@ public partial class ActivityDetailsPage
     private bool _isLoading = true;
     private string? _loadError;
     private int _loadVersion;
+
+    private void ReturnToDay() =>
+        Navigation.NavigateTo(
+            $"/dayplanning?date={_details!.Date:yyyy-MM-dd}",
+            replace: true);
+
+    private void OpenEdit() =>
+        Navigation.NavigateTo(
+            $"/dayplanning/activities/{ActivityId}/edit?date={_details!.Date:yyyy-MM-dd}");
 
     protected override async Task OnParametersSetAsync()
     {
