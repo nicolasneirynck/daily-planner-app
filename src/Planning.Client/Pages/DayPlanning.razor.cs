@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Planning.Client.DayPlanning;
@@ -17,8 +18,16 @@ public partial class DayPlanning
     private readonly HashSet<int> _completionUpdatesInProgress = [];
     private int? _completionErrorActivityId;
     private bool _isActivityFormOpen;
+    private bool _isActivityDetailsOpen;
     private PlannedActivityDto? _selectedActivity;
+    private DateOnly? _selectedActivityDate;
+    private string? _selectedTimeBlockName;
     private int? _initialTimeBlockId;
+    private string? _activityError;
+    private int _activityOpenVersion;
+    private bool _showDeleteConfirmation;
+    private readonly HashSet<int> _deletionsInProgress = [];
+    private string? _deleteError;
     private bool _restoreFocusAfterCancel;
     private ElementReference _globalAddButton;
     private ElementReference _activityFormTrigger;
@@ -32,6 +41,12 @@ public partial class DayPlanning
 
     private string NewActivityUrl =>
         $"/dayplanning/activities/new?date={_selectedDate:yyyy-MM-dd}";
+
+    private string DeleteConfirmationMessage =>
+        $"“{_selectedActivity?.Name}” wordt verwijderd uit je dagplanning.";
+
+    private bool SelectedActivityDeleting =>
+        _selectedActivity is not null && _deletionsInProgress.Contains(_selectedActivity.Id);
 
     protected override Task OnParametersSetAsync()
     {
@@ -74,6 +89,8 @@ public partial class DayPlanning
         _hasLoadError = false;
         _timeBlocks = [];
         _completionErrorActivityId = null;
+        _activityError = null;
+        _isActivityDetailsOpen = false;
 
         try
         {
@@ -135,6 +152,15 @@ public partial class DayPlanning
             if (result.IsSuccess)
             {
                 activity.IsCompleted = newStatus;
+
+                var dayActivity = _timeBlocks
+                    .SelectMany(block => block.Activities)
+                    .FirstOrDefault(planned => planned.Id == activity.Id);
+                if (dayActivity is not null)
+                    dayActivity.IsCompleted = newStatus;
+
+                if (_selectedActivity?.Id == activity.Id)
+                    _selectedActivity.IsCompleted = newStatus;
                 return;
             }
         }
@@ -154,25 +180,152 @@ public partial class DayPlanning
 
     private void OpenActivityForm(int? timeBlockId, ElementReference trigger)
     {
-        _selectedActivity = null;
+        ++_activityOpenVersion;
+        ClearSelectedActivity();
+        _activityError = null;
         _activityFormTrigger = trigger;
         _initialTimeBlockId = timeBlockId;
         _isActivityFormOpen = true;
     }
 
-    private void OpenExistingActivity(PlannedActivityDto activity, ElementReference trigger, int timeBlockId)
+    private async Task OpenExistingActivity(int activityId, ElementReference trigger)
     {
-        _selectedActivity = activity;
-        _activityFormTrigger = trigger;
-        _initialTimeBlockId = timeBlockId;
+        var dayLoadVersion = _loadVersion;
+        var activityOpenVersion = ++_activityOpenVersion;
+        _activityError = null;
+
+        try
+        {
+            var result = await DayPlanningService.GetActivityAsync(activityId);
+
+            if (dayLoadVersion != _loadVersion || activityOpenVersion != _activityOpenVersion)
+                return;
+
+            if (!result.IsSuccess || result.Value is null)
+            {
+                _activityError = result.StatusCode == HttpStatusCode.NotFound
+                    ? "Deze activiteit staat niet meer in de dagplanning."
+                    : "De activiteit kon niet geladen worden.";
+                return;
+            }
+
+            var details = result.Value;
+            _selectedActivity = details.ToPlannedActivity();
+            _selectedActivityDate = details.Date;
+            _selectedTimeBlockName = details.TimeBlockName;
+            _activityFormTrigger = trigger;
+            _initialTimeBlockId = details.TimeBlockId;
+            _isActivityDetailsOpen = true;
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
+        {
+            if (dayLoadVersion == _loadVersion && activityOpenVersion == _activityOpenVersion)
+            {
+                Log.Warning(ex, "Could not load activity details for {ActivityId}", activityId);
+                _activityError = "De activiteit kon niet geladen worden.";
+            }
+        }
+    }
+
+    private void ClearSelectedActivity()
+    {
+        _selectedActivity = null;
+        _selectedActivityDate = null;
+        _selectedTimeBlockName = null;
+        _initialTimeBlockId = null;
+    }
+
+    private void CloseActivityDetails()
+    {
+        _isActivityDetailsOpen = false;
+        _showDeleteConfirmation = false;
+        ClearSelectedActivity();
+        _restoreFocusAfterCancel = true;
+    }
+
+    private void EditSelectedActivity()
+    {
+        ++_activityOpenVersion;
+        _isActivityDetailsOpen = false;
         _isActivityFormOpen = true;
     }
-    
+
+    private void ShowDeleteConfirmation()
+    {
+        _deleteError = null;
+        _activityError = null;
+        _showDeleteConfirmation = true;
+    }
+
+    private void CancelDeleteConfirmation()
+    {
+        _showDeleteConfirmation = false;
+        _deleteError = null;
+    }
+
+    private async Task DeleteSelectedActivityAsync()
+    {
+        if (_selectedActivity is null)
+            return;
+
+        var activityId = _selectedActivity.Id;
+        var dayLoadVersion = _loadVersion;
+        if (!_deletionsInProgress.Add(activityId))
+            return;
+
+        _deleteError = null;
+
+        try
+        {
+            var result = await DayPlanningService.DeletePlannedActivityAsync(activityId);
+
+            if (result.IsSuccess)
+            {
+                ApplyDeletedActivity(activityId);
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not delete activity {ActivityId}", activityId);
+        }
+        finally
+        {
+            _deletionsInProgress.Remove(activityId);
+        }
+
+        if (_showDeleteConfirmation && _selectedActivity?.Id == activityId)
+            _deleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+        else if (dayLoadVersion == _loadVersion)
+            _activityError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+    }
+
+    private void ApplyDeletedActivity(int activityId)
+    {
+        foreach (var block in _timeBlocks)
+            block.Activities = block.Activities
+                .Where(activity => activity.Id != activityId)
+                .ToArray();
+
+        if (_selectedActivity?.Id != activityId)
+            return;
+
+        _showDeleteConfirmation = false;
+        _isActivityDetailsOpen = false;
+        _isActivityFormOpen = false;
+        ClearSelectedActivity();
+        _activityFormTrigger = default;
+        _restoreFocusAfterCancel = true;
+    }
+
     private void CloseActivityForm()
     {
         _isActivityFormOpen = false;
-        _selectedActivity = null;
-        _initialTimeBlockId = null;
+        ClearSelectedActivity();
     }
 
     private void CancelActivityForm()
@@ -180,20 +333,33 @@ public partial class DayPlanning
         if (!_isActivityFormOpen)
             return;
 
+        if (_selectedActivity is not null)
+        {
+            _isActivityFormOpen = false;
+            _isActivityDetailsOpen = true;
+            return;
+        }
+
         CloseActivityForm();
         _restoreFocusAfterCancel = true;
     }
 
-    private async Task ActivitySavedAsync(DateOnly date)
+    private async Task ActivitySavedAsync(DateOnly date, int activityOpenVersion)
     {
-        CloseActivityForm();
-        await LoadDayAsync(date);
-        Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}", replace: true);
-    }
+        if (!_isActivityFormOpen || activityOpenVersion != _activityOpenVersion)
+            return;
 
-    private async Task ActivityDeletedAsync(DateOnly date)
-    {
+        var editedActivityId = _selectedActivity?.Id;
         CloseActivityForm();
+        var expectedLoadVersion = _loadVersion + 1;
         await LoadDayAsync(date);
+        if (expectedLoadVersion != _loadVersion ||
+            activityOpenVersion != _activityOpenVersion)
+            return;
+
+        Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}", replace: true);
+
+        if (editedActivityId is not null)
+            await OpenExistingActivity(editedActivityId.Value, default);
     }
 }

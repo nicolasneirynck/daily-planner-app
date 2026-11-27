@@ -19,6 +19,9 @@ public partial class PlannedActivityDetails
     public bool CompletionError { get; set; }
 
     [Parameter]
+    public string? DeleteError { get; set; }
+
+    [Parameter]
     public bool CompletionUpdating { get; set; }
 
     [Parameter]

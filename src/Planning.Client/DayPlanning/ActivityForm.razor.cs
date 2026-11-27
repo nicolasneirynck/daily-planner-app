@@ -43,7 +43,7 @@ public partial class ActivityForm : IAsyncDisposable
     public EventCallback<DateOnly> OnSaved { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<DateOnly> OnDeleted { get; set; }
+    public EventCallback<int> OnDeleted { get; set; }
 
     private ElementReference _activityDialog;
     private ElementReference _pageTitle;
@@ -70,7 +70,7 @@ public partial class ActivityForm : IAsyncDisposable
     private bool _allowNavigation;
     private string? _pendingLocation;
 
-    private bool HasChangesToSave =>
+    private bool HasEffectiveChanges =>
         ExistingActivity is not null &&
         (_model.Name.Trim() != ExistingActivity.Name.Trim() ||
          NormalizeDescription(_model.Description) !=
@@ -79,7 +79,7 @@ public partial class ActivityForm : IAsyncDisposable
          _model.TimeBlockId != InitialTimeBlockId ||
          _model.IsImportant != ExistingActivity.IsImportant);
 
-    private bool HasChangedFormValues =>
+    private bool HasUnsavedInput =>
         _model.Name != (ExistingActivity?.Name ?? string.Empty) ||
         (_model.Description ?? string.Empty) !=
             (ExistingActivity?.Description ?? string.Empty) ||
@@ -144,8 +144,11 @@ public partial class ActivityForm : IAsyncDisposable
         }
     }
 
-    private void ShowDeleteConfirmation() =>
+    private void ShowDeleteConfirmation()
+    {
+        _deleteError = null;
         _isAwaitingDeleteConfirmation = true;
+    }
 
     private void CancelDeleteConfirmation()
     {
@@ -158,7 +161,7 @@ public partial class ActivityForm : IAsyncDisposable
         if (_isAwaitingCloseConfirmation)
             return;
 
-        if (!HasChangedFormValues)
+        if (!HasUnsavedInput)
         {
             await OnClose.InvokeAsync();
             return;
@@ -204,7 +207,7 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task BeforeNavigationAsync(LocationChangingContext context)
     {
-        if (_allowNavigation || !HasChangedFormValues)
+        if (_allowNavigation || !HasUnsavedInput)
             return;
 
         context.PreventNavigation();
@@ -218,7 +221,8 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task SubmitAsync()
     {
-        if (_isSaving || (ExistingActivity is not null && !HasChangesToSave))
+        if (_isSaving || _isDeleting ||
+            (ExistingActivity is not null && !HasEffectiveChanges))
             return;
 
         var timeBlockId = _model.TimeBlockId
@@ -260,7 +264,7 @@ public partial class ActivityForm : IAsyncDisposable
             if (result.IsSuccess)
             {
                 _allowNavigation = true;
-                await OnSaved.InvokeAsync(_model.Date); // het formulier meldt aan bovenliggend compontent dat het een succes is + geeft datum mee die nu in het formulier staat zodat bovenliggend component kan terugnavigeren naar de dagplanning van die datum en dag opnieuw kan laden (indien nodig)
+                await OnSaved.InvokeAsync(_model.Date); // geef de opgeslagen datum door aan de bovenliggende weergave
                 return;
             }
 
@@ -302,7 +306,7 @@ public partial class ActivityForm : IAsyncDisposable
 
     private async Task DeleteAsync()
     {
-        if (_isDeleting || ExistingActivity is null)
+        if (_isDeleting || _isSaving || ExistingActivity is null)
             return;
 
         var activityId = ExistingActivity.Id;
@@ -319,7 +323,7 @@ public partial class ActivityForm : IAsyncDisposable
             }
 
             _allowNavigation = true;
-            await OnDeleted.InvokeAsync(InitialDate);
+            await OnDeleted.InvokeAsync(activityId);
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException

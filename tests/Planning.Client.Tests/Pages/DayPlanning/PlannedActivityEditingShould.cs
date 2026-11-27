@@ -73,6 +73,8 @@ public class PlannedActivityEditingShould : BunitContext
             .ShouldContain("Walk for twenty minutes");
         cut.Find("[data-testid='activity-detail-importance']").TextContent
             .ShouldContain("Belangrijk");
+        cut.Find("[data-testid='activity-detail-time-block']").TextContent
+            .Trim().ShouldBe("Ochtend");
         cut.FindAll("[role='dialog'] input, [role='dialog'] textarea, [role='dialog'] select")
             .ShouldBeEmpty();
         _ = service.Received(1).GetActivityAsync(
@@ -112,11 +114,13 @@ public class PlannedActivityEditingShould : BunitContext
     }
 
     [Fact]
-    public void UpdateSelectedActivityNameAndShowItInDayPlanning()
+    public void UpdateSelectedActivityNameAndShowItInDetailsAndDayPlanning()
     {
         // Arrange
         var storedName = "Morning walk";
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service,
+            () => MorningWalkDetails(name: storedName));
 
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -168,7 +172,10 @@ public class PlannedActivityEditingShould : BunitContext
                     request.Name == "Evening walk"),
                 Arg.Any<CancellationToken>());
 
-            cut.FindAll("[role='dialog']").ShouldBeEmpty();
+            cut.Find("[role='dialog']").TextContent
+                .ShouldContain("Activiteit bekijken");
+            cut.Find("[data-testid='activity-detail-name']")
+                .TextContent.ShouldBe("Evening walk");
             cut.Find("[data-testid='planned-activity-name']")
                 .TextContent.ShouldBe("Evening walk");
         });
@@ -186,6 +193,8 @@ public class PlannedActivityEditingShould : BunitContext
         // Arrange
         var storedDescription = originalDescription;
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service,
+            () => MorningWalkDetails(description: storedDescription));
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
@@ -235,11 +244,16 @@ public class PlannedActivityEditingShould : BunitContext
                     request.Description == expectedDescription),
                 Arg.Any<CancellationToken>());
 
-            cut.FindAll("[role='dialog']").ShouldBeEmpty();
+            cut.Find("[role='dialog']").TextContent
+                .ShouldContain("Activiteit bekijken");
+            if (expectedDescription is null)
+                cut.FindAll("[data-testid='activity-detail-description']").ShouldBeEmpty();
+            else
+                cut.Find("[data-testid='activity-detail-description']")
+                    .TextContent.Trim().ShouldBe(expectedDescription);
         });
 
-        // Act: reopen the saved activity
-        cut.Find("[data-testid='activity-open-button']").Click();
+        // Act: edit the saved activity again
         cut.Find("[data-testid='activity-detail-edit-button']").Click();
 
         // Assert
@@ -258,6 +272,8 @@ public class PlannedActivityEditingShould : BunitContext
         // Arrange
         var storedImportance = originalImportance;
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service,
+            () => MorningWalkDetails(isImportant: storedImportance));
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
@@ -307,7 +323,10 @@ public class PlannedActivityEditingShould : BunitContext
                     request.IsImportant == expectedImportance),
                 Arg.Any<CancellationToken>());
 
-            cut.FindAll("[role='dialog']").ShouldBeEmpty();
+            cut.Find("[role='dialog']").TextContent
+                .ShouldContain("Activiteit bekijken");
+            cut.FindAll("[data-testid='activity-detail-importance']")
+                .Count.ShouldBe(expectedImportance ? 1 : 0);
             cut.FindAll("[data-testid='activity-important-flag']")
                 .Count.ShouldBe(expectedImportance ? 1 : 0);
         });
@@ -321,6 +340,8 @@ public class PlannedActivityEditingShould : BunitContext
         var tomorrow = today.AddDays(1);
         var storedDate = today;
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service,
+            () => MorningWalkDetails(date: storedDate));
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
@@ -378,6 +399,11 @@ public class PlannedActivityEditingShould : BunitContext
                 tomorrow, Arg.Any<CancellationToken>());
             cut.Find("[data-testid='planned-activity-name']")
                 .TextContent.ShouldBe("Morning walk");
+            cut.Find("[role='dialog']").TextContent
+                .ShouldContain("Activiteit bekijken");
+            cut.Find("[data-testid='activity-detail-date']")
+                .TextContent.ShouldContain(tomorrow.ToString("d MMMM yyyy",
+                    System.Globalization.CultureInfo.GetCultureInfo("nl-BE")));
         });
     }
 
@@ -387,6 +413,8 @@ public class PlannedActivityEditingShould : BunitContext
         // Arrange
         var storedTimeBlockId = 1;
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service,
+            () => MorningWalkDetails(timeBlockId: storedTimeBlockId));
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
@@ -441,6 +469,10 @@ public class PlannedActivityEditingShould : BunitContext
                 .ShouldBeEmpty();
             cut.Find("[data-testid='time-block-2'] [data-testid='planned-activity-name']")
                 .TextContent.ShouldBe("Morning walk");
+            cut.Find("[role='dialog']").TextContent
+                .ShouldContain("Activiteit bekijken");
+            cut.Find("[data-testid='activity-detail-time-block']")
+                .TextContent.Trim().ShouldBe("Middag");
         });
     }
 
@@ -455,7 +487,7 @@ public class PlannedActivityEditingShould : BunitContext
         cut.Find("[data-testid='activity-open-button']").Click();
         cut.Find("[data-testid='activity-detail-edit-button']").Click();
         cut.Find("[data-testid='activity-name']").Change("Evening walk");
-        cut.Find("[role='dialog'] button[aria-label='Sluiten']").Click();
+        cut.Find("[role='dialog'] .activity-form-cancel").Click();
 
         // Assert: closing requires confirmation and preserves the edited value
         cut.Find("[role='alertdialog']").TextContent
@@ -470,14 +502,16 @@ public class PlannedActivityEditingShould : BunitContext
         // Act: discard the changes
         cut.Find("[data-testid='discard-changes-button']").Click();
 
-        // Assert: the original activity remains
-        cut.FindAll("[role='dialog']").ShouldBeEmpty();
+        // Assert: the original activity is shown in the details dialog
+        cut.Find("[role='dialog']").TextContent
+            .ShouldContain("Activiteit bekijken");
         cut.FindAll("[role='alertdialog']").ShouldBeEmpty();
+        cut.Find("[data-testid='activity-detail-name']")
+            .TextContent.ShouldBe("Morning walk");
         cut.Find("[data-testid='planned-activity-name']")
             .TextContent.ShouldBe("Morning walk");
 
-        // Act: reopen the activity
-        cut.Find("[data-testid='activity-open-button']").Click();
+        // Act: edit the activity again
         cut.Find("[data-testid='activity-detail-edit-button']").Click();
 
         // Assert
@@ -486,7 +520,7 @@ public class PlannedActivityEditingShould : BunitContext
     }
 
     [Fact]
-    public void CloseUnchangedEditedActivityWithoutWarning()
+    public void ReturnToDetailsFromUnchangedEditedActivityWithoutWarning()
     {
         // Arrange
         RegisterPlanningWithEditableActivity();
@@ -498,8 +532,71 @@ public class PlannedActivityEditingShould : BunitContext
         cut.Find("[role='dialog'] button[aria-label='Sluiten']").Click();
 
         // Assert
-        cut.FindAll("[role='dialog']").ShouldBeEmpty();
+        cut.Find("[role='dialog']").TextContent
+            .ShouldContain("Activiteit bekijken");
         cut.FindAll("[role='alertdialog']").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task KeepOtherEditOpenWhenPendingSaveFinishes()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var morning = Block(1, "Ochtend", 6, 9);
+        morning.Activities =
+        [
+            new PlannedActivityDto { Id = 101, Name = "Morning walk" },
+            new PlannedActivityDto { Id = 102, Name = "Read a book" }
+        ];
+        var pendingSave = new TaskCompletionSource<ClientResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetActivityAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var id = call.ArgAt<int>(0);
+                return Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                    HttpStatusCode.OK,
+                    new PlannedActivityDetailsDto
+                    {
+                        Id = id,
+                        Name = id == 101 ? "Morning walk" : "Read a book",
+                        Date = today,
+                        TimeBlockId = 1,
+                        TimeBlockName = "Ochtend",
+                        StartTime = new TimeOnly(6, 0),
+                        EndTime = new TimeOnly(9, 0)
+                    }));
+            });
+        service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse { Date = today, TimeBlocks = [morning] })));
+        service.UpdateActivityAsync(101, Arg.Any<UpdatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(pendingSave.Task);
+        Services.AddSingleton(service);
+        var cut = Render<DayPlanning>();
+
+        // Act
+        cut.FindAll("[data-testid='activity-open-button']")[0].Click();
+        cut.Find("[data-testid='activity-detail-edit-button']").Click();
+        cut.Find("[data-testid='activity-name']").Change("Evening walk");
+        var saveTask = cut.Find("[role='dialog'] form").SubmitAsync();
+        cut.Find(".activity-form-cancel").Click();
+        cut.Find("[data-testid='discard-changes-button']").Click();
+        cut.Find(".activity-details-close").Click();
+        cut.FindAll("[data-testid='activity-open-button']")[1].Click();
+        cut.Find("[data-testid='activity-detail-edit-button']").Click();
+        cut.Find("[data-testid='activity-name']").Input("Updated book");
+        pendingSave.SetResult(new ClientResult(HttpStatusCode.NoContent));
+        await saveTask;
+
+        // Assert
+        ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+            .Value.ShouldBe("Updated book");
+        _ = service.Received(1).UpdateActivityAsync(101,
+            Arg.Any<UpdatePlannedActivityRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -515,6 +612,7 @@ public class PlannedActivityEditingShould : BunitContext
         var pendingUpdate = new TaskCompletionSource<ClientResult>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service, () => MorningWalkDetails());
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
                 HttpStatusCode.OK,
@@ -570,6 +668,7 @@ public class PlannedActivityEditingShould : BunitContext
         ];
 
         var service = Substitute.For<IDayPlanningClient>();
+        ConfigureActivityDetails(service, () => MorningWalkDetails());
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
                 HttpStatusCode.OK,
@@ -580,5 +679,39 @@ public class PlannedActivityEditingShould : BunitContext
                 })));
         Services.AddSingleton(service);
         return service;
+    }
+
+    private static void ConfigureActivityDetails(
+        IDayPlanningClient service,
+        Func<PlannedActivityDetailsDto> createDetails)
+    {
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK, createDetails())));
+    }
+
+    private static PlannedActivityDetailsDto MorningWalkDetails(
+        string name = "Morning walk",
+        string? description = null,
+        bool isImportant = false,
+        DateOnly? date = null,
+        int timeBlockId = 1)
+    {
+        var block = timeBlockId == 1
+            ? Block(1, "Ochtend", 6, 9)
+            : Block(2, "Middag", 12, 14);
+
+        return new PlannedActivityDetailsDto
+        {
+            Id = 101,
+            Name = name,
+            Description = description,
+            IsImportant = isImportant,
+            Date = date ?? DateOnly.FromDateTime(DateTime.Today),
+            TimeBlockId = block.Id,
+            TimeBlockName = block.Name,
+            StartTime = block.StartTime,
+            EndTime = block.EndTime
+        };
     }
 }

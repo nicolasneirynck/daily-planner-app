@@ -143,12 +143,16 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Page.GetByTestId("activity-name").FillAsync(editedName);
         await Page.EvaluateAsync("history.back()");
 
-        // Assert: keep the unsaved edit and finish saving it
+        // Assert: keep the unsaved edit, save it and return through details
         await Expect(Page.GetByRole(AriaRole.Alertdialog)).ToBeVisibleAsync();
         await Page.GetByTestId("continue-editing-button").ClickAsync();
         await Expect(Page.GetByTestId("activity-name")).ToHaveValueAsync(editedName);
         await Page.GetByTestId("update-activity-button").ClickAsync();
 
+        await Expect(Page.GetByTestId("activity-detail-page")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(editedName);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Terug" }).ClickAsync();
         await Expect(Page).ToHaveURLAsync($"{BaseUrl}/dayplanning?date={today:yyyy-MM-dd}");
         var editedActivity = morning.GetByTestId("planned-activity-row")
             .Filter(new() { HasText = editedName });

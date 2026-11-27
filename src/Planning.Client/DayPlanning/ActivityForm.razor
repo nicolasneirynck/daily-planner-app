@@ -8,6 +8,23 @@
     zonder de veldopmaak twee keer te schrijven
 *@
 @{
+    RenderFragment deleteButton = @<button type="button"
+        class="activity-delete-trigger"
+        data-testid="delete-activity-button"
+        @ref="_deleteButton"
+        disabled="@(_isDeleting || _isSaving)"
+        @onclick="ShowDeleteConfirmation">
+        <svg aria-hidden="true" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+            <path d="M3 6h18" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+        </svg>
+        <span>Verwijderen uit planning</span>
+    </button>;
+
     RenderFragment formContent = @<div class="activity-form-content">
     <header>
         @if (Presentation == ActivityFormPresentation.Page)
@@ -180,26 +197,16 @@
     {
         <p role="alert" data-testid="activity-save-error">@_saveError</p>
     }
+    @if (!_isAwaitingDeleteConfirmation && _deleteError is not null)
+    {
+        <p role="alert" data-testid="activity-delete-error">@_deleteError</p>
+    }
     </div>
 
     <footer class="activity-form-actions">
         @if (Presentation == ActivityFormPresentation.Modal && ExistingActivity is not null)
         {
-            <button type="button"
-                    class="activity-delete-trigger"
-                    data-testid="delete-activity-button"
-                    @ref="_deleteButton"
-                    @onclick="ShowDeleteConfirmation" >
-                <svg aria-hidden="true" viewBox="0 0 24 24"
-                     fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round">
-                    <path d="M3 6h18" />
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                </svg>
-                <span>Verwijderen uit planning</span>
-            </button>
+            @deleteButton
         }
 
         @if (Presentation == ActivityFormPresentation.Modal)
@@ -225,28 +232,14 @@
             <button type="submit"
                     class="activity-form-submit"
                     data-testid="update-activity-button"
-                    disabled="@(!HasChangesToSave || _isSaving)">
+                    disabled="@(!HasEffectiveChanges || _isSaving || _isDeleting)">
                 @(_isSaving ? "Opslaan..." : "Wijzigingen opslaan")
             </button>
         }
 
         @if (Presentation == ActivityFormPresentation.Page && ExistingActivity is not null)
         {
-            <button type="button"
-                    class="activity-delete-trigger"
-                    data-testid="delete-activity-button"
-                    @ref="_deleteButton"
-                    @onclick="ShowDeleteConfirmation" >
-                <svg aria-hidden="true" viewBox="0 0 24 24"
-                     fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round">
-                    <path d="M3 6h18" />
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                </svg>
-                <span>Verwijderen uit planning</span>
-            </button>
+            @deleteButton
         }
     </footer>
     </EditForm>
@@ -257,10 +250,10 @@
     Het doel hier is voorkomen dat je per ongeluk niet-opgeslagen wijzigingen verliest.
     Er zijn 2 soorten navigatie:
      - Binnen de app, bijvoorbeeld de terugknop van de browser naar de dagplanning: BeforePageNavigationAsync wordt aangeroepen. Die methode moet zelf beslissen of de navigatie doorgaat of met context.PreventNavigation() wordt tegengehouden.
-     - Buiten de app of bij verversen/sluiten van het tabblad: ConfirmExternalNavigation laat de browser een standaardwaarschuwing tonen als HasChangedFormValues waar is en _allowNavigation onwaar is.
+     - Buiten de app of bij verversen/sluiten van het tabblad: ConfirmExternalNavigation laat de browser een standaardwaarschuwing tonen als HasUnsavedInput waar is en _allowNavigation onwaar is.
 *@
 <NavigationLock OnBeforeInternalNavigation="BeforeNavigationAsync"
-                ConfirmExternalNavigation="@(HasChangedFormValues && !_allowNavigation)" />
+                ConfirmExternalNavigation="@(HasUnsavedInput && !_allowNavigation)" />
 
 @if (Presentation == ActivityFormPresentation.Page)
 {
@@ -298,8 +291,8 @@ else
 {
     <ConfirmationDialog Title="Verwijderen uit planning?"
                         Message="@DeleteConfirmationMessage"
-                        CancelText="Annuleren"
-                        ConfirmText="Verwijderen"
+                        CancelText="@(_isDeleting ? "Sluiten" : "Annuleren")"
+                        ConfirmText="@(_isDeleting ? "Verwijderen..." : "Verwijderen")"
                         CancelTestId="cancel-delete-button"
                         ConfirmTestId="confirm-delete-button"
                         ConfirmDisabled="@_isDeleting"

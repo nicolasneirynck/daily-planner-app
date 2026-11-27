@@ -6,7 +6,7 @@
 
 @if (_isLoading)
 {
-    <p class="activity-form-page-state">Dagplanning laden...</p>
+    <p class="activity-form-page-state">Activiteit laden...</p>
 }
 else if (_loadError is not null)
 {
@@ -20,9 +20,10 @@ else if (_activity is not null && _timeBlockName is not null)
     <div data-testid="activity-detail-page">
         <PlannedActivityDetails Activity="_activity"
                                 Date="_date"
-                                TimeBlockName="_timeBlockName"
+                                TimeBlockName="@_timeBlockName"
                                 IsPage="true"
                                 CompletionError="_completionError"
+                                DeleteError="@(_showDeleteConfirmation ? null : _deleteError)"
                                 CompletionUpdating="_isUpdatingCompletion"
                                 OnClose="ReturnToDay"
                                 OnEdit="OpenEdit"
@@ -35,14 +36,14 @@ else if (_activity is not null && _timeBlockName is not null)
 {
     <ConfirmationDialog Title="Verwijderen uit planning?"
                         Message="@DeleteConfirmationMessage"
-                        CancelText="Annuleren"
-                        ConfirmText="Verwijderen"
+                        CancelText="@(_isDeleting ? "Sluiten" : "Annuleren")"
+                        ConfirmText="@(_isDeleting ? "Verwijderen..." : "Verwijderen")"
                         CancelTestId="cancel-delete-button"
                         ConfirmTestId="confirm-delete-button"
                         ConfirmDisabled="_isDeleting"
                         OnCancel="CancelDeleteConfirmation"
                         OnConfirm="DeleteAsync">
-        
+
         @if (_deleteError is not null)
         {
             <p role="alert" data-testid="activity-delete-error">@_deleteError</p>

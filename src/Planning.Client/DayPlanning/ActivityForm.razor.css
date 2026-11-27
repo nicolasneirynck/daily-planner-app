@@ -1,10 +1,11 @@
 .activity-form {
     border: 0;
-    background: #fefdfb;
+    background: var(--surface);
 }
 
 .activity-form-page {
     padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+    background: var(--background);
 }
 
 .activity-form-modal {

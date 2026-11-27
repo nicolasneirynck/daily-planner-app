@@ -100,6 +100,7 @@ public class PlannedActivityCompletionShould : BunitContext
     {
         // Arrange
         var service = RegisterServiceWithActivity(isCompleted: false);
+        ConfigureActivityDetails(service);
         service.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new ClientResult(HttpStatusCode.OK)));
 
@@ -126,6 +127,7 @@ public class PlannedActivityCompletionShould : BunitContext
     {
         // Arrange
         var service = RegisterServiceWithActivity(isCompleted: false);
+        ConfigureActivityDetails(service);
         service.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new ClientResult(
                 HttpStatusCode.UnprocessableEntity, "Save failed.")));
@@ -172,5 +174,22 @@ public class PlannedActivityCompletionShould : BunitContext
             })));
         Services.AddSingleton(service);
         return service;
+    }
+
+    private static void ConfigureActivityDetails(IDayPlanningClient service)
+    {
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK,
+                new PlannedActivityDetailsDto
+                {
+                    Id = 101,
+                    Name = "Morning walk",
+                    Date = DateOnly.FromDateTime(DateTime.Today),
+                    TimeBlockId = 1,
+                    TimeBlockName = "Morning",
+                    StartTime = new TimeOnly(6, 0),
+                    EndTime = new TimeOnly(9, 0)
+                })));
     }
 }

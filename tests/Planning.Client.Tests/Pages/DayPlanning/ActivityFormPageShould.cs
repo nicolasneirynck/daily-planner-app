@@ -58,14 +58,14 @@ public class ActivityFormPageShould : BunitContext
     }
 
     [Fact]
-    public void SaveEditedActivityFromPageAndReturnToUpdatedDay()
+    public void SaveEditedActivityFromPageAndReturnToUpdatedDetails()
     {
         // Arrange
         var originalDate = new DateOnly(2026, 11, 24);
         var updatedDate = originalDate.AddDays(1);
-        
+
         var service = RegisterActivityForEditing(originalDate);
-        
+
         service.UpdateActivityAsync(
                 101,
                 Arg.Any<UpdatePlannedActivityRequest>(),
@@ -100,8 +100,65 @@ public class ActivityFormPageShould : BunitContext
                     request.Date == updatedDate),
                 Arg.Any<CancellationToken>());
             Services.GetRequiredService<NavigationManager>().Uri
-                .ShouldEndWith("/dayplanning?date=2026-11-25");
+                .ShouldEndWith("/dayplanning/activities/101?date=2026-11-25");
         });
+    }
+
+    [Fact]
+    public async Task KeepAnotherEditPageOpenWhenEarlierSaveFinishes()
+    {
+        // Arrange
+        var date = new DateOnly(2026, 11, 24);
+        var pendingSave = new TaskCompletionSource<ClientResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetActivityAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var id = call.ArgAt<int>(0);
+                var details = MorningWalkDetails(date);
+                details.Id = id;
+                details.Name = id == 101 ? "Morning walk" : "Read a book";
+                return Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                    HttpStatusCode.OK, details));
+            });
+        service.GetDayAsync(date, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = date,
+                    TimeBlocks = [Block(1, "Ochtend", 6, 9)]
+                })));
+        service.UpdateActivityAsync(101, Arg.Any<UpdatePlannedActivityRequest>(),
+                Arg.Any<CancellationToken>())
+            .Returns(pendingSave.Task);
+        Services.AddSingleton(service);
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo("/dayplanning/activities/101/edit?date=2026-11-24");
+        var cut = Render<ActivityFormPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101));
+        cut.WaitForAssertion(() =>
+            ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+                .Value.ShouldBe("Morning walk"));
+
+        // Act
+        cut.Find("[data-testid='activity-name']").Change("Evening walk");
+        var saveTask = cut.Find("form").SubmitAsync();
+        cut.Render(parameters => parameters
+            .Add(page => page.ActivityId, 102));
+        cut.WaitForAssertion(() =>
+            ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+                .Value.ShouldBe("Read a book"));
+        navigation.NavigateTo("/dayplanning/activities/102/edit?date=2026-11-24");
+        cut.Find("[data-testid='activity-name']").Input("Updated book");
+        pendingSave.SetResult(new ClientResult(HttpStatusCode.NoContent));
+        await saveTask;
+
+        // Assert
+        navigation.Uri.ShouldEndWith("/dayplanning/activities/102/edit?date=2026-11-24");
+        ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+            .Value.ShouldBe("Updated book");
     }
 
     [Fact]
@@ -142,7 +199,7 @@ public class ActivityFormPageShould : BunitContext
 
         // Assert
         Services.GetRequiredService<NavigationManager>().Uri
-            .ShouldEndWith("/dayplanning?date=2026-11-24");
+            .ShouldEndWith("/dayplanning/activities/101?date=2026-11-24");
         _ = service.DidNotReceive().UpdateActivityAsync(
             Arg.Any<int>(),
             Arg.Any<UpdatePlannedActivityRequest>(),

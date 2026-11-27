@@ -1,0 +1,70 @@
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@using Planning.Shared.DayPlanning
+@inject IJSRuntime Js
+
+<dialog @ref="_dialog"
+        class="activity-details-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Activiteit bekijken"
+        @onclose="OnClose">
+
+    <PlannedActivityDetails Activity="Activity"
+                            Date="Date"
+                            TimeBlockName="@TimeBlockName"
+                            CompletionError="CompletionError"
+                            CompletionUpdating="CompletionUpdating"
+                            OnClose="OnClose"
+                            OnEdit="OnEdit"
+                            OnDelete="OnDelete"
+                            OnToggleCompletion="OnToggleCompletion"/>
+</dialog>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlannedActivityDto Activity { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DateOnly Date { get; set; }
+
+    [Parameter, EditorRequired]
+    public string TimeBlockName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    [Parameter]
+    public bool CompletionError { get; set; }
+
+    [Parameter]
+    public bool CompletionUpdating { get; set; }
+
+    [Parameter]
+    public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }
+
+    private ElementReference _dialog;
+    private IJSObjectReference? _module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _module = await Js.InvokeAsync<IJSObjectReference>(
+            "import", "./js/activityDialog.js");
+        await _module.InvokeVoidAsync("showModal", _dialog);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+            await _module.DisposeAsync();
+    }
+}

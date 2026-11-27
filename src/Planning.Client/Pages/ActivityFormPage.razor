@@ -7,7 +7,9 @@
 
 @if (_isLoading)
 {
-    <p class="activity-form-page-state">Dagplanning laden...</p>
+    <p class="activity-form-page-state">
+        @(ActivityId is null ? "Dagplanning laden..." : "Activiteit laden...")
+    </p>
 }
 else if (_loadError is not null)
 {
@@ -18,13 +20,14 @@ else if (_loadError is not null)
 }
 else
 {
+    var formLoadVersion = _loadVersion;
     <ActivityForm @key="FormKey"
                   Presentation="ActivityFormPresentation.Page"
                   InitialDate="_date"
                   InitialTimeBlockId="_initialTimeBlockId"
                   ExistingActivity="_activity"
                   TimeBlocks="_timeBlocks"
-                  OnSaved="ReturnToDay"
-                  OnDeleted="ReturnToDay"
-                  OnClose="ReturnToOriginalDay" />
+                  OnSaved="date => ReturnAfterSave(date, formLoadVersion)"
+                  OnDeleted="ReturnToDayAfterDeletion"
+                  OnClose="ReturnWithoutSaving" />
 }

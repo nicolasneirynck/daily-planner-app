@@ -41,8 +41,10 @@ public partial class ActivityDetailsPage
         _loadError = null;
         _activity = null;
         _timeBlockName = null;
+        _isUpdatingCompletion = false;
         _completionError = false;
         _showDeleteConfirmation = false;
+        _isDeleting = false;
         _deleteError = null;
 
         _date = DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
@@ -54,7 +56,7 @@ public partial class ActivityDetailsPage
         try
         {
             var result = await DayPlanningClient.GetActivityAsync(requestedActivityId);
-            
+
             if (loadVersion != _loadVersion) // de controle moet na de vorige await staan. Omdat de toestand kan veranderen terwijl GetActivityAsync loopt. Bijvoorbeeld: aanvraag A start met loadVersion = 1. Tijdens het wachten start aanvraag B, die _loadVersion op 2 zet. Wanneer A terugkomt, ziet de controle 1 != 2 en negeert ze het verouderde antwoord.
                 return;
 
@@ -69,14 +71,7 @@ public partial class ActivityDetailsPage
             var details = result.Value;
             _date = details.Date;
             _timeBlockName = details.TimeBlockName;
-            _activity = new PlannedActivityDto
-            {
-                Id = details.Id,
-                Name = details.Name,
-                Description = details.Description,
-                IsImportant = details.IsImportant,
-                IsCompleted = details.IsCompleted
-            };
+            _activity = details.ToPlannedActivity();
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException
@@ -100,6 +95,7 @@ public partial class ActivityDetailsPage
         if (_isUpdatingCompletion || _activity is null || activity.Id != _activity.Id)
             return;
 
+        var loadVersion = _loadVersion;
         _isUpdatingCompletion = true;
         _completionError = false;
         var newStatus = !activity.IsCompleted;
@@ -108,7 +104,10 @@ public partial class ActivityDetailsPage
         {
             var result = await DayPlanningClient.SetActivityCompletionAsync(
                 activity.Id, newStatus);
-            
+
+            if (loadVersion != _loadVersion)
+                return;
+
             if (result.IsSuccess)
             {
                 activity.IsCompleted = newStatus;
@@ -123,10 +122,12 @@ public partial class ActivityDetailsPage
         }
         finally
         {
-            _isUpdatingCompletion = false;
+            if (loadVersion == _loadVersion)
+                _isUpdatingCompletion = false;
         }
 
-        _completionError = true;
+        if (loadVersion == _loadVersion)
+            _completionError = true;
     }
 
     private void ShowDeleteConfirmation()
@@ -142,6 +143,7 @@ public partial class ActivityDetailsPage
         if (_isDeleting || _activity is null)
             return;
 
+        var loadVersion = _loadVersion;
         var activityId = _activity.Id;
         _isDeleting = true;
         _deleteError = null;
@@ -149,7 +151,10 @@ public partial class ActivityDetailsPage
         try
         {
             var result = await DayPlanningClient.DeletePlannedActivityAsync(activityId);
-            
+
+            if (loadVersion != _loadVersion)
+                return;
+
             if (result.IsSuccess)
             {
                 ReturnToDay();
@@ -164,10 +169,12 @@ public partial class ActivityDetailsPage
         }
         finally
         {
-            _isDeleting = false;
+            if (loadVersion == _loadVersion)
+                _isDeleting = false;
         }
 
-        _deleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
+        if (loadVersion == _loadVersion)
+            _deleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
     }
 
     private void OpenEdit() =>

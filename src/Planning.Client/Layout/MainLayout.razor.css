@@ -1,7 +1,7 @@
 .app-shell {
     /* min-height: 100dvh -> minstens zo hoog als het zichtbare browservenster */
     min-height: 100dvh;
-    background: #FAF7F2;
+    background: var(--background);
 }
 
 .app-main {

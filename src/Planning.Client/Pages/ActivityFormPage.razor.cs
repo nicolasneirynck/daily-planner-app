@@ -8,7 +8,7 @@ using Serilog;
 
 namespace Planning.Client.Pages;
 
-public partial class ActivityFormPage
+public partial class ActivityFormPage : IDisposable
 {
     [Inject] private IDayPlanningClient DayPlanningClient { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -29,6 +29,7 @@ public partial class ActivityFormPage
     private bool _isLoading = true;
     private string? _loadError;
     private int _loadVersion;
+    private bool _isDisposed;
     private string FormKey =>
         $"{_date:yyyy-MM-dd}:{ActivityId}:{_initialTimeBlockId}";
 
@@ -68,21 +69,14 @@ public partial class ActivityFormPage
                 {
                     _loadError = activityResult.StatusCode == HttpStatusCode.NotFound
                         ? "Deze activiteit staat niet meer in de dagplanning."
-                        : "De dagplanning kon niet geladen worden.";
+                        : "De activiteit kon niet geladen worden.";
                     return;
                 }
 
                 var details = activityResult.Value;
                 _date = details.Date;
                 _initialTimeBlockId = details.TimeBlockId;
-                _activity = new PlannedActivityDto
-                {
-                    Id = details.Id,
-                    Name = details.Name,
-                    Description = details.Description,
-                    IsCompleted = details.IsCompleted,
-                    IsImportant = details.IsImportant
-                };
+                _activity = details.ToPlannedActivity();
             }
 
             var requestedDate = _date;
@@ -111,22 +105,12 @@ public partial class ActivityFormPage
                 .ToArray();
 
             if (requestedActivityId is null)
-            {
-                if (requestedTimeBlockId is not null &&
-                    _timeBlocks.All(block => block.Id != requestedTimeBlockId))
-                {
-                    _loadError = "Het tijdsblok bestaat niet meer.";
-                    return;
-                }
-
                 _initialTimeBlockId = requestedTimeBlockId;
-                return;
-            }
 
-            if (_timeBlocks.All(block => block.Id != _initialTimeBlockId))
+            if (_initialTimeBlockId is not null &&
+                _timeBlocks.All(block => block.Id != _initialTimeBlockId))
             {
                 _loadError = "Het tijdsblok bestaat niet meer.";
-                return;
             }
         }
         catch (Exception ex) when (ex is HttpRequestException
@@ -136,7 +120,9 @@ public partial class ActivityFormPage
             if (loadVersion == _loadVersion)
             {
                 Log.Warning(ex, "Could not load activity form for {Date}", _date);
-                _loadError = "De dagplanning kon niet geladen worden.";
+                _loadError = requestedActivityId is not null && _activity is null
+                    ? "De activiteit kon niet geladen worden."
+                    : "De dagplanning kon niet geladen worden.";
             }
         }
         finally
@@ -146,11 +132,34 @@ public partial class ActivityFormPage
         }
     }
 
-    private void ReturnToOriginalDay() => ReturnToDay(_date);
+    private void ReturnWithoutSaving() => ReturnToDetailsOrDay(_date);
 
-    private void ReturnToDay(DateOnly date) =>
-        Navigation.NavigateTo(DayUrl(date), replace: true);
+    private void ReturnToDetailsOrDay(DateOnly date) =>
+        Navigation.NavigateTo(
+            ActivityId is int id ? DetailsUrl(id, date) : DayUrl(date),
+            replace: true);
+
+    private void ReturnAfterSave(DateOnly date, int formLoadVersion)
+    {
+        if (_isDisposed || formLoadVersion != _loadVersion)
+            return;
+
+        ReturnToDetailsOrDay(date);
+    }
+
+    private void ReturnToDayAfterDeletion(int deletedActivityId)
+    {
+        if (_isDisposed || ActivityId != deletedActivityId)
+            return;
+
+        Navigation.NavigateTo(DayUrl(_date), replace: true);
+    }
+
+    private static string DetailsUrl(int activityId, DateOnly date) =>
+        $"/dayplanning/activities/{activityId}?date={date:yyyy-MM-dd}";
 
     private static string DayUrl(DateOnly date) =>
         $"/dayplanning?date={date:yyyy-MM-dd}";
+
+    public void Dispose() => _isDisposed = true;
 }

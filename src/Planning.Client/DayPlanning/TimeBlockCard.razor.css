@@ -3,7 +3,7 @@
     padding: 1.25rem 1.25rem 0.75rem; /* boven, links/rechts, onder*/
     border: 1px solid #e7ddcc;
     border-radius: 1.5rem;
-    background: #fefdfb;
+    background: var(--surface);
 }
 
 /* ::before is een CSS pseudo-element: de browser tekent een extra visueel element alsof het vóór de inhoud van.time-block` staat. */
