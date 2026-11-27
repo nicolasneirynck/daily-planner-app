@@ -48,6 +48,55 @@ public class DayPlanningApiClientShould
     }
 
     [Fact]
+    public async Task ReadActivityThroughClientInterface()
+    {
+        // Arrange
+        using var client = new HttpClient(new StubHandler(request =>
+        {
+            request.Method.ShouldBe(HttpMethod.Get);
+            request.RequestUri!.AbsolutePath
+                .ShouldBe("/api/day-planning/activities/42");
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {
+                      "id": 42,
+                      "name": "Morning walk",
+                      "description": "Bring a jacket",
+                      "date": "2026-11-24",
+                      "timeBlockId": 1,
+                      "timeBlockName": "Ochtend",
+                      "startTime": "06:00:00",
+                      "endTime": "09:00:00",
+                      "isImportant": true,
+                      "isCompleted": false
+                    }
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
+            };
+        }))
+        {
+            BaseAddress = new Uri("https://example.test")
+        };
+        IDayPlanningClient service = new DayPlanningApiClient(client);
+
+        // Act
+        var result = await service.GetActivityAsync(42);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.Id.ShouldBe(42);
+        result.Value.Name.ShouldBe("Morning walk");
+        result.Value.Date.ShouldBe(new DateOnly(2026, 11, 24));
+        result.Value.TimeBlockName.ShouldBe("Ochtend");
+        result.Value.IsImportant.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task UpdateActivityThroughClientInterface()
     {
         // Arrange

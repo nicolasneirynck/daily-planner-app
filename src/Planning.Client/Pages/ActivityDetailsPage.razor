@@ -1,0 +1,21 @@
+@page "/dayplanning/activities/{ActivityId:int}"
+@layout ActivityFormLayout
+@using Planning.Client.DayPlanning
+
+<PageTitle>Activiteit bekijken</PageTitle>
+
+@if (_isLoading)
+{
+    <p>Activiteit laden...</p>
+}
+else if (_loadError is not null)
+{
+    <p role="alert">@_loadError</p>
+}
+else if (_details is not null)
+{
+    <section aria-label="Activiteit bekijken">
+        <h1>Activiteit bekijken</h1>
+        <PlannedActivityDetails Activity="_details" />
+    </section>
+}

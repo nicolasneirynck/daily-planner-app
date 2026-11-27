@@ -1,0 +1,35 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Components
+@using Planning.Shared.DayPlanning
+
+<div class="activity-details-content">
+    <h2 data-testid="activity-detail-name">@Activity.Name</h2>
+
+    @if (Activity.IsImportant)
+    {
+        <p data-testid="activity-detail-importance">Belangrijk</p>
+    }
+
+    <p data-testid="activity-detail-date">@FormatDate(Activity.Date)</p>
+    <p data-testid="activity-detail-time-block">@Activity.TimeBlockName</p>
+
+    @if (!string.IsNullOrWhiteSpace(Activity.Description))
+    {
+        <section class="activity-details-description">
+            <h3>Beschrijving</h3>
+            <p data-testid="activity-detail-description">@Activity.Description</p>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlannedActivityDetailsDto Activity { get; set; } = default!;
+
+    private static string FormatDate(DateOnly date)
+    {
+        var culture = CultureInfo.GetCultureInfo("nl-BE");
+        var text = date.ToString("dddd d MMMM yyyy", culture);
+        return $"{char.ToUpper(text[0], culture)}{text[1..]}";
+    }
+}

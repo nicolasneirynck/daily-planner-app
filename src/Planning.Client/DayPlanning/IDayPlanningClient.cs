@@ -7,6 +7,9 @@ public interface IDayPlanningClient
 {
     Task<ClientResult<DayPlanningResponse>> GetDayAsync(DateOnly date, CancellationToken ctx = default);
 
+    Task<ClientResult<PlannedActivityDetailsDto>> GetActivityAsync(
+        int activityId, CancellationToken ctx = default);
+
     Task<ClientResult> CreateActivityAsync(CreatePlannedActivityRequest request, CancellationToken ctx = default);
 
     Task<ClientResult> UpdateActivityAsync(
