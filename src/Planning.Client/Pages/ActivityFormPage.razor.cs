@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Planning.Client.DayPlanning;
@@ -23,7 +24,7 @@ public partial class ActivityFormPage
 
     private DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
     private IReadOnlyList<TimeBlockDto> _timeBlocks = [];
-    private PlannedActivityDto? _activity;
+    private PlannedActivityDetailsDto? _activity;
     private int? _initialTimeBlockId;
     private bool _isLoading = true;
     private string? _loadError;
@@ -40,34 +41,40 @@ public partial class ActivityFormPage
         _activity = null;
         _initialTimeBlockId = null;
 
-        if (!DateOnly.TryParseExact(DateQuery, "yyyy-MM-dd",
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out _date))
+        var hasLinkDate = DateOnly.TryParseExact(
+            DateQuery, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var linkDate);
+        _date = hasLinkDate
+            ? linkDate
+            : DateOnly.FromDateTime(DateTime.Today);
+
+        var requestedActivityId = ActivityId;
+        if (requestedActivityId is null && !hasLinkDate)
         {
-            _date = DateOnly.FromDateTime(DateTime.Today);
             _loadError = "De datum in de link is ongeldig.";
             _isLoading = false;
             return;
         }
 
-        var requestedDate = _date;
-        var requestedTimeBlockId = TimeBlockId;
-        var requestedActivityId = ActivityId;
-
         try
         {
+            if (requestedActivityId is not null)
+            {
+                var activityLoaded =
+                    await LoadExistingActivityAsync(requestedActivityId.Value, loadVersion);
+                if (!activityLoaded)
+                    return;
+            }
+            else
+            {
+                _initialTimeBlockId = TimeBlockId;
+            }
+
+            var requestedDate = _date;
             var result = await DayPlanningClient.GetDayAsync(requestedDate);
 
-            if (loadVersion != _loadVersion) // wanneer een nieuwe laadaanvraag start voordat een eerdere klaar is
+            if (loadVersion != _loadVersion)
                 return;
-            /*
-             * Bijvoorbeeld:
-               1. De aanvraag voor 24 november start met loadVersion = 1.
-               2. Je navigeert snel naar 25 november. Die aanvraag start met versie 2.
-               3. Het antwoord voor 24 november komt pas daarna terug. Voor dat antwoord geldt 1 != _loadVersion (nu 2), dus return voorkomt dat de oude dag opnieuw in beeld komt.
-
-                OnParametersSetAsync loopt bij de eerste weergave en kan opnieuw lopen wanneer parameters veranderen,
-                bijvoorbeeld wanneer de date-queryparameter in de URL verandert.
-             */
 
             if (!result.IsSuccess || result.Value is null)
             {
@@ -79,32 +86,11 @@ public partial class ActivityFormPage
                 .OrderBy(block => block.SortOrder)
                 .ToArray();
 
-            if (requestedActivityId is null)
+            if (_initialTimeBlockId is not null &&
+                _timeBlocks.All(block => block.Id != _initialTimeBlockId))
             {
-                if (requestedTimeBlockId is not null &&
-                    _timeBlocks.All(block => block.Id != requestedTimeBlockId))
-                {
-                    _loadError = "Het tijdsblok bestaat niet meer.";
-                    return;
-                }
-
-                _initialTimeBlockId = requestedTimeBlockId;
-                return;
+                _loadError = "Het tijdsblok bestaat niet meer.";
             }
-
-            foreach (var block in _timeBlocks)
-            {
-                var activity = block.Activities.FirstOrDefault(
-                    item => item.Id == requestedActivityId);
-                if (activity is null)
-                    continue;
-
-                _activity = activity;
-                _initialTimeBlockId = block.Id;
-                return;
-            }
-
-            _loadError = "Deze activiteit staat niet meer in de dagplanning.";
         }
         catch (Exception ex) when (ex is HttpRequestException
                                    or JsonException
@@ -112,8 +98,9 @@ public partial class ActivityFormPage
         {
             if (loadVersion == _loadVersion)
             {
-                Log.Warning(ex, "Could not load activity form for {Date}", requestedDate);
-                _loadError = "De dagplanning kon niet geladen worden.";
+                Log.Warning(ex, "Could not load activity form for {ActivityId} on {Date}",
+                    requestedActivityId, _date);
+                _loadError = "De activiteit of dagplanning kon niet geladen worden.";
             }
         }
         finally
@@ -123,7 +110,41 @@ public partial class ActivityFormPage
         }
     }
 
-    private void ReturnToOriginalDay() => ReturnToDay(_date);
+    private async Task<bool> LoadExistingActivityAsync(int activityId, int loadVersion)
+    {
+        var result = await DayPlanningClient.GetActivityAsync(activityId);
+
+        if (loadVersion != _loadVersion)
+            return false;
+
+        if (!result.IsSuccess || result.Value is null)
+        {
+            _loadError = result.StatusCode == HttpStatusCode.NotFound
+                ? "Deze activiteit staat niet meer in de dagplanning."
+                : "De activiteit kon niet geladen worden.";
+            return false;
+        }
+
+        var details = result.Value;
+        _date = details.Date;
+        _initialTimeBlockId = details.TimeBlockId;
+        _activity = details;
+        return true;
+    }
+
+    private void ReturnAfterSave(DateOnly savedDate) =>
+        NavigateToDetailsOrDay(savedDate);
+
+    private void ReturnAfterClose() => NavigateToDetailsOrDay(_date);
+
+    private void NavigateToDetailsOrDay(DateOnly date)
+    {
+        var url = ActivityId is int activityId
+            ? $"/dayplanning/activities/{activityId}?date={date:yyyy-MM-dd}"
+            : DayUrl(date);
+
+        Navigation.NavigateTo(url, replace: true);
+    }
 
     private void ReturnToDay(DateOnly date) =>
         Navigation.NavigateTo(DayUrl(date), replace: true);

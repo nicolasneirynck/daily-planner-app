@@ -1,0 +1,64 @@
+.activity-details-dialog {
+    width: min(650px, calc(100vw - 3rem));
+    max-height: calc(100dvh - 3rem);
+    padding: 1.5rem 1.25rem;
+    overflow-y: auto;
+    border: 0;
+    border-radius: 1.5rem;
+    background: var(--surface);
+    color: #192231;
+    box-shadow: 0 1rem 3rem rgb(25 34 49 / 18%);
+}
+
+.activity-details-dialog::backdrop {
+    background: rgb(25 34 49 / 35%);
+}
+
+.activity-details-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.activity-details-dialog-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.activity-details-dialog-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.activity-details-dialog-controls button {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.activity-details-dialog-controls .lucide-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.activity-details-dialog ::deep .activity-details-content {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.activity-details-dialog ::deep .activity-details-actions {
+    position: static;
+    margin-top: 1.5rem;
+    padding: 0;
+    background: var(--surface);
+}

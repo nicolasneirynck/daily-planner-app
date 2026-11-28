@@ -32,10 +32,10 @@ try
     builder.Services.AddScoped(sp => (IAccountManager)sp.GetRequiredService<AuthenticationStateProvider>());
 
     // HTTP-client voor aanvragen naar de backend.
-    // CookieHandler stelt "credentials: include" in, zodat de browser
-    // toepasselijke cookies kan meesturen en bv een bij login door de server uitgegeven cookie kan bewaren.
+    // CookieHandler stelt "credentials: include" in, zodat de browser toepasselijke cookies kan meesturen en bv een bij login door de server uitgegeven cookie kan bewaren.
     // De loginpagina gebruikt deze client via CookieAuthenticationStateProvider; ze roept SecureApi dus niet rechtstreeks aan.
     var appBaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
+    
     builder.Services.AddHttpClient("SecureApi",
             client => client.BaseAddress = appBaseAddress)
                         .AddHttpMessageHandler<CookieHandler>();
@@ -44,12 +44,10 @@ try
 
     // als iemand een dagplanningclient vraagt, maak dan een DayPlanningApiClient
     // en geef hem een HTTP-client met het "SecureApi"-recept
-    builder.Services.AddScoped(sp =>
-        new DayPlanningApiClient(
-            sp.GetRequiredService<IHttpClientFactory>().CreateClient("SecureApi")));
+    builder.Services.AddScoped(sp => new DayPlanningApiClient(sp.GetRequiredService<IHttpClientFactory>().CreateClient("SecureApi")));
 
-    builder.Services.AddScoped<IDayPlanningClient>(sp =>
-        sp.GetRequiredService<DayPlanningApiClient>());
+    // als een component IDayPlanningClient nodig heeft, geef hem dan de geregistreerde DayPlanningApiClient
+    builder.Services.AddScoped<IDayPlanningClient>(sp => sp.GetRequiredService<DayPlanningApiClient>());
 
     await builder.Build().RunAsync();
 }           

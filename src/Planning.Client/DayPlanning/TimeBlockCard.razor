@@ -41,7 +41,7 @@
 
                         <a class="activity-open-button mobile-activity-action"
                            data-testid="mobile-activity-open-link"
-                           href="@EditActivityUrl(activity.Id)"
+                           href="@ActivityDetailsUrl(activity.Id)"
                            aria-label="@(activity.IsImportant
                                            ? $"Open belangrijke activiteit {activity.Name}"
                                            : $"Open activiteit {activity.Name}")">
@@ -64,13 +64,9 @@
 
                             @if (activity.IsImportant)
                             {
-                                <svg class="activity-important-flag"
-                                     data-testid="activity-important-flag"
-                                     viewBox="0 0 24 24"
-                                     aria-hidden="true"
-                                     focusable="false">
-                                    <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>
-                                </svg>
+                                <span class="lucide-icon icon-flag-filled activity-important-flag"
+                                      data-testid="activity-important-flag"
+                                      aria-hidden="true"></span>
                             }
                         </div>
 
@@ -124,8 +120,8 @@
     private string NewActivityUrl =>
         $"/dayplanning/activities/new?date={SelectedDate:yyyy-MM-dd}&timeBlockId={Block.Id}";
 
-    private string EditActivityUrl(int activityId) =>
-        $"/dayplanning/activities/{activityId}/edit?date={SelectedDate:yyyy-MM-dd}";
+    private string ActivityDetailsUrl(int activityId) =>
+        $"/dayplanning/activities/{activityId}?date={SelectedDate:yyyy-MM-dd}";
     
     [Parameter, EditorRequired]
     public EventCallback<PlannedActivityDto> OnToggleCompletion { get; set; }

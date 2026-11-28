@@ -7,6 +7,8 @@ namespace Planning.Server.Tests.DayPlanning;
 public sealed class RecordingDayPlanningService : IDayPlanningService
 {
     public DateOnly? RequestedDate { get; private set; }
+    public int? RequestedActivityId { get; private set; }
+    public Func<int, Result<PlannedActivityDetailsDto>>? GetActivityOverride { get; set; }
     public CreatePlannedActivityRequest? CreatedActivity { get; private set; }
     public Func<CreatePlannedActivityRequest, Result<PlannedActivityDto>>? CreateActivityOverride { get; set; }
     public int? EditedActivityId { get; private set; }
@@ -45,6 +47,27 @@ public sealed class RecordingDayPlanningService : IDayPlanningService
                     }
                 ]
             }));
+    }
+
+    public Task<Result<PlannedActivityDetailsDto>> GetActivityAsync(
+        int activityId, CancellationToken ctx = default)
+    {
+        RequestedActivityId = activityId;
+        return Task.FromResult(
+            GetActivityOverride?.Invoke(activityId) ?? Result.Success(
+                new PlannedActivityDetailsDto
+                {
+                    Id = activityId,
+                    Name = "Prepare presentation",
+                    Description = "Bring the slides",
+                    Date = new DateOnly(2026, 11, 24),
+                    TimeBlockId = 3,
+                    TimeBlockName = "Afternoon",
+                    StartTime = new TimeOnly(13, 0),
+                    EndTime = new TimeOnly(16, 0),
+                    IsImportant = true,
+                    IsCompleted = false
+                }));
     }
 
     public Task<Result<PlannedActivityDto>> CreateActivityAsync(CreatePlannedActivityRequest request, CancellationToken ctx = default)

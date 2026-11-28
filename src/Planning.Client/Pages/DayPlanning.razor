@@ -37,6 +37,15 @@
     
 </header>
 
+@if (_isActivityDetailsLoading)
+{
+    <p role="status">Activiteit laden...</p>
+}
+else if (_activityDetailsError is not null)
+{
+    <p role="alert">@_activityDetailsError</p>
+}
+
 @if (_isLoading)
 {
     <p>Dagplanning laden...</p>
@@ -54,18 +63,45 @@ else
                            Block="block" 
                            SelectedDate="_selectedDate"
                            OnAddActivity="trigger => OpenActivityForm(block.Id, trigger)"
-                           OnOpenActivity="selection => OpenExistingActivity(selection.Activity, selection.Trigger, block.Id)"
+                           OnOpenActivity="selection => OpenActivityDetailsAsync(selection.Activity.Id, selection.Trigger)"
                            OnToggleCompletion="ToggleActivityCompletionAsync"
                            CompletionUpdatesInProgress="_completionUpdatesInProgress"
                            CompletionErrorActivityId="_completionErrorActivityId" />
         }
     </div>
 }
+@if (_selectedActivityDetails is not null && !_isActivityFormOpen)
+{
+    <ActivityDetailsDialog Activity="_selectedActivityDetails"
+                           OnClose="CloseActivityDetails"
+                           OnEdit="OpenEditDialog"
+                           OnToggleCompletion="ToggleDetailsCompletionAsync"
+                           CompletionUpdating="_isUpdatingDetailsCompletion"
+                           CompletionError="_detailsCompletionError"
+                           OnDelete="ShowDetailsDeleteConfirmation" />
+}
+@if (_showDetailsDeleteConfirmation)
+{
+    <ConfirmationDialog Title="Verwijderen uit planning?"
+                        Message="@DetailsDeleteConfirmationMessage"
+                        CancelText="Annuleren"
+                        ConfirmText="@(_isDeletingDetails ? "Verwijderen..." : "Verwijderen")"
+                        CancelTestId="cancel-delete-button"
+                        ConfirmTestId="confirm-delete-button"
+                        ConfirmDisabled="_isDeletingDetails"
+                        OnCancel="CancelDetailsDeleteConfirmation"
+                        OnConfirm="DeleteFromDetailsAsync">
+        @if (_detailsDeleteError is not null)
+        {
+            <p role="alert" data-testid="activity-delete-error">@_detailsDeleteError</p>
+        }
+    </ConfirmationDialog>
+}
 @if (_isActivityFormOpen)
 {
-    <ActivityForm InitialDate="_selectedDate"
+    <ActivityForm InitialDate="@(_selectedActivityDetails?.Date ?? _selectedDate)"
                   InitialTimeBlockId="_initialTimeBlockId"
-                  ExistingActivity="_selectedActivity"
+                  ExistingActivity="_selectedActivityDetails"
                   TimeBlocks="_timeBlocks"
                   OnSaved="ActivitySavedAsync"
                   OnDeleted="ActivityDeletedAsync"

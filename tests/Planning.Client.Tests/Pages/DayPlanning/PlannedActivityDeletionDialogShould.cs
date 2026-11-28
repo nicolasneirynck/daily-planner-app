@@ -8,16 +8,16 @@ using static Planning.Client.Pages.DayPlanningTestData;
 
 namespace Planning.Client.Pages;
 
-public class PlannedActivityDeletionShould : BunitContext
+public class PlannedActivityDeletionDialogShould : BunitContext
 {
-    public PlannedActivityDeletionShould()
+    public PlannedActivityDeletionDialogShould()
     {
         JSInterop.SetupModule("./js/activityDialog.js")
             .SetupVoid("showModal", _ => true);
     }
 
     [Fact]
-    public void CancelDeletionWithoutChangingPlannedActivity()
+    public void CancelDeletionFromDetailsWithoutChangingPlannedActivity()
     {
         // Arrange
         var service = RegisterServiceWithActivities(() =>
@@ -28,7 +28,10 @@ public class PlannedActivityDeletionShould : BunitContext
 
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
-        cut.Find("[data-testid='delete-activity-button']").Click();
+        cut.WaitForAssertion(() =>
+            cut.Find("dialog[aria-label='Activiteit bekijken'] [data-testid='activity-detail-delete-button']")
+                .ShouldNotBeNull());
+        cut.Find("[data-testid='activity-detail-delete-button']").Click();
 
         // Assert: confirmation is required
         var confirmation = cut.Find("[role='alertdialog']");
@@ -44,8 +47,8 @@ public class PlannedActivityDeletionShould : BunitContext
 
         // Assert: the activity and its details remain
         cut.FindAll("[role='alertdialog']").ShouldBeEmpty();
-        cut.Find("[data-testid='activity-name']")
-            .GetAttribute("value").ShouldBe("Morning walk");
+        cut.Find("dialog[aria-label='Activiteit bekijken'] [data-testid='activity-detail-name']")
+            .TextContent.ShouldBe("Morning walk");
         cut.Find("[data-testid='planned-activity-name']")
             .TextContent.ShouldBe("Morning walk");
         _ = service.DidNotReceive().DeletePlannedActivityAsync(
@@ -53,7 +56,7 @@ public class PlannedActivityDeletionShould : BunitContext
     }
 
     [Fact]
-    public void DeleteOnlySelectedActivityAfterConfirmation()
+    public void DeleteOnlySelectedActivityFromDetailsAfterConfirmation()
     {
         // Arrange
         var selected = new PlannedActivityDto
@@ -80,7 +83,10 @@ public class PlannedActivityDeletionShould : BunitContext
         // Act
         cut.Find("[data-testid='activity-open-button']")
             .Click();
-        cut.Find("[data-testid='delete-activity-button']")
+        cut.WaitForAssertion(() =>
+            cut.Find("dialog[aria-label='Activiteit bekijken'] [data-testid='activity-detail-delete-button']")
+                .ShouldNotBeNull());
+        cut.Find("[data-testid='activity-detail-delete-button']")
             .Click();
         cut.Find("[data-testid='confirm-delete-button']")
             .Click();
@@ -91,6 +97,8 @@ public class PlannedActivityDeletionShould : BunitContext
             _ = service.Received(1).DeletePlannedActivityAsync(
                 101, Arg.Any<CancellationToken>());
 
+            cut.FindAll("dialog[aria-label='Activiteit bekijken']").ShouldBeEmpty();
+            cut.FindAll("[role='alertdialog']").ShouldBeEmpty();
             cut.FindAll("[data-testid='planned-activity-name']")
                 .Select(element => element.TextContent.Trim())
                 .ToArray()
@@ -99,7 +107,7 @@ public class PlannedActivityDeletionShould : BunitContext
     }
 
     [Fact]
-    public void KeepActivityVisibleAndShowErrorWhenDeletionFails()
+    public void KeepActivityInDetailsAndShowErrorWhenDeletionFails()
     {
         // Arrange
         var service = RegisterServiceWithActivities(() =>
@@ -113,7 +121,10 @@ public class PlannedActivityDeletionShould : BunitContext
 
         // Act
         cut.Find("[data-testid='activity-open-button']").Click();
-        cut.Find("[data-testid='delete-activity-button']").Click();
+        cut.WaitForAssertion(() =>
+            cut.Find("dialog[aria-label='Activiteit bekijken'] [data-testid='activity-detail-delete-button']")
+                .ShouldNotBeNull());
+        cut.Find("[data-testid='activity-detail-delete-button']").Click();
         cut.Find("[data-testid='confirm-delete-button']").Click();
 
         // Assert
@@ -122,6 +133,8 @@ public class PlannedActivityDeletionShould : BunitContext
             cut.Find("[data-testid='activity-delete-error']")
                 .TextContent.ShouldContain("Verwijderen is niet gelukt.");
             cut.Find("[data-testid='planned-activity-name']")
+                .TextContent.ShouldBe("Morning walk");
+            cut.Find("dialog[aria-label='Activiteit bekijken'] [data-testid='activity-detail-name']")
                 .TextContent.ShouldBe("Morning walk");
             _ = service.Received(1).DeletePlannedActivityAsync(
                 101, Arg.Any<CancellationToken>());
@@ -151,6 +164,23 @@ public class PlannedActivityDeletionShould : BunitContext
                     Date = DateOnly.FromDateTime(DateTime.Today),
                     TimeBlocks = [morning]
                 }));
+            });
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                var activity = getActivities().Single(item => item.Id == 101);
+                return Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                    HttpStatusCode.OK,
+                    new PlannedActivityDetailsDto
+                    {
+                        Id = activity.Id,
+                        Name = activity.Name,
+                        Date = DateOnly.FromDateTime(DateTime.Today),
+                        TimeBlockId = 1,
+                        TimeBlockName = "Morning",
+                        StartTime = new TimeOnly(6, 0),
+                        EndTime = new TimeOnly(9, 0)
+                    }));
             });
         Services.AddSingleton(service);
         return service;

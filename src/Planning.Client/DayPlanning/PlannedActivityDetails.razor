@@ -1,0 +1,84 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Components
+@using Planning.Shared.DayPlanning
+
+<div class="activity-details-content">
+    <h2 data-testid="activity-detail-name">@Activity.Name</h2>
+
+    @if (Activity.IsImportant)
+    {
+        <p class="activity-detail-row activity-detail-importance"
+           data-testid="activity-detail-importance">
+            <span class="lucide-icon icon-flag-filled" aria-hidden="true"></span>
+            <span>Belangrijk</span>
+        </p>
+    }
+
+    <p class="activity-detail-row" data-testid="activity-detail-date">
+        <span class="lucide-icon icon-calendar-days"
+              role="img" aria-label="Datum"></span>
+        <span>@FormatDate(Activity.Date)</span>
+    </p>
+    <p class="activity-detail-row" data-testid="activity-detail-time-block">
+        <span class="lucide-icon icon-clock-3"
+              role="img" aria-label="Tijdsblok"></span>
+        <span>@Activity.TimeBlockName</span>
+    </p>
+
+    @if (!string.IsNullOrWhiteSpace(Activity.Description))
+    {
+        <section class="activity-details-description">
+            <h3>Beschrijving</h3>
+            <p data-testid="activity-detail-description">@Activity.Description</p>
+        </section>
+    }
+</div>
+
+<footer class="activity-details-actions">
+    @if (CompletionError)
+    {
+        <p role="alert">Status wijzigen is niet gelukt. Probeer het opnieuw.</p>
+    }
+    <button type="button"
+            class="activity-detail-completion-button"
+            data-testid="activity-detail-completion-toggle"
+            aria-pressed="@(Activity.IsCompleted ? "true" : "false")"
+            disabled="@CompletionUpdating"
+            @onclick="OnToggleCompletion">
+        <span class="activity-completion-icon" aria-hidden="true">
+            <span class="lucide-icon @(Activity.IsCompleted ? "icon-check" : "icon-circle-check")"></span>
+        </span>
+        <span>@(Activity.IsCompleted ? "Activiteit voltooid" : "Activiteit voltooien")</span>
+    </button>
+    <button type="button"
+            class="activity-detail-delete-button"
+            data-testid="activity-detail-delete-button"
+            @onclick="OnDelete">
+        <span class="lucide-icon icon-trash" aria-hidden="true"></span>
+        <span>Verwijderen uit planning</span>
+    </button>
+</footer>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlannedActivityDetailsDto Activity { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnToggleCompletion { get; set; }
+
+    [Parameter]
+    public bool CompletionUpdating { get; set; }
+
+    [Parameter]
+    public bool CompletionError { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    private static string FormatDate(DateOnly date)
+    {
+        var culture = CultureInfo.GetCultureInfo("nl-BE");
+        var text = date.ToString("dddd d MMMM yyyy", culture);
+        return $"{char.ToUpper(text[0], culture)}{text[1..]}";
+    }
+}
