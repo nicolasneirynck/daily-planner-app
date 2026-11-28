@@ -71,22 +71,66 @@ public class ActivityFormPageShould : BunitContext
     }
 
     [Fact]
-    public void SaveEditedActivityFromPageAndReturnToUpdatedDay()
+    public void LoadEditFormByActivityId()
+    {
+        // Arrange
+        var storedDate = new DateOnly(2026, 11, 24);
+        var staleDate = storedDate.AddDays(-1);
+
+        var morning = Block(1, "Ochtend", 6, 9);
+
+        var service = Substitute.For<IDayPlanningClient>();
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK,
+                MorningWalkDetails(storedDate))));
+
+        service.GetDayAsync(storedDate, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
+                HttpStatusCode.OK,
+                new DayPlanningResponse
+                {
+                    Date = storedDate,
+                    TimeBlocks = [morning]
+                })));
+        Services.AddSingleton(service);
+
+        Services.GetRequiredService<NavigationManager>()
+            .NavigateTo("/dayplanning/activities/101/edit?date=2026-11-23");
+        var cut = Render<ActivityFormPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101));
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            ((IHtmlInputElement)cut.Find("[data-testid='activity-name']"))
+                .Value.ShouldBe("Morning walk");
+            ((IHtmlInputElement)cut.Find("[data-testid='activity-date']"))
+                .Value.ShouldBe("2026-11-24");
+            ((IHtmlSelectElement)cut.Find("[data-testid='activity-time-block']"))
+                .Value.ShouldBe("1");
+            _ = service.Received(1).GetActivityAsync(
+                101, Arg.Any<CancellationToken>());
+            _ = service.Received(1).GetDayAsync(
+                storedDate, Arg.Any<CancellationToken>());
+            _ = service.DidNotReceive().GetDayAsync(
+                staleDate, Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public void SaveEditedActivityFromPageAndReturnToDetailsOnUpdatedDate()
     {
         // Arrange
         var originalDate = new DateOnly(2026, 11, 24);
         var updatedDate = originalDate.AddDays(1);
         var morning = Block(1, "Ochtend", 6, 9);
-        morning.Activities =
-        [
-            new PlannedActivityDto
-            {
-                Id = 101,
-                Name = "Morning walk"
-            }
-        ];
 
         var service = Substitute.For<IDayPlanningClient>();
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK,
+                MorningWalkDetails(originalDate))));
         service.GetDayAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(new ClientResult<DayPlanningResponse>(
                 HttpStatusCode.OK,
@@ -124,7 +168,7 @@ public class ActivityFormPageShould : BunitContext
                     request.Date == updatedDate),
                 Arg.Any<CancellationToken>());
             Services.GetRequiredService<NavigationManager>().Uri
-                .ShouldEndWith("/dayplanning?date=2026-11-25");
+                .ShouldEndWith("/dayplanning/activities/101?date=2026-11-25");
         });
     }
 
@@ -134,16 +178,12 @@ public class ActivityFormPageShould : BunitContext
         // Arrange
         var originalDate = new DateOnly(2026, 11, 24);
         var morning = Block(1, "Ochtend", 6, 9);
-        morning.Activities =
-        [
-            new PlannedActivityDto
-            {
-                Id = 101,
-                Name = "Morning walk"
-            }
-        ];
 
         var service = Substitute.For<IDayPlanningClient>();
+        service.GetActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult<PlannedActivityDetailsDto>(
+                HttpStatusCode.OK,
+                MorningWalkDetails(originalDate))));
         service.GetDayAsync(originalDate, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new ClientResult<DayPlanningResponse>(
                 HttpStatusCode.OK,
@@ -191,4 +231,15 @@ public class ActivityFormPageShould : BunitContext
             Arg.Any<UpdatePlannedActivityRequest>(),
             Arg.Any<CancellationToken>());
     }
+
+    private static PlannedActivityDetailsDto MorningWalkDetails(DateOnly date) => new()
+    {
+        Id = 101,
+        Name = "Morning walk",
+        Date = date,
+        TimeBlockId = 1,
+        TimeBlockName = "Ochtend",
+        StartTime = new TimeOnly(6, 0),
+        EndTime = new TimeOnly(9, 0)
+    };
 }

@@ -1,6 +1,9 @@
 @import "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css";
 
 :root {
+    --background: #FAF7F2;
+    --surface: #fefdfb;
+    --card-border: #e7ddcc;
     --accent-coral: #ef6343;
     --accent-coral-hover: #f47b60;
     --control-hover-background: #E3EFE6;

@@ -22,9 +22,40 @@
     }
 </div>
 
+<footer class="activity-details-actions">
+    @if (CompletionError)
+    {
+        <p role="alert">Status wijzigen is niet gelukt. Probeer het opnieuw.</p>
+    }
+    <button type="button"
+            data-testid="activity-detail-completion-toggle"
+            aria-pressed="@(Activity.IsCompleted ? "true" : "false")"
+            disabled="@CompletionUpdating"
+            @onclick="OnToggleCompletion">
+        @(Activity.IsCompleted ? "Activiteit voltooid" : "Activiteit voltooien")
+    </button>
+    <button type="button"
+            data-testid="activity-detail-delete-button"
+            @onclick="OnDelete">
+        Verwijderen uit planning
+    </button>
+</footer>
+
 @code {
     [Parameter, EditorRequired]
     public PlannedActivityDetailsDto Activity { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnToggleCompletion { get; set; }
+
+    [Parameter]
+    public bool CompletionUpdating { get; set; }
+
+    [Parameter]
+    public bool CompletionError { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
 
     private static string FormatDate(DateOnly date)
     {

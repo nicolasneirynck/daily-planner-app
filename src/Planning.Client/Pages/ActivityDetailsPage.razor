@@ -31,6 +31,28 @@ else if (_details is not null)
                      height="24" />
             </button>
         </header>
-        <PlannedActivityDetails Activity="_details" />
+        <PlannedActivityDetails Activity="_details"
+                                OnToggleCompletion="ToggleCompletionAsync"
+                                CompletionUpdating="_isUpdatingCompletion"
+                                CompletionError="_completionError"
+                                OnDelete="ShowDeleteConfirmation" />
     </section>
+
+    @if (_showDeleteConfirmation)
+    {
+        <ConfirmationDialog Title="Verwijderen uit planning?"
+                            Message="@DeleteConfirmationMessage"
+                            CancelText="Annuleren"
+                            ConfirmText="@(_isDeleting ? "Verwijderen..." : "Verwijderen")"
+                            CancelTestId="cancel-delete-button"
+                            ConfirmTestId="confirm-delete-button"
+                            ConfirmDisabled="_isDeleting"
+                            OnCancel="CancelDeleteConfirmation"
+                            OnConfirm="DeleteAsync">
+            @if (_deleteError is not null)
+            {
+                <p role="alert">@_deleteError</p>
+            }
+        </ConfirmationDialog>
+    }
 }

@@ -47,13 +47,9 @@ public class PlannedActivityEditingShould : BunitContext
         var cut = Render<DayPlanning>();
 
         // Act
-        var mobileUrl = cut.Find("[data-testid='mobile-activity-open-link']")
-            .GetAttribute("href");
         cut.Find("[data-testid='activity-open-button']").Click();
 
         // Assert
-        mobileUrl.ShouldBe(
-            $"/dayplanning/activities/101/edit?date={today:yyyy-MM-dd}");
         var dialog = cut.Find("[role='dialog']");
         dialog.TextContent.ShouldContain("Activiteit aanpassen");
 

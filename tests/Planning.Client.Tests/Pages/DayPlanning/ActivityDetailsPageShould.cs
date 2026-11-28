@@ -79,6 +79,70 @@ public class ActivityDetailsPageShould : BunitContext
             "/dayplanning/activities/101/edit?date=2026-11-24");
     }
 
+    [Fact]
+    public void ToggleCompletionByClickingTheWholeDetailsButton()
+    {
+        // Arrange
+        var client = RegisterActivityClient();
+        client.SetActivityCompletionAsync(101, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.NoContent)));
+        var cut = Render<ActivityDetailsPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101));
+
+        // Act
+        cut.WaitForAssertion(() =>
+            cut.Find("[data-testid='activity-detail-completion-toggle']")
+                .ShouldNotBeNull());
+        cut.Find("[data-testid='activity-detail-completion-toggle']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = client.Received(1).SetActivityCompletionAsync(
+                101, true, Arg.Any<CancellationToken>());
+            var button = cut.Find("[data-testid='activity-detail-completion-toggle']");
+            button.GetAttribute("aria-pressed").ShouldBe("true");
+            button.TextContent.ShouldContain("Activiteit voltooid");
+        });
+    }
+
+    [Fact]
+    public void DeleteActivityOnlyAfterConfirmation()
+    {
+        // Arrange
+        JSInterop.SetupModule("./js/activityDialog.js")
+            .SetupVoid("showModal", _ => true);
+        var client = RegisterActivityClient();
+        client.DeletePlannedActivityAsync(101, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ClientResult(HttpStatusCode.NoContent)));
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var cut = Render<ActivityDetailsPage>(parameters => parameters
+            .Add(page => page.ActivityId, 101));
+
+        // Act
+        cut.WaitForAssertion(() =>
+            cut.Find("[data-testid='activity-detail-delete-button']")
+                .ShouldNotBeNull());
+        cut.Find("[data-testid='activity-detail-delete-button']").Click();
+
+        // Assert
+        cut.Find("[role='alertdialog']").TextContent
+            .ShouldContain("Verwijderen uit planning?");
+        _ = client.DidNotReceive().DeletePlannedActivityAsync(
+            101, Arg.Any<CancellationToken>());
+
+        // Act
+        cut.Find("[data-testid='confirm-delete-button']").Click();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            _ = client.Received(1).DeletePlannedActivityAsync(
+                101, Arg.Any<CancellationToken>());
+            navigation.Uri.ShouldEndWith("/dayplanning?date=2026-11-24");
+        });
+    }
+
     private IDayPlanningClient RegisterActivityClient()
     {
         var client = Substitute.For<IDayPlanningClient>();
