@@ -24,7 +24,7 @@ public partial class ActivityFormPage
 
     private DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
     private IReadOnlyList<TimeBlockDto> _timeBlocks = [];
-    private PlannedActivityDto? _activity;
+    private PlannedActivityDetailsDto? _activity;
     private int? _initialTimeBlockId;
     private bool _isLoading = true;
     private string? _loadError;
@@ -128,14 +128,7 @@ public partial class ActivityFormPage
         var details = result.Value;
         _date = details.Date;
         _initialTimeBlockId = details.TimeBlockId;
-        _activity = new PlannedActivityDto
-        {
-            Id = details.Id,
-            Name = details.Name,
-            Description = details.Description,
-            IsImportant = details.IsImportant,
-            IsCompleted = details.IsCompleted
-        };
+        _activity = details;
         return true;
     }
 

@@ -4,8 +4,45 @@
 }
 
 .activity-form-page {
-    padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+    padding: 0 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
     background: var(--background);
+}
+
+@media (max-width: 768px) {
+    .activity-form-page {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        overflow: hidden;
+        padding-bottom: 0;
+    }
+
+    .activity-form-page .activity-form-content,
+    .activity-form-page ::deep .activity-form-edit {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .activity-form-page header {
+        flex: none;
+    }
+
+    .activity-form-page .activity-form-fields {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .activity-form-page .activity-form-actions {
+        flex: none;
+        padding: 1rem 0 calc(1rem + env(safe-area-inset-bottom));
+    }
+
+    .activity-form-page .activity-form-submit {
+        margin-top: 0;
+    }
 }
 
 .activity-form-modal {
@@ -36,8 +73,23 @@
     justify-content: space-between;
 }
 
+.activity-form-page header {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding: calc(1rem + env(safe-area-inset-top)) 0 1rem;
+}
+
+.activity-form-page header h1 {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: center;
+}
+
 .activity-form-page header button {
-    order: -1; /* zet de terugknop visueel vóór de titel, ook al staat de knop in de Razor-code na de titel. */
+    grid-column: 1;
+    grid-row: 1;
 }
 
 .activity-form h1,
@@ -344,8 +396,20 @@
     cursor: pointer;
 }
 
-.activity-delete-trigger svg {
+.activity-delete-trigger .lucide-icon {
     width: 1.25rem;
     height: 1.25rem;
-    flex: none;
+}
+
+.activity-form-page .activity-delete-trigger {
+    min-height: 3.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--card-border);
+    border-radius: 0;
+    gap: 0.75rem;
+}
+
+.activity-form-page .activity-delete-trigger .lucide-icon {
+    width: 1.5rem;
+    height: 1.5rem;
 }

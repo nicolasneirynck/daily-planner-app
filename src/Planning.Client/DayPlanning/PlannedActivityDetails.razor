@@ -7,11 +7,23 @@
 
     @if (Activity.IsImportant)
     {
-        <p data-testid="activity-detail-importance">Belangrijk</p>
+        <p class="activity-detail-row activity-detail-importance"
+           data-testid="activity-detail-importance">
+            <span class="lucide-icon icon-flag-filled" aria-hidden="true"></span>
+            <span>Belangrijk</span>
+        </p>
     }
 
-    <p data-testid="activity-detail-date">@FormatDate(Activity.Date)</p>
-    <p data-testid="activity-detail-time-block">@Activity.TimeBlockName</p>
+    <p class="activity-detail-row" data-testid="activity-detail-date">
+        <span class="lucide-icon icon-calendar-days"
+              role="img" aria-label="Datum"></span>
+        <span>@FormatDate(Activity.Date)</span>
+    </p>
+    <p class="activity-detail-row" data-testid="activity-detail-time-block">
+        <span class="lucide-icon icon-clock-3"
+              role="img" aria-label="Tijdsblok"></span>
+        <span>@Activity.TimeBlockName</span>
+    </p>
 
     @if (!string.IsNullOrWhiteSpace(Activity.Description))
     {
@@ -28,16 +40,22 @@
         <p role="alert">Status wijzigen is niet gelukt. Probeer het opnieuw.</p>
     }
     <button type="button"
+            class="activity-detail-completion-button"
             data-testid="activity-detail-completion-toggle"
             aria-pressed="@(Activity.IsCompleted ? "true" : "false")"
             disabled="@CompletionUpdating"
             @onclick="OnToggleCompletion">
-        @(Activity.IsCompleted ? "Activiteit voltooid" : "Activiteit voltooien")
+        <span class="activity-completion-icon" aria-hidden="true">
+            <span class="lucide-icon @(Activity.IsCompleted ? "icon-check" : "icon-circle-check")"></span>
+        </span>
+        <span>@(Activity.IsCompleted ? "Activiteit voltooid" : "Activiteit voltooien")</span>
     </button>
     <button type="button"
+            class="activity-detail-delete-button"
             data-testid="activity-detail-delete-button"
             @onclick="OnDelete">
-        Verwijderen uit planning
+        <span class="lucide-icon icon-trash" aria-hidden="true"></span>
+        <span>Verwijderen uit planning</span>
     </button>
 </footer>
 

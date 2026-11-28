@@ -10,6 +10,27 @@
     --error-color: #b42318;
 }
 
+.lucide-icon {
+    display: inline-block;
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+}
+
+.icon-arrow-left { --icon: url("/icons/lucide/arrow-left.svg"); }
+.icon-pencil { --icon: url("/icons/lucide/pencil.svg"); }
+.icon-x { --icon: url("/icons/lucide/x.svg"); }
+.icon-flag { --icon: url("/icons/lucide/flag.svg"); }
+.icon-flag-filled { --icon: url("/icons/lucide/flag-filled.svg"); }
+.icon-calendar-days { --icon: url("/icons/lucide/calendar-days.svg"); }
+.icon-clock-3 { --icon: url("/icons/lucide/clock-3.svg"); }
+.icon-circle-check { --icon: url("/icons/lucide/circle-check.svg"); }
+.icon-check { --icon: url("/icons/lucide/check.svg"); }
+.icon-trash { --icon: url("/icons/lucide/trash.svg"); }
+
 *,
 *::before,
 *::after {

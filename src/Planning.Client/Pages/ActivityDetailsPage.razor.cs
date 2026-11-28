@@ -19,6 +19,8 @@ public partial class ActivityDetailsPage
     private bool _isLoading = true;
     private string? _loadError;
     private int _loadVersion;
+    private ElementReference _pageTitle;
+    private bool _focusTitleAfterRender;
     private bool _isUpdatingCompletion;
     private bool _completionError;
     private bool _showDeleteConfirmation;
@@ -128,6 +130,7 @@ public partial class ActivityDetailsPage
         _isLoading = true;
         _loadError = null;
         _details = null;
+        _focusTitleAfterRender = false;
         _isUpdatingCompletion = false;
         _completionError = false;
         _showDeleteConfirmation = false;
@@ -142,7 +145,10 @@ public partial class ActivityDetailsPage
                 return;
 
             if (result.IsSuccess && result.Value is not null)
+            {
                 _details = result.Value;
+                _focusTitleAfterRender = true;
+            }
             else
                 _loadError = result.StatusCode == HttpStatusCode.NotFound
                     ? "Deze activiteit staat niet meer in de dagplanning."
@@ -163,5 +169,14 @@ public partial class ActivityDetailsPage
             if (loadVersion == _loadVersion)
                 _isLoading = false;
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusTitleAfterRender)
+            return;
+
+        _focusTitleAfterRender = false;
+        await _pageTitle.FocusAsync();
     }
 }

@@ -13,11 +13,14 @@ public partial class DayPlanning
     private IReadOnlyList<TimeBlockDto> _timeBlocks = [];
     private bool _isLoading = true;
     private bool _hasLoadError;
-    private int _loadVersion;
+    private int _dayLoadVersion;
     private readonly HashSet<int> _completionUpdatesInProgress = [];
     private int? _completionErrorActivityId;
     private bool _isActivityFormOpen;
-    private PlannedActivityDto? _selectedActivity;
+    private PlannedActivityDetailsDto? _selectedActivityDetails;
+    private bool _isActivityDetailsLoading;
+    private string? _activityDetailsError;
+    private int _activityDetailsLoadVersion;
     private int? _initialTimeBlockId;
     private bool _restoreFocusAfterCancel;
     private ElementReference _globalAddButton;
@@ -41,7 +44,7 @@ public partial class DayPlanning
             ? parsed
             : DateOnly.FromDateTime(DateTime.Today); // als DateQuery ongeldig is of leeg -> vandaag zetten
 
-        return _loadVersion == 0 || date != _selectedDate // _loadVersion == 0 wil zeggen: er is nog nooit geladen
+        return _dayLoadVersion == 0 || date != _selectedDate // _dayLoadVersion == 0 wil zeggen: er is nog nooit geladen
             ? LoadDayAsync(date)
             : Task.CompletedTask; // er hoeft niets opnieuw geladen worden
     }
@@ -68,7 +71,8 @@ public partial class DayPlanning
 
     private async Task LoadDayAsync(DateOnly date)
     {
-        var loadVersion = ++_loadVersion; // verhoogt _loadVersion eerst met 1 en daarna nieuwe waarde opslaan in loadVersion
+        var dayLoadVersion = ++_dayLoadVersion; // verhoogt _dayLoadVersion eerst met 1 en daarna nieuwe waarde opslaan in dayLoadVersion
+        ClearActivityDetails();
         _selectedDate = date;
         _isLoading = true;
         _hasLoadError = false;
@@ -79,7 +83,7 @@ public partial class DayPlanning
         {
             var result = await DayPlanningService.GetDayAsync(date);
 
-            if (loadVersion != _loadVersion)
+            if (dayLoadVersion != _dayLoadVersion)
                 return;
 
             if (result.IsSuccess && result.Value is not null)
@@ -97,7 +101,7 @@ public partial class DayPlanning
                                    or JsonException
                                    or InvalidOperationException)
         {
-            if (loadVersion == _loadVersion)
+            if (dayLoadVersion == _dayLoadVersion)
             {
                 Log.Warning(ex, "Could not load day planning for {Date}", date);
                 _hasLoadError = true;
@@ -105,16 +109,16 @@ public partial class DayPlanning
         }
         finally
         {
-            if (loadVersion == _loadVersion)
+            if (dayLoadVersion == _dayLoadVersion)
                 _isLoading = false;
         }
     }
 
     private async Task SelectDateAsync(DateOnly date)
     {
-        var requestedLoadVersion = _loadVersion + 1;
+        var requestedDayLoadVersion = _dayLoadVersion + 1;
         await LoadDayAsync(date);
-        if (requestedLoadVersion != _loadVersion)
+        if (requestedDayLoadVersion != _dayLoadVersion)
             return;
 
         Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}");
@@ -154,24 +158,76 @@ public partial class DayPlanning
 
     private void OpenActivityForm(int? timeBlockId, ElementReference trigger)
     {
-        _selectedActivity = null;
+        ClearActivityDetails();
         _activityFormTrigger = trigger;
         _initialTimeBlockId = timeBlockId;
+        _restoreFocusAfterCancel = false;
         _isActivityFormOpen = true;
     }
 
-    private void OpenExistingActivity(PlannedActivityDto activity, ElementReference trigger, int timeBlockId)
+    private async Task OpenActivityDetailsAsync(int activityId, ElementReference trigger)
     {
-        _selectedActivity = activity;
         _activityFormTrigger = trigger;
-        _initialTimeBlockId = timeBlockId;
+        var detailsLoadVersion = ++_activityDetailsLoadVersion;
+        _selectedActivityDetails = null;
+        _isActivityDetailsLoading = true;
+        _activityDetailsError = null;
+
+        try
+        {
+            var result = await DayPlanningService.GetActivityAsync(activityId);
+            if (detailsLoadVersion != _activityDetailsLoadVersion)
+                return;
+
+            if (result.IsSuccess && result.Value is not null)
+                _selectedActivityDetails = result.Value;
+            else
+                _activityDetailsError = "De activiteit kon niet geladen worden.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
+        {
+            if (detailsLoadVersion == _activityDetailsLoadVersion)
+            {
+                Log.Warning(ex, "Could not load activity details for {ActivityId}", activityId);
+                _activityDetailsError = "De activiteit kon niet geladen worden.";
+            }
+        }
+        finally
+        {
+            if (detailsLoadVersion == _activityDetailsLoadVersion)
+                _isActivityDetailsLoading = false;
+        }
+    }
+
+    private void ClearActivityDetails()
+    {
+        _activityDetailsLoadVersion++;
+        _selectedActivityDetails = null;
+        _activityDetailsError = null;
+        _isActivityDetailsLoading = false;
+    }
+
+    private void CloseActivityDetails()
+    {
+        ClearActivityDetails();
+        _restoreFocusAfterCancel = true;
+    }
+
+    private void OpenEditDialog()
+    {
+        if (_selectedActivityDetails is null)
+            return;
+
+        _initialTimeBlockId = _selectedActivityDetails.TimeBlockId;
+        _restoreFocusAfterCancel = false;
         _isActivityFormOpen = true;
     }
     
     private void CloseActivityForm()
     {
         _isActivityFormOpen = false;
-        _selectedActivity = null;
         _initialTimeBlockId = null;
     }
 
@@ -181,14 +237,18 @@ public partial class DayPlanning
             return;
 
         CloseActivityForm();
-        _restoreFocusAfterCancel = true;
+        _restoreFocusAfterCancel = _selectedActivityDetails is null;
     }
 
     private async Task ActivitySavedAsync(DateOnly date)
     {
+        var editedActivityId = _selectedActivityDetails?.Id;
         CloseActivityForm();
         await LoadDayAsync(date);
         Navigation.NavigateTo($"/dayplanning?date={date:yyyy-MM-dd}", replace: true);
+
+        if (editedActivityId is not null)
+            await OpenActivityDetailsAsync(editedActivityId.Value, default);
     }
 
     private async Task ActivityDeletedAsync(DateOnly date)

@@ -31,7 +31,7 @@ public partial class ActivityForm : IAsyncDisposable
         ActivityFormPresentation.Modal;
 
     [Parameter]
-    public PlannedActivityDto? ExistingActivity { get; set; }
+    public PlannedActivityDetailsDto? ExistingActivity { get; set; }
 
     [Parameter, EditorRequired]
     public IReadOnlyList<TimeBlockDto> TimeBlocks { get; set; } = [];
