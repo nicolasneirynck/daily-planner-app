@@ -20,6 +20,11 @@ public partial class DayPlanning
     private PlannedActivityDetailsDto? _selectedActivityDetails;
     private bool _isActivityDetailsLoading;
     private string? _activityDetailsError;
+    private bool _isUpdatingDetailsCompletion;
+    private bool _detailsCompletionError;
+    private bool _showDetailsDeleteConfirmation;
+    private bool _isDeletingDetails;
+    private string? _detailsDeleteError;
     private int _activityDetailsLoadVersion;
     private int? _initialTimeBlockId;
     private bool _restoreFocusAfterCancel;
@@ -35,6 +40,9 @@ public partial class DayPlanning
 
     private string NewActivityUrl =>
         $"/dayplanning/activities/new?date={_selectedDate:yyyy-MM-dd}";
+
+    private string DetailsDeleteConfirmationMessage =>
+        $"“{_selectedActivityDetails?.Name}” wordt verwijderd uit je dagplanning.";
 
     protected override Task OnParametersSetAsync()
     {
@@ -156,6 +164,50 @@ public partial class DayPlanning
         _completionErrorActivityId = activity.Id;
     }
 
+    private async Task ToggleDetailsCompletionAsync()
+    {
+        if (_selectedActivityDetails is null || _isUpdatingDetailsCompletion)
+            return;
+
+        var details = _selectedActivityDetails;
+        var detailsLoadVersion = _activityDetailsLoadVersion;
+        var newStatus = !details.IsCompleted;
+        _isUpdatingDetailsCompletion = true;
+        _detailsCompletionError = false;
+
+        try
+        {
+            var result = await DayPlanningService.SetActivityCompletionAsync(details.Id, newStatus);
+            if (detailsLoadVersion != _activityDetailsLoadVersion)
+                return;
+
+            if (result.IsSuccess)
+            {
+                details.IsCompleted = newStatus;
+                var dayActivity = _timeBlocks
+                    .SelectMany(block => block.Activities)
+                    .FirstOrDefault(activity => activity.Id == details.Id);
+                if (dayActivity is not null)
+                    dayActivity.IsCompleted = newStatus;
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not update completion for activity {ActivityId}", details.Id);
+        }
+        finally
+        {
+            if (detailsLoadVersion == _activityDetailsLoadVersion)
+                _isUpdatingDetailsCompletion = false;
+        }
+
+        if (detailsLoadVersion == _activityDetailsLoadVersion)
+            _detailsCompletionError = true;
+    }
+
     private void OpenActivityForm(int? timeBlockId, ElementReference trigger)
     {
         ClearActivityDetails();
@@ -207,12 +259,71 @@ public partial class DayPlanning
         _selectedActivityDetails = null;
         _activityDetailsError = null;
         _isActivityDetailsLoading = false;
+        _isUpdatingDetailsCompletion = false;
+        _detailsCompletionError = false;
+        _showDetailsDeleteConfirmation = false;
+        _isDeletingDetails = false;
+        _detailsDeleteError = null;
     }
 
     private void CloseActivityDetails()
     {
         ClearActivityDetails();
         _restoreFocusAfterCancel = true;
+    }
+
+    private void ShowDetailsDeleteConfirmation()
+    {
+        _detailsDeleteError = null;
+        _showDetailsDeleteConfirmation = true;
+    }
+
+    private void CancelDetailsDeleteConfirmation()
+    {
+        if (_isDeletingDetails)
+            return;
+
+        _showDetailsDeleteConfirmation = false;
+        _detailsDeleteError = null;
+    }
+
+    private async Task DeleteFromDetailsAsync()
+    {
+        if (_isDeletingDetails || _selectedActivityDetails is not { } details)
+            return;
+
+        var detailsLoadVersion = _activityDetailsLoadVersion;
+        _isDeletingDetails = true;
+        _detailsDeleteError = null;
+
+        try
+        {
+            var result = await DayPlanningService.DeletePlannedActivityAsync(details.Id);
+            if (detailsLoadVersion != _activityDetailsLoadVersion)
+                return;
+
+            if (result.IsSuccess)
+            {
+                await LoadDayAsync(details.Date);
+                _activityFormTrigger = default;
+                _restoreFocusAfterCancel = true;
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException
+                                   or JsonException
+                                   or InvalidOperationException)
+        {
+            Log.Warning(ex, "Could not delete activity {ActivityId}", details.Id);
+        }
+        finally
+        {
+            if (detailsLoadVersion == _activityDetailsLoadVersion)
+                _isDeletingDetails = false;
+        }
+
+        if (detailsLoadVersion == _activityDetailsLoadVersion)
+            _detailsDeleteError = "Verwijderen is niet gelukt. Probeer het opnieuw.";
     }
 
     private void OpenEditDialog()

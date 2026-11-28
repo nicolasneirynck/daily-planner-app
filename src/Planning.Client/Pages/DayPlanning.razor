@@ -74,7 +74,28 @@ else
 {
     <ActivityDetailsDialog Activity="_selectedActivityDetails"
                            OnClose="CloseActivityDetails"
-                           OnEdit="OpenEditDialog" />
+                           OnEdit="OpenEditDialog"
+                           OnToggleCompletion="ToggleDetailsCompletionAsync"
+                           CompletionUpdating="_isUpdatingDetailsCompletion"
+                           CompletionError="_detailsCompletionError"
+                           OnDelete="ShowDetailsDeleteConfirmation" />
+}
+@if (_showDetailsDeleteConfirmation)
+{
+    <ConfirmationDialog Title="Verwijderen uit planning?"
+                        Message="@DetailsDeleteConfirmationMessage"
+                        CancelText="Annuleren"
+                        ConfirmText="@(_isDeletingDetails ? "Verwijderen..." : "Verwijderen")"
+                        CancelTestId="cancel-delete-button"
+                        ConfirmTestId="confirm-delete-button"
+                        ConfirmDisabled="_isDeletingDetails"
+                        OnCancel="CancelDetailsDeleteConfirmation"
+                        OnConfirm="DeleteFromDetailsAsync">
+        @if (_detailsDeleteError is not null)
+        {
+            <p role="alert" data-testid="activity-delete-error">@_detailsDeleteError</p>
+        }
+    </ConfirmationDialog>
 }
 @if (_isActivityFormOpen)
 {

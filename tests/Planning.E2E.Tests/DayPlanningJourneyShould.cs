@@ -52,7 +52,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
-    public async Task AddActivityWithDescriptionToTimeBlockAndKeepItAfterReload()
+    public async Task ShowCreatedActivityDescriptionInDesktopDetailsAfterReload()
     {
         // Arrange
         await DayPlanningTestData.EnsureTimeBlocksAsync(environment);
@@ -90,8 +90,9 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await activity.GetByTestId("activity-open-button").ClickAsync();
 
         // Assert: the saved description is available
-        await Expect(Page.GetByTestId("activity-description"))
-            .ToHaveValueAsync(activityDescription);
+        var dialog = Page.GetByRole(AriaRole.Dialog, new() { Name = "Activiteit bekijken" });
+        await Expect(dialog.GetByTestId("activity-detail-description"))
+            .ToHaveTextAsync(activityDescription);
     }
 
     [Fact]
@@ -127,6 +128,9 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
 
         // Act: edit through the mobile page and use browser Back
         await activity.GetByTestId("mobile-activity-open-link").ClickAsync();
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(activityName);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Bewerken" }).ClickAsync();
         await Expect(Page.GetByTestId("activity-form-page")).ToBeVisibleAsync();
         await Page.GetByTestId("activity-name").FillAsync(editedName);
         await Page.EvaluateAsync("history.back()");
@@ -137,6 +141,10 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Expect(Page.GetByTestId("activity-name")).ToHaveValueAsync(editedName);
         await Page.GetByTestId("update-activity-button").ClickAsync();
 
+        await Expect(Page.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(editedName);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Terug naar dagplanning" })
+            .ClickAsync();
         await Expect(Page).ToHaveURLAsync($"{BaseUrl}/dayplanning?date={today:yyyy-MM-dd}");
         var editedActivity = morning.GetByTestId("planned-activity-row")
             .Filter(new() { HasText = editedName });
@@ -148,7 +156,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
-    public async Task KeepEditedActivityAfterReload()
+    public async Task KeepEditedActivityInDesktopDetailsAfterReload()
     {
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
@@ -167,6 +175,10 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
 
         // Act
         await activity.GetByTestId("activity-open-button").ClickAsync();
+        var detailsDialog = Page.GetByRole(
+            AriaRole.Dialog, new() { Name = "Activiteit bekijken" });
+        await detailsDialog.GetByRole(AriaRole.Button, new() { Name = "Bewerken" })
+            .ClickAsync();
         await Page.GetByTestId("activity-name").FillAsync(editedName);
         await Page.GetByTestId("activity-description")
             .FillAsync(editedDescription);
@@ -183,6 +195,8 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
                         && response.Status == 204);
 
         // Assert: the update appears on its new day and in its new time block
+        await Expect(detailsDialog.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(editedName);
         await Expect(Page.GetByTestId("selected-date"))
             .ToHaveTextAsync(ExpectedDateLabel(tomorrow));
         var midday = Page.GetByRole(AriaRole.Region, new() { Name = "Middag" });
@@ -204,20 +218,23 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Expect(editedActivity.GetByTestId("activity-important-flag"))
             .ToBeVisibleAsync();
         await editedActivity.GetByTestId("activity-open-button").ClickAsync();
-        await Expect(Page.GetByTestId("activity-name"))
-            .ToHaveValueAsync(editedName);
-        await Expect(Page.GetByTestId("activity-description"))
-            .ToHaveValueAsync(editedDescription);
-        await Expect(Page.GetByTestId("activity-date"))
-            .ToHaveValueAsync(tomorrow.ToString("yyyy-MM-dd"));
-        await Expect(Page.GetByTestId("activity-time-block").Locator("option:checked"))
-            .ToHaveTextAsync("Middag");
-        await Expect(Page.GetByTestId("activity-important"))
-            .ToBeCheckedAsync();
+        await Expect(detailsDialog.GetByTestId("activity-detail-name"))
+            .ToHaveTextAsync(editedName);
+        await Expect(detailsDialog.GetByTestId("activity-detail-description"))
+            .ToHaveTextAsync(editedDescription);
+        await Expect(detailsDialog.GetByTestId("activity-detail-date"))
+            .ToContainTextAsync(tomorrow.ToString(
+                "d MMMM yyyy", CultureInfo.GetCultureInfo("nl-BE")));
+        await Expect(detailsDialog.GetByTestId("activity-detail-time-block"))
+            .ToContainTextAsync("Middag");
+        await Expect(detailsDialog.GetByTestId("activity-detail-importance"))
+            .ToBeVisibleAsync();
+        await Expect(detailsDialog.Locator("input, textarea, select"))
+            .ToHaveCountAsync(0);
     }
 
     [Fact]
-    public async Task DeleteSelectedActivityOnlyAfterConfirmationAndKeepItDeletedAfterReload()
+    public async Task DeleteActivityFromDesktopDetailsOnlyAfterConfirmation()
     {
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
@@ -237,15 +254,18 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
 
         // Act: open the activity and cancel deletion
         await selected.GetByTestId("activity-open-button").ClickAsync();
-        await Page.GetByTestId("delete-activity-button").ClickAsync();
+        var detailsDialog = Page.GetByRole(
+            AriaRole.Dialog, new() { Name = "Activiteit bekijken" });
+        await detailsDialog.GetByTestId("activity-detail-delete-button").ClickAsync();
 
         // Assert: confirmation is shown before deletion
         await Expect(Page.GetByRole(AriaRole.Alertdialog)).ToBeVisibleAsync();
         await Page.GetByTestId("cancel-delete-button").ClickAsync();
+        await Expect(detailsDialog).ToBeVisibleAsync();
         await Expect(selected).ToBeVisibleAsync();
 
         // Act: confirm deletion
-        await Page.GetByTestId("delete-activity-button").ClickAsync();
+        await detailsDialog.GetByTestId("activity-detail-delete-button").ClickAsync();
         /* Begin vóór de klik naar de DELETE-response te luisteren, zodat ook een snel
          serverantwoord wordt opgevangen. De test wacht op dat antwoord voordat hij verdergaat. */
         await Page.RunAndWaitForResponseAsync(
@@ -255,6 +275,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
                         && response.Status == 204);
 
         // Assert: only the selected activity disappeared
+        await Expect(detailsDialog).ToHaveCountAsync(0);
         await Expect(selected).ToHaveCountAsync(0);
         await Expect(other).ToBeVisibleAsync();
 
@@ -267,13 +288,14 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
-    public async Task KeepActivityCompletionChangesAfterReload()
+    public async Task KeepMobileActivityCompletionChangesAfterReload()
     {
         // Arrange
         var today = DateOnly.FromDateTime(DateTime.Today);
         var activityName = $"Morning walk {Guid.NewGuid():N}";
         await DayPlanningTestData.SeedMorningActivityAsync(
             environment, activityName, today);
+        await Page.SetViewportSizeAsync(390, 844);
         await LogInToDayPlanningAsync();
 
         var morning = Page.GetByRole(AriaRole.Region, new() { Name = "Ochtend" });
@@ -294,8 +316,14 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
         await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "true");
         await Expect(name).ToHaveCSSAsync("text-decoration-line", "line-through");
 
-        // Act: reopen
-        await toggle.ClickAsync();
+        // Act: reopen from the mobile details page
+        await row.GetByTestId("mobile-activity-open-link").ClickAsync();
+        var detailsToggle = Page.GetByTestId("activity-detail-completion-toggle");
+        await Expect(detailsToggle).ToHaveAttributeAsync("aria-pressed", "true");
+        await detailsToggle.GetByText("Activiteit voltooid").ClickAsync();
+        await Expect(detailsToggle).ToHaveAttributeAsync("aria-pressed", "false");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Terug naar dagplanning" })
+            .ClickAsync();
 
         // Assert: visible immediately and retained after reload
         await Expect(toggle).ToHaveAttributeAsync("aria-pressed", "false");
@@ -306,7 +334,7 @@ public class DayPlanningJourneyShould(E2ETestEnvironment environment)
     }
 
     [Fact]
-    public async Task CloseActivityDialogWithEscapeAndRestoreTriggerFocus()
+    public async Task CloseDesktopActivityFormDialogWithEscapeAndRestoreTriggerFocus()
     {
         // Arrange
         await DayPlanningTestData.EnsureTimeBlocksAsync(environment);

@@ -199,13 +199,14 @@
 .activity-form input:focus,
 .activity-form select:focus,
 .activity-form textarea:focus {
-    outline: 1px solid var(--accent-coral);
+    outline: 2px solid var(--accent-coral);
+    outline-offset: -2px;
 }
 
 .activity-form input[aria-invalid="true"]:focus,
 .activity-form select[aria-invalid="true"]:focus,
 .activity-form textarea[aria-invalid="true"]:focus {
-    outline: 1px solid var(--error-color);
+    outline-color: var(--error-color);
 }
 
 .activity-form-select {
@@ -269,8 +270,7 @@
 }
 
 .activity-important-toggle:focus-within {
-    outline: 1px solid var(--accent-coral);
-    outline-offset: 1px;
+    border-color: var(--accent-coral);
 }
 
 .activity-important-toggle input:checked + svg {
